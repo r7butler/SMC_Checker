@@ -1,0 +1,19 @@
+<html>
+<body>
+<h3> {{ helplayer }} </h3>
+<table>
+<tr>
+{% for name in fieldnames %}
+	<th> {{ name }} </th>
+{% endfor %}
+</tr>
+{% for row in data %}
+	<tr>
+	{% for name in fieldnames %}
+		<td>{{ row['attributes'][name] }}</td>
+	{% endfor %}
+	</tr>
+{% endfor %}
+</table>
+</body>
+</html>

@@ -1,0 +1,150 @@
+<html>
+<head>
+  <link rel="stylesheet" href="http://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.css" />
+<style>
+.ui-icon-check { background-color: green; float: right; !important; }
+.ui-icon-alert { background-color: yellow; float: right; !important; }
+.ui-icon-delete { background-color: red; float: right; !important; }
+@-webkit-keyframes spin {
+  100% {
+    -webkit-transform: rotate(360deg);
+  }
+}
+@-moz-keyframes spin {
+  100% {
+    -moz-transform: rotate(360deg);
+  }
+}
+@keyframes spin {
+  100% {
+    -webkit-transform: rotate(360deg);
+    -moz-transform: rotate(360deg);
+    -ms-transform: rotate(360deg);
+    -o-transform: rotate(360deg);
+    transform: rotate(360deg);
+  }
+}
+.lt-ie10 {
+  float: right;
+}
+
+.loader {
+  border: 4px solid #fff;
+  border-right-color: transparent;
+  border-radius: 50%;
+  display: inline-block;
+  width: .5em;
+  height: .5em;
+  -webkit-animation: spin 0.75s linear infinite;
+  -moz-animation: spin 0.75s linear infinite;
+  animation: spin 0.75s linear infinite;
+}
+.lt-ie10 .loader {
+  margin: 0 0 -2px;
+  background: url("http://i2.wp.com/www.thegreatnovelingadventure.com/wp-content/plugins/wp-polls/images/loading.gif") center center no-repeat;
+  -webkit-animation: none;
+  -moz-animation: none;
+  animation: none;
+  border: none;
+  width: 16px;
+  height: 16px;
+}
+</style>
+<link rel="stylesheet" href="/checker/static/jquery.toast.css" />
+<script src="http://code.jquery.com/jquery-1.11.1.min.js"></script>
+<script src="http://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.js"></script>
+<script src="/checker/static/jquery.toast.js"></script>
+</head>
+<body>
+  <div id="one" data-role="page">
+	<p><a id="open" href="#" data-role="button">Open Dialog</a></p>
+	<p><a id="close" href="#" data-role="button">Close Dialog</a></p>
+  </div>
+  <div data-role="dialog" data-theme="a" id="confirm_window">
+    <div data-role="header" data-theme="a">
+         <h1>Message Center</h1>
+    </div>
+	<span><p>Data is clean and ready for final submission. Please use <b>Final Submit</b> button below.</p></span>
+  </div>
+  <div data-role="dialog" data-theme="a" id="message_window">
+    <div data-role="header" data-theme="a">
+		<h1>Uploading File</h1>
+    </div>
+    <div data-role="content" data-theme="a">
+		<ul id="message_center" data-role="listview" data-inset="true">
+		<li id="file_progress">Temporary</li>
+		<li id="match_progress">Temporary</li>
+		<li id="core_progress">Temporary</li>
+		<li id="custom_progress">Temporary</li>
+		</ul>
+    </div> <!-- close content // -->
+  </div> <!-- close message window // -->
+</html>
+<script>
+	function move(e) {
+    		var elem = document.getElementById(e); 
+    		var width = 1;
+    		var id = setInterval(frame, 10);
+    		function frame() {
+        		if (width >= 100) {
+            			clearInterval(id);
+				$(elem).css('background-color', 'silver');
+        			$("message_center").listview("refresh");
+        		} else {
+            			width++; 
+            			elem.style.width = width + '%'; 
+        		}
+    		}
+	}
+	$(document).ready(function(){
+		function match(){
+			setTimeout(function(){
+				console.log("start match");
+				$("#file_icon").buttonMarkup({ icon: "check" });
+				$('#file_icon').text('Finished Uploading');
+				$('#file_icon').css('color', 'white');
+				$('#file_icon').css('background-color', 'green');
+				move("match_progress_bar");
+			}, 5000);
+		}	
+		function start(lyr,startmsg,endmsg){
+			var deferred = new $.Deferred();
+			console.log(startmsg);
+			$(lyr).html(startmsg).enhanceWithin();
+			setTimeout(function(){
+				start_status = end(lyr,endmsg);
+				deferred.resolve(start_status);
+			}, 5000);
+			return deferred.promise();
+		}	
+		function end(lyr,endmsg){
+			console.log(endmsg);
+			$(lyr).html(endmsg).enhanceWithin();
+		}	
+		$("#open").on("click", function(e){
+$.toast({
+    heading: 'Positioning',
+    text: 'Use the predefined ones, or specify a custom position object.',
+    icon: 'warning',
+    position: 'mid-center',
+    stack: false
+})
+			e.preventDefault();
+			$.mobile.changePage('#confirm_window', {transition: 'pop', role: 'dialog'});  
+			console.log("open dialog");
+			start('#file_progress','<span>File Upload <p class="lt-ie10"><i class="loader"></i></p></span>','<span>Finished Uploading File <a href="#" data-role="button" data-icon="check" data-inline="true" data-iconpos="notext"></a></span>').done(function(result){
+					console.log(result);
+				start('#match_progress','<span>Match File <p class="lt-ie10"><i class="loader"></i></p></span>','<span>Matched File to Table <a href="#" data-role="button" data-icon="check" data-inline="true" data-iconpos="notext"></a></span>').done(function(result){
+					console.log("finished");
+				});
+			});
+		});
+		$("#close").on("click", function(e){
+			e.preventDefault();
+			$.mobile.changePage('#confirm_window', {transition: 'close', role: 'dialog'});  
+			console.log("close dialog");
+		});
+	});
+</script>
+</body>
+</html>

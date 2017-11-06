@@ -1,0 +1,870 @@
+<html>
+  <head>
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<link rel="stylesheet" href="http://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.css" />
+	<style>
+		* {
+			font-family: 'Open Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
+			box-sizing: border-box;
+		}
+		div {
+			display: block;
+		}
+		.ui-icon-check { background-color: green; float: right; !important; }
+		.ui-icon-alert { background-color: yellow; float: right; !important; }
+		.ui-icon-delete { background-color: red; float: right; !important; }
+		.ui-dialog  .ui-header .ui-btn-icon-notext { display:none;} 
+
+@-webkit-keyframes spin {
+  100% {
+    -webkit-transform: rotate(360deg);
+  }
+}
+@-moz-keyframes spin {
+  100% {
+    -moz-transform: rotate(360deg);
+  }
+}
+@keyframes spin {
+  100% {
+    -webkit-transform: rotate(360deg);
+    -moz-transform: rotate(360deg);
+    -ms-transform: rotate(360deg);
+    -o-transform: rotate(360deg);
+    transform: rotate(360deg);
+  }
+}
+.lt-ie10 {
+  float: right;
+}
+
+.loader {
+  border: 4px solid #fff;
+  border-right-color: transparent;
+  border-radius: 50%;
+  display: inline-block;
+  width: .5em;
+  height: .5em;
+  -webkit-animation: spin 0.75s linear infinite;
+  -moz-animation: spin 0.75s linear infinite;
+  animation: spin 0.75s linear infinite;
+}
+.lt-ie10 .loader {
+  margin: 0 0 -2px;
+  background: url("static/loading.gif") center center no-repeat;
+  -webkit-animation: none;
+  -moz-animation: none;
+  animation: none;
+  border: none;
+  width: 16px;
+  height: 16px;
+}
+th {
+    background-color: white;
+    color: #307fc8;
+    padding: 6px;
+}
+table {
+	width: 100%;
+	border-spacing: 10px;
+	border-collapse: collapse;
+}
+td {
+	padding: 6px;
+}
+#one_main {
+	position: absolute;
+	width: 400px;
+	height: 400px;
+	margin-left: 29%;
+	background-size:400px 400px;
+	background-image: url(/images/drag.png);
+	background-repeat:no-repeat;
+	z-index: 1;
+}
+.ui-overlay-a {
+  background-color: #444444;
+}
+@media print {
+  //.ui-navbar {
+  //	display: none;
+  //}
+  .tab-content > .tab-pane {
+    display: block !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+   * { color: black; background: white; }
+   table { 
+  	border-collapse:collapse;
+  	border: 1px solid black;
+  	width:100%;
+  	text-align:right;
+  }
+}
+	</style>
+	<link rel="stylesheet" href="/checker/static/jquery.toast.css" />
+	<script src="http://code.jquery.com/jquery-1.11.1.min.js"></script>
+	<script src="http://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.js"></script>
+	<script src="/checker/static/jquery.toast.js"></script>
+	<script type="text/javascript">
+		var $SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
+	</script>
+<script type="text/javascript">
+	// users are not allowed to make a final submission until they have submitted the proper custom checks (ie. tox, chem, fish, etc..)
+	var allowed_to_submit = 1;
+	var type_of_data = "";	// keep track of data submitted (toxicity, fish) for emailing committee
+	var business;
+	var custom;
+	var redundant;
+	var redundant_custom = {};
+	var summary_file;
+	var table_match;
+	var status_timer;
+	var timestamp;
+	function print_core_errors(server_object,error_title){
+		  $.each(server_object, function(array_key,array_val){
+			tab_id = "#tab"+array_key;
+			$('#tabs').append('<div id="tab'+ array_key +'" style="overflow-y:auto; height: 100%;"><br></div>');
+			var error_object = $.parseJSON(server_object[array_key]);
+			if(error_object.length !== 0){
+				var body = '<h3>'+error_title+'</h3><table data-role="table" id="table-custom-2" data-mode="columntoggle" class="ui-body-d ui-shadow table-stripe ui-responsive table-stroke"><thead><tr class="ui-bar-d"><th data-priority="1">Row</th><th>Column</th><th>Error Type</th><th>Error/Incorrect Value</th></tr></thead><tbody>';
+				$.each(Object.keys(error_object), function(sk,sv){
+					$.each( error_object[sk], function( key, value ) {
+						var record = JSON.parse(value);
+						var columns = [];
+						var error_types = [];
+						var errors = [];
+						for(var i = 0; i < record[0].value.length; ++i){
+							var s = i + 1;
+							columns.push(record[0].value[i].column + "<sup>"+s+"</sup>");
+							error_types.push(record[0].value[i].error_type + "<sup>"+s+"</sup>");
+							errors.push(record[0].value[i].error + "<sup>"+s+"</sup>");
+							// increment row by 2 due to array starting at 0 and column headers in excel file
+							//console.log(record[0]);
+							if(record[0].row){
+								var row_number = parseInt(record[0].row) + 2;
+							}
+							if(record[0].rows){
+								var row_number = record[0].rows;
+							}
+						}
+						body += "<tr><td>"+row_number+"</td><td>"+columns.join('<br>')+"</td><td>"+error_types.join('<br>')+"<td>"+errors.join('<br>')+"</td></tr>";
+					});
+				});
+			} else {
+				// NEED TO FIX undefined
+				// body += "<p>test</p>";
+				console.log("Empty");
+			}
+			body += "</tbody></table><br>";
+			$(tab_id).append(body);
+			$("#tabs").tabs();
+			$("#tabs").tabs("refresh");
+		  });
+	}
+	function end_application(h,t,i){
+		//$('#message_window').dialog( "close" );
+		// if i = critical then email sccwrp
+		// if i = success plus h end of application email sccwrp and committee
+		var end_toast = $.toast({
+    			heading: h,
+    			text: t,
+    			position: 'mid-center',
+    			icon: i,
+			hideAfter: false,
+			loader: false
+		});
+		/* disable temporarily - may have to leave disabled - some users leave the app to run and walk away
+		setTimeout(function(){ 
+			// reload application
+			reload_page();
+		}, 10000); 
+		*/
+		if (i == "success" && h == "Data Loaded Successful"){
+    				$.ajax({
+					type: "GET",
+					url: $SCRIPT_ROOT + '/mail?action=' + i + '&type=' + type_of_data,
+        				success: function(data) {
+						console.log(data);
+						var answer = confirm("Restart the application?");
+						if (answer == true){
+							reload_page();
+						} else {
+							// do nothing
+						}
+					},
+					error: function(data){
+						console.log(data);
+					}
+				});
+		}
+		if (i == "critical"){
+			alert("critical");
+    				$.ajax({
+					type: "GET",
+					url: $SCRIPT_ROOT + '/mail?action=' + i,
+        				success: function(data) {
+						console.log(data);
+					},
+					error: function(data){
+						console.log(data);
+					}
+				});
+		}
+		// stop status either way
+		end_status();
+	}
+	// for some reason toxicity wont work as a function - strange
+	function start_loader(lyr,startmsg){
+		//console.log(startmsg);
+		$(lyr).html(startmsg).enhanceWithin();
+	}	
+	function end_loader(lyr,endmsg){
+		//console.log(endmsg);
+		$(lyr).html(endmsg).enhanceWithin();
+	}	
+	function get_status(t) {
+    		$.ajax({
+			type: "GET",
+			url: $SCRIPT_ROOT + '/status?t=' + t,
+        		success: function(data) {
+           			console.log(data.message);
+				$('#status').html(data.message);
+				$('#submit_status').html(data.message);
+            			// call it again after one second
+				var t = data.timestamp;
+            			status_timer = setTimeout(function(){ get_status(t); }, 3000);    
+        		},
+        		error: function(data) {
+				console.log("Application Error:"+ data.responseJSON.message);
+				end_loader('#core_progress','<span>Failed Core Checks <a href="#" data-role="button" data-icon="check" data-inl    ine="true" data-iconpos="notext"></a></span>');
+				end_application("Application Failed","The application suffered a critical error. SCCWRP has been notified. The application will reload now","error");
+        		},
+        		cache: false
+    		});
+	}
+	function end_status(){
+		clearTimeout(status_timer);
+	}
+	function reload_page() {
+	  //console.log("fired reload page");
+	  $.toast().reset('all');
+	  location.href = "/checker";
+	}
+	function toxicology(){
+		console.log("toxicity routine");
+		$.ajax({
+			url: $SCRIPT_ROOT + '/toxicity',
+			type: "POST",
+			data: "test",
+			processData: false,
+			contentType: false,
+			success: function(data){
+				//console.log(data);
+				if(data.state === 0){
+					console.log("summary");
+					allowed_to_submit = 0;
+					type_of_data = "toxicity";
+					//console.log(data.summary);
+					//console.log(data.custom);
+					//console.log(data.redundant_custom);
+					custom = data.custom;
+					redundant_custom = data.redundant_custom;
+					summary_file = data.summary_file;
+				}
+				if(data.state === 1){
+					console.log("failed toxicity checks");
+					console.log(data.message);
+				}
+				end_loader('#custom_progress','<span>Completed Custom Checks <a href="#" data-role="button" data-icon="check" data-inline="true" data-iconpos="notext"></a></span>')
+				//$('#message_window').dialog( "close" );
+				finish();
+			},
+		    	error: function(data){
+				console.log("Application Error:"+ data.responseJSON.message);
+				end_loader('#core_progress','<span>Failed Core Checks <a href="#" data-role="button" data-icon="check" data-inl    ine="true" data-iconpos="notext"></a></span>');
+				end_application("Application Failed","The application suffered a critical error. SCCWRP has been notified. The application will reload now","error");
+    			}
+		})
+		.fail(function(response) {
+			console.log(response);
+		})
+	}	
+	function core(){
+		console.log("core routine");
+		$.ajax({
+			url: $SCRIPT_ROOT + '/core',
+			type: "POST",
+			data: "test",
+			processData: false,
+			contentType: false,
+			beforeSend: function(){
+				start_loader('#core_progress','<span>Running Core Checks <p class="lt-ie10"><i class="loader"></i></p></span>')
+			},
+			success: function(data){
+				console.log(data);
+				if(data.state === 0){
+					business = data.business;
+					redundant = data.redundant;
+					end_loader('#core_progress','<span>Completed Core Checks <a href="#" data-role="button" data-icon="check" data-inline="true" data-iconpos="notext"></a></span>')
+					custom();
+				}
+				if(data.state === 1){
+					console.log("Application Error:"+ data.message);
+					end_loader('#core_progress','<span>Failed Core Checks <a href="#" data-role="button" data-icon="check" data-inline="true" data-iconpos="notext"></a></span>')
+					//end_application("Application Failed","The application suffered a critical error. SCCWRP has been notified. The application will reload now","error");
+					finish();
+					// go to main page
+				}
+			},
+		    	error: function(data){
+				console.log("Application Error:"+ data.responseJSON.message);
+				end_loader('#core_progress','<span>Failed Core Checks <a href="#" data-role="button" data-icon="check" data-inline="true" data-iconpos="notext"></a></span>');
+				end_application("Application Failed","The application suffered a critical error. SCCWRP has been notified. The application will reload now","error");
+    			}
+		})
+	}	
+	function custom(){
+		console.log("custom routine");
+		$.ajax({
+			url: $SCRIPT_ROOT + '/custom',
+			type: "POST",
+			data: "test",
+			processData: false,
+			contentType: false,
+			beforeSend: function(){
+				start_loader('#custom_progress','<span>Custom Checks<p class="lt-ie10"><i class="loader"></i></p></span>')
+			},
+			success: function(data){
+				console.log(data);
+				if(data.state === 0){
+					//$('#message_window').dialog( "close" );
+					if(data.match === "fish"){
+						fish();
+					}
+					if(data.match === "ocpw"){
+						ocpw();
+					}
+					if(data.match === "toxicity"){
+						toxicology();
+					}
+				}
+				if(data.state === 1){
+					console.log("failed custom");
+					allowed_to_submit = 0;
+					$.toast('In order to make a final toxicity submission you must have all three tabs (batch, results, wq).');
+					end_loader('#custom_progress','<span>Completed Custom Checks <a href="#" data-role="button" data-icon="check" data-inline="true" data-iconpos="notext"></a></span>')
+					finish();
+				}
+			}
+		})
+	}	
+	function fish(){
+		console.log("fish routine");
+		$.ajax({
+			url: $SCRIPT_ROOT + '/fish',
+			type: "POST",
+			data: "test",
+			processData: false,
+			contentType: false,
+			success: function(data){
+				console.log(data);
+				end_loader('#custom_progress','<span>Completed Custom Checks <a href="#" data-role="button" data-icon="check" data-inline="true" data-iconpos="notext"></a></span>')
+				//$('#message_window').dialog( "close" );
+				finish();
+			}
+		})
+	}	
+	function ocpw(){
+		console.log("ocpw routine");
+		$.ajax({
+			url: $SCRIPT_ROOT + '/ocpw',
+			type: "POST",
+			data: "test",
+			processData: false,
+			contentType: false,
+			success: function(data){
+				console.log(data);
+				if(data.state === 0){
+					type_of_data = "ocpw";
+					allowed_to_submit = 0;
+				}
+				end_loader('#custom_progress','<span>Completed Custom Checks <a href="#" data-role="button" data-icon="check" data-inline="true" data-iconpos="notext"></a></span>')
+				//$('#message_window').dialog( "close" );
+				finish();
+			}
+		})
+	}	
+	function match(){
+		console.log("match routine");
+		//console.log("load progress routine...");
+		$.ajax({
+			url: $SCRIPT_ROOT + '/match',
+			type: "POST",
+			data: "test",
+			processData: false,
+			contentType: false,
+			beforeSend: function(){
+				start_loader('#match_progress','<span>Match File <p class="lt-ie10"><i class="loader"></i></p></span>')
+			},
+			success: function(data){
+				//console.log(data);
+				if(data.table_match){
+					table_match = data.table_match;
+				} else {
+					alert("Critical Error: Missing the table_match variable");
+					return;
+				}
+				$.each(data.table_match, function(key,val){
+					var value_string = String(val);
+					var elements = value_string.split("-");
+					if(elements[4] === "True"){
+						$("#compare_list").append("<ul><li><strong>MATCH</strong> - Excel sheet "+elements[1]+" - Matched table "+elements[3]+" on columns:<p>"+elements[6]+"</p></li></ul>");
+					} else {
+						$("#compare_list").append("<ul><li><strong>NO MATCH</strong> - Excel sheet "+elements[1]+" - The closest matching table we could find was "+elements[3]+" on columns:<p>"+elements[6]+" - <font color=red>unmatched tab columns: ["+elements[7]+"]</font> - <font color=red>unmatched table columns: ["+elements[8]+"]</font></p></li></ul>");
+					}
+					$("#compare_list").append("<br>");
+				});
+				if(data.state === 0){
+					//console.log(data);
+					end_loader('#match_progress','<span>Matched File to Table <a href="#" data-role="button" data-icon="check" data-inline="true" data-iconpos="notext"></a></span>')
+					core();
+				}	
+				if(data.state === 1){
+					end_loader('#match_progress','<span>Failed Match <a href="index.html" data-role="button" data-icon="delete" data-inline="true" data-iconpos="notext"></a></span><br>'+data.message)
+					setTimeout(function(){ 
+						// go to main page but do no checks
+						//$('#message_window').dialog( "close" );
+						//$.mobile.changePage( "#two", { transition: "pop"} );
+						finish();
+					}, 3000);	
+					$("#compare_list").append("<ul><li>"+data.message+"</li></ul>");
+				}	
+			},
+		    	error: function(data){
+				alert("Major Error");
+				alert(data.status);
+				if(data.status === "504"){
+					alert("Caughtit!");
+				}
+				console.log("Application Error:");
+				console.log(data);
+				end_loader('#core_progress','<span>Failed Core Checks <a href="#" data-role="button" data-icon="check" data-inl    ine="true" data-iconpos="notext"></a></span>');
+				end_application("Application Failed","The application suffered a critical error. SCCWRP has been notified. The application will reload now","critical");
+    			}
+		})
+	}	
+	function presentation(table_match,redundant,redundant_custom,business,custom,summary_file){
+		console.log("presentation");
+		console.log(summary_file);
+		var redundant_rows = [];
+		var redundant_custom_rows = [];
+		$.each(table_match, function(tkey,tval){
+			//console.log("tkey:"+ tkey + " tval: "+ tval);
+			var value_string = String(tval);
+			var elements = value_string.split("-");
+			var tab_name = elements[1];
+			var tab_show = String(elements[4]);
+			//console.log(tab_show);	
+			if(tab_show == "True"){
+				$("#tabsnav").navbar("destroy");
+				// create tab navigation button 
+				$('#tabsnav ul').append('<li><a href="#tab' + tkey + '">'+ tab_name + '</a></li>');
+				/* This code was removed because it was causing issues whenever at least one tab is not supposed to show (ie. one tab doesnt match any table in the database but other tabs do - when removed the page still ran properly - 30Aug17 
+				// create tab page
+				tab_id = "#tab"+tkey;
+				var tab_div = '<div id="tab'+ tkey +'" style="overflow-y:auto; height: 100%;"><br></div>';
+				$('#tabs').append(tab_div);
+				*/
+				$("#tabs").tabs();
+				$("#tabs").tabs("refresh");
+				$("#tabs").tabs('load', tkey);
+				// tkey was set to 2 meaning 3 tabs should be something else - use summary_file instead if(tkey == 2){
+				if(summary_file && tkey == 2){
+					$('#tabsnav ul').append('<li><a href="#tab3">tblToxicityResultsSummary</a></li>');
+					$('#tabs').append('<div id="tab3" style="overflow-y:auto; height: 100%;"><br><a href="'+ summary_file + '" target="_blank">Download Toxicity Summary File [Excel]</a></div>');
+					//$('#tabs').append('<div id="tab3" style="overflow-y:auto; height: 100%;"><br><a href="#" target="_blank">Download Toxicity Summary File [Excel]</a></div>');
+				}
+		 		$("#tabsnav").navbar();
+			}
+		}); // close table_match
+		if(redundant){
+		  console.log("test");
+		  console.log("redundant");
+		  console.log(redundant);
+		  print_core_errors(redundant,"Redundant (Core Errors):");
+		}
+		/* output core checks */
+		if(business){
+		  console.log("business");
+		  //console.log(business);
+		  print_core_errors(business,"Core Errors:");
+		}
+		if(Object.keys(redundant_custom).length !== 0){
+			console.log("redundant custom");
+			console.log(redundant_custom);
+			// get json from server into an object
+	  		var rerror_object = $.parseJSON(redundant_custom);
+		  	//print_core_errors(redundant_custom,"Redundant (Toxicity Errors):");
+			// check if we have data
+	  		if(rerror_object.length !== 0){
+				count = 0;
+			  	$.each(Object.keys(rerror_object), function(rk,rv){
+					var body = '<h3>Redundant (Toxicity Errors):</h3><table data-role="table" id="table-custom-1" class="ui-body-d ui-shadow table-stripe ui-responsive"><thead><tr class="ui-bar-d"><th>Rows</th><th>Column</th><th>Error Type</th><th>Error/Incorrect Value</th></tr></thead><tbody>';
+					// gets tab id - console.log(Object.keys(rerror_object[rk])[0]);	
+					console.log(Object.keys(rerror_object[rk])[0]);
+					if (Object.keys(rerror_object[rk])[0]){
+						var tab_holder = Object.keys(rerror_object[rk])[0].split('-');
+						rtab_id = "#tab"+tab_holder[0];
+						console.log(rtab_id);
+						$.each( rerror_object[rk], function( key, value ) {
+							//console.log(key);
+							var record = JSON.parse(value);
+							var row = record[count].rows;
+							$.each( record[count].value, function ( mkey, mvalue ){
+								body += "<tr><td>"+row+"</td><td>"+mvalue.column+"</td><td>"+mvalue.error_type+"<td>"+mvalue.error+"</td></tr>";				
+							});
+						})
+						body += "</tbody></table><br>";
+						$(rtab_id).append(body);
+						$("#tabs").tabs();
+						$("#tabs").tabs("refresh");
+					}
+			  	})
+				count++;
+	  		}
+		}
+		//console.log("custom");
+		if(Object.keys(custom).length !== 0){
+			 console.log("custom: "); 
+			 //console.log(custom); 
+			  var error_object = $.parseJSON(custom);
+			  // check to make sure that elements of the json are empty
+			  if(error_object.length !== 0){
+				$.each(Object.keys(error_object), function(sk,sv){
+					$('#tabs').append('<div id="tab'+ sk +'" style="overflow-y:auto; height: 100%;"><br></div>');
+					//tab_id = "#tab"+sk;
+					//console.log("tab_id: "+tab_id);
+					// gets tab id - console.log(Object.keys(error_object[sk])[0]);	
+					var tab_holder = Object.keys(error_object[sk])[0].split('-');
+					tab_id = "#tab"+tab_holder[0];
+					console.log(tab_id);
+					var body = '<h3>Individual Toxicity Errors:</h3><table data-role="table" id="table-custom-2" data-mode="columntoggle" class="ui-body-d ui-shadow table-stripe ui-responsive table-stroke"><thead><tr class="ui-bar-d"><th data-priority="1">Row</th><th>Column</th><th>Error Type</th><th>Error/Incorrect Value</th></tr></thead><tbody>';
+					$.each( error_object[sk], function( key, value ) {
+						var record = JSON.parse(value);
+						var columns = [];
+						var error_types = [];
+						var errors = [];
+						for(var i = 0; i < record[0].value.length; ++i){
+							var s = i + 1;
+							columns.push(record[0].value[i].column + "<sup>"+s+"</sup>");
+							error_types.push(record[0].value[i].error_type + "<sup>"+s+"</sup>");
+							errors.push(record[0].value[i].error + "<sup>"+s+"</sup>");
+							// increment row by 2 due to array starting at 0 and column headers in excel file
+							var increment_row = parseInt(record[0].row) + 2;
+						}
+						body += "<tr><td>"+increment_row+"</td><td>"+columns.join('<br>')+"</td><td>"+error_types.join('<br>')+"<td>"+errors.join('<br>')+"</td></tr>";
+					});
+					body += "</tbody></table><br>";
+					//console.log(body);
+					$(tab_id).append(body);
+				});
+				//body += "</tbody></table><br>";
+				//$(tab_id).append(body);
+				// if they are empty then print empty
+				$("#tabs").tabs();
+				$("#tabs").tabs("refresh");
+		  	} else {
+				$("#tabs").tabs();
+				$("#tabs").tabs("refresh");
+				console.log("Empty");
+			}
+		} // end of custom
+	}
+	function finish(){
+		console.log("finish routine");
+		$.ajax({
+			url: $SCRIPT_ROOT + '/finish',
+			type: "POST",
+			data: "test",
+			processData: false,
+			contentType: false,
+			success: function(data){
+				//console.log(data);
+				//$('#message_window').dialog( "close" );
+				//$.mobile.changePage( "#two", { transition: "pop"} );
+				var error = JSON.parse(data.errors);
+				// when there are no errors we can load to staging
+				if(error.total === 0 && allowed_to_submit === 0){
+					//alert("Ready to load!")
+					$.toast({
+    						heading: 'Ready for Final Submission',
+    						text: 'Data is clean and ready for final submission. Please use "Final Submit" button below.',
+    						position: 'mid-center',
+    						icon: 'success',
+						loader: false
+					})
+					//$.mobile.changePage('#notification_window', {transition: 'pop', role: 'dialog'});
+					$('#final_submit').show();
+				}
+				$("#total_errors").html(error.total);
+				$("#match_errors").html(error.match);
+				$("#mia_errors").html(error.mia);
+				$("#lookup_errors").html(error.lookup);
+				$("#duplicate_errors").html(error.duplicate);
+				$("#custom_errors").html(error.custom);
+				$.mobile.changePage( "#two", { transition: "pop"} );
+			}
+		})
+	}	
+	$(document).on( "pageinit", "#two", function( event ) {
+		//console.log("pageinit");
+		presentation(table_match,redundant,redundant_custom,business,custom,summary_file);
+// Tab initialization
+$('#tabs').tabs({
+    activate: function(event,ui) {
+	console.log(ui.newTab.index());
+        // You need Firebug or the developer tools on your browser open to see these
+        console.log(event);
+        // This will get you the index of the tab you selected
+        //console.log(event.options.selected);
+        // And this will get you it's name
+        // console.log(event.tab.text);
+    }
+});
+	});
+	$(document).ready(function(){
+
+		function application(){
+			console.log("app routine");
+			$.ajax({
+				url: $SCRIPT_ROOT + '/application',
+				type: "POST",
+				data: "test",
+				processData: false,
+				contentType: false,
+				success: function(data){
+					//console.log(data);
+					$('#log_file').append('<a href="'+data.log_file+'" target="_blank">'+data.log_file+'</a>');
+					//$('#status').append(data.status_file);
+					timestamp = data.timestamp;
+					get_status(data.timestamp);
+				},
+		    		error: function(data){
+					console.log("Application Error:"+ data.responseJSON.message);
+					end_loader('#core_progress','<span>Failed Core Checks <a href="#" data-role="button" data-icon="check" data-inl    ine="true" data-iconpos="notext"></a></span>');
+					end_application("Application Failed","The application suffered a critical error. SCCWRP has been notified. The application will reload now","error");
+    				}
+			})
+		}	
+		application();
+		/* disable events before drop */
+		$('#final_submit').hide();
+		$('html').on('dragenter',function(event){ event.stopPropagation(); event.preventDefault(); });
+		$('html').on('dragover',function(event){ event.stopPropagation(); event.preventDefault(); });
+		$('html').on('drop',function(event){
+			event.stopPropagation();
+			event.preventDefault();
+			var dropped_files = event.originalEvent.dataTransfer.files;
+			// if user drops more than one file in the interface alert and exit
+			if(dropped_files.length > 1){
+				alert("Please only submit one file at a time.");
+				return;
+			}
+			var formData = new FormData();
+			var database = $("#select-database").val();
+			$("#select-database select").val(database); 
+			var type = "none";
+			if($("#checkbox-checks-0").is(':checked')){
+				toxicity = "Yes";
+			} else {
+				toxicity = "No";
+			}
+			formData.append('timestamp', 'yes');
+			formData.append('database', database);
+			formData.append('type', type);
+			formData.append('toxicity', toxicity);
+			for(var i = 0; i < dropped_files.length; ++i){
+				/* submit as array to as file array - otherwise will fail */
+				formData.append('files[]', dropped_files[i]);
+			}
+			$.ajax({
+				url: $SCRIPT_ROOT + '/upload',
+				type: "POST",
+				data: formData,
+				processData: false,
+				contentType: false,
+				beforeSend: function(){
+					$.mobile.changePage('#message_window', {transition: 'pop', role: 'dialog'});
+					start_loader('#file_progress','<span>File Upload <p class="lt-ie10"><i class="loader"></i></p></span>')
+				},
+				success: function(data){
+					//console.log(data);
+					$("#original_file").html(data.original_file);
+					$("#modified_file").html(data.modified_file);
+					if(data.state === 0){
+						end_loader('#file_progress','<span>Finished Uploading File <a href="#" data-role="button" data-icon="check" data-inline="true" data-iconpos="notext"></a></span>')
+						match();
+					}
+					if(data.state === 1){
+						end_loader('#file_progress','<span>Failed Uploading <a href="index.html" data-role="button" data-icon="delete" data-inline="true" data-iconpos="notext"></a></span><br>'+data.message)
+					}
+				}
+			})
+		}); // html drop function
+			$("#final_submit").click(function(e){
+				e.stopImmediatePropagation();
+				e.preventDefault();
+				var formData = new FormData();
+				var submit_file = $('#modified_file').text();
+				//var database = $("#select-database :selected").text();
+				var database = "bight2018";
+				var type = "none";
+				formData.append('database', database);
+				formData.append('type', type);
+				formData.append('submit_file', submit_file);
+				get_status(timestamp); // turn on status logging
+				$.ajax({
+					url: $SCRIPT_ROOT + '/staging',
+					type: "POST",
+					data: formData,
+					processData: false,
+					contentType: false,
+					beforeSend: function(){
+						$.mobile.changePage('#submit_message_window', {transition: 'pop', role: 'dialog'});
+						start_loader('#submit_progress','<span>Loading Data into Database<p class="lt-ie10"><i class="loader"></i></p></span>')
+					},
+					success: function(data){
+						console.log(data);
+						end_loader('#submit_progress','<span>Loaded Data Successfully <a href="#" data-role="button" data-icon="check" data-inline="true" data-iconpos="notext"></a></span>')
+						// hold message for twenty second then let user know that app will reload
+						// send pertinent message to sccwrp staff - you will need to know which dataset was submitted
+						// action = toxicity, fish, etc... and record_count and who submitted (for later after authen)
+						end_application("Data Loaded Successful","Thank you for submitting your data. SCCWRP staff along with committee have been notified of your submission. The application will reload now","success");
+					},
+		    			error: function(data){
+						console.log("Application Error:"+ data.responseJSON.message);
+						end_loader('#core_progress','<span>Failed Core Checks <a href="#" data-role="button" data-icon="check" data-inl    ine="true" data-iconpos="notext"></a></span>');
+						end_application("Application Failed","The application suffered a critical error. SCCWRP has been notified. The application will reload now","error");
+    					}
+				});
+			        // send signal to get_status to quit checking on status
+                		end_status();
+				$('#final').closest('.ui-btn').hide();
+			});
+			$("#notification_close").click(function(e,u){
+				console.log("notification_close");
+				//e.stopImmediatePropagation();
+    				//e.preventDefault();
+				//$('#notification_window').dialog( "close" );
+			});
+			$("#page_reload").click(function(e,u){
+				var answer = confirm("Are you sure you want to restart the application?");
+				if (answer == true){
+					e.stopImmediatePropagation();
+    					e.preventDefault();
+					reload_page();
+				} else {
+					// do nothing
+				}
+			});
+		});
+	</script>
+  </head>
+  <div id="one" data-role="page">
+    <h3>Drag & Drop Single File to Run Checker</h3>
+    <div id="one_main" role="main" class="ui-content">
+      <!--  just in case we might use
+      <div data-role="controlgroup" data-type="horizontal" data-mini="true">
+    	<input type="checkbox" name="checkbox-checks-0" id="checkbox-checks-0" data-mini="true">
+	<label for="checkbox-checks-0">Toxicity Checks</label>
+      </div>
+      // -->
+	<!-- temporary - delete later
+	<div align="left" style="float: right;">
+		<h3>Messages</h3>
+		<ul id="message_center2" data-role="listview" data-inset="true">
+		<li><span>File Upload  <a href="#" data-role="button" data-icon="check" data-inline="true" data-iconpos="notext"></a></span></li>
+		<li><span>Match Table  <a href="#" data-role="button" data-icon="alert" data-inline="true" data-iconpos="notext"></a></span></li>
+		<li><span>Core Checks  <a href="#" data-role="button" data-icon="clock" data-inline="true" data-iconpos="notext"></a></span></li>
+		<li data-icon="arrow-r"><a href="#">Custom Checks</a></li>
+		<li><a href="#">Final Submission</a></li>
+		</ul>
+	</div>
+	<div data-role="popup" id="p" data-position-to="window" data-transition="turn"><p>This is a completely basic popup, no options set.</p></div>
+	<p><a id="test" href="#" data-role="button">Show page "two"</a></p>
+	// -->
+	<!-- <div id="status">Status</div> // -->
+    </div>
+  </div>
+
+  <div id="two" data-role="page">
+    <div id="main" role="main" class="ui-content">
+	<a href="#" class="ui-btn" id="page_reload" rel="external">Reload Application</a>
+	<div id="tabs" data-role="tabs"><div id="tabsnav" data-role="navbar"><ul><li><a href="#home" class="ui-btn-active">Submission Information</a></li></ul></div>
+	<div id="home">
+	<ul data-role="listview" data-inset="true" data-divider-theme="a">
+	  <li>
+		<h2>Dropped File</h2>
+		<p id="original_file"></p>
+		<p id="modified_file"></p>
+    	  </li>
+	  <li>
+		<h2>Excel Tab to Table Comparison</h2>
+		<p id="compare_list">
+	  </li>
+    	  <li><h2>Total Errors</h2> <span id="total_errors" class="ui-li-count"></span></li>
+    	  <li><p><strong>Match</strong></p> <span id="match_errors" class="ui-li-count"></span></li>
+    	  <li><p><strong>Missing/Incomplete</strong></p> <span id="mia_errors" class="ui-li-count"></span></li>
+    	  <li><p><strong>Lookup Failure</strong></p> <span id="lookup_errors" class="ui-li-count"></span></li>
+    	  <li><p><strong>Duplicates</strong></p> <span id="duplicate_errors" class="ui-li-count"></span></li>
+    	  <li><p><strong>Custom Toxicity</strong></p> <span id="custom_errors" class="ui-li-count"></span></li>
+    	  <li>
+		<h2>Log File</h2>
+		<p id="log_file"></p>
+    	  </li>
+	</ul>
+	<div id="final"><button id="final_submit" type="submit" value="Final Submit"/>Final Submit</button></div>
+	</div>
+      </div>
+    </div>
+  </div>
+  <div id="three" data-role="page">
+	<div data-role="header">Application Error</div>
+	<div id="application_error"></div>
+  </div>
+  <div data-role="dialog" data-theme="a" id="notification_window">
+    <div data-role="header" data-theme="a">
+		<h1>Notification</h1>
+    </div>
+		Data has been checked and is ready to submit.
+    <a href="#" id="notification_close" data-rel="back" class="ui-btn ui-shadow ui-corner-all ui-btn-a">Close</a>
+  </div>
+  <div data-role="dialog" data-theme="a" id="message_window">
+    <div data-role="header" data-theme="a">
+		<h1>Message Center</h1>
+    </div>
+    <div data-role="content" data-theme="a">
+		<ul id="message_center" data-role="listview" data-inset="true">
+			<li id="status">Status</li>
+			<li id="file_progress">File Upload</li>
+			<li id="match_progress">Match File</li>
+			<li id="core_progress">Core Checks</li>
+			<li id="custom_progress">Custom Checks</li>
+		</ul>
+    </div> <!-- close content // -->
+  </div> <!-- close message window // -->
+  <div data-role="dialog" data-theme="a" id="submit_message_window">
+    <div data-role="header" data-theme="a">
+		<h1>Message Center</h1>
+    </div>
+    <div data-role="content" data-theme="a">
+		<ul id="message_center" data-role="listview" data-inset="true">
+			<li id="submit_status">Status</li>
+			<li id="submit_progress">Submit Data</li>
+		</ul>
+    </div> <!-- close content // -->
+  </div> <!-- close message window // -->
+
+</html>

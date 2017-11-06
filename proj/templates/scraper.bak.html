@@ -1,0 +1,18 @@
+<html>
+<body>
+<div>
+<table>
+{% for f in field %}
+	{{ f }}
+	<tr><th>{{ f['name'] }}</th></tr>
+{% endfor %}
+
+{% for item in data %}
+	{% for values in item['attributes'] %}
+		<tr><td>{{ item['attributes'][values] }}</td></tr>
+	{% endfor %}
+{% endfor %}
+</table>
+</div>
+</body>
+</html>
