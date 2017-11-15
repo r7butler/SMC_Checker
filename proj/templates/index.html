@@ -250,7 +250,7 @@ td {
 	function reload_page() {
 	  //console.log("fired reload page");
 	  $.toast().reset('all');
-	  location.href = "/checker";
+	  location.href = "/smc";
 	}
 	function toxicology(){
 		console.log("toxicity routine");
@@ -343,8 +343,8 @@ td {
 					if(data.match === "fish"){
 						fish();
 					}
-					if(data.match === "ocpw"){
-						ocpw();
+					if(data.match === "csci"){
+						csci();
 					}
 					if(data.match === "toxicity"){
 						toxicology();
@@ -376,10 +376,10 @@ td {
 			}
 		})
 	}	
-	function ocpw(){
-		console.log("ocpw routine");
+	function csci(){
+		console.log("csci routine");
 		$.ajax({
-			url: $SCRIPT_ROOT + '/ocpw',
+			url: $SCRIPT_ROOT + '/csci',
 			type: "POST",
 			data: "test",
 			processData: false,
@@ -387,8 +387,9 @@ td {
 			success: function(data){
 				console.log(data);
 				if(data.state === 0){
-					type_of_data = "ocpw";
+					type_of_data = "csci";
 					allowed_to_submit = 0;
+					summary_file = data.summary_file;
 				}
 				end_loader('#custom_progress','<span>Completed Custom Checks <a href="#" data-role="button" data-icon="check" data-inline="true" data-iconpos="notext"></a></span>')
 				//$('#message_window').dialog( "close" );
@@ -481,10 +482,10 @@ td {
 				$("#tabs").tabs("refresh");
 				$("#tabs").tabs('load', tkey);
 				// tkey was set to 2 meaning 3 tabs should be something else - use summary_file instead if(tkey == 2){
-				if(summary_file && tkey == 2){
-					$('#tabsnav ul').append('<li><a href="#tab3">tblToxicityResultsSummary</a></li>');
-					$('#tabs').append('<div id="tab3" style="overflow-y:auto; height: 100%;"><br><a href="'+ summary_file + '" target="_blank">Download Toxicity Summary File [Excel]</a></div>');
-					//$('#tabs').append('<div id="tab3" style="overflow-y:auto; height: 100%;"><br><a href="#" target="_blank">Download Toxicity Summary File [Excel]</a></div>');
+				// if(summary_file && tkey == 2){ - this works properly for toxicity 
+				if(summary_file && tkey == 1){
+					$('#tabsnav ul').append('<li><a href="#tab3">CSCI</a></li>');
+					$('#tabs').append('<div id="tab3" style="overflow-y:auto; height: 100%;"><br><a href="http://checker.sccwrp.org/smc/logs/'+ summary_file + '.core.csv" target="_blank">CSCI component scores [Excel]</a> - <a href="http://checker.sccwrp.org/smc/logs/'+ summary_file + '.Suppl1_mmi.csv" target="_blank">Details about pMMI score [Excel]</a> - <a href="http://checker.sccwrp.org/smc/logs/'+ summary_file + '.Suppl1_grps.csv" target="_blank">Details on ref group membership [Excel]</a> - <a href="http://checker.sccwrp.org/smc/logs/'+ summary_file + '.Suppl1_OE.csv" target="_blank">Details about O/E score [Excel]</a> - <a href="http://checker.sccwrp.org/smc/logs/'+ summary_file + '.Suppl2_mmi.csv" target="_blank">Iteration-level details on pMMI score [Excel]</a> - <a href="http://checker.sccwrp.org/smc/logs/'+ summary_file + '.Suppl2_OE.csv" target="_blank">Iteration-level details on O/E score [Excel]</a></div>');
 				}
 		 		$("#tabsnav").navbar();
 			}
@@ -719,7 +720,7 @@ $('#tabs').tabs({
 				var formData = new FormData();
 				var submit_file = $('#modified_file').text();
 				//var database = $("#select-database :selected").text();
-				var database = "bight2018";
+				var database = "smcphab";
 				var type = "none";
 				formData.append('database', database);
 				formData.append('type', type);

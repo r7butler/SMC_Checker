@@ -33,14 +33,14 @@ def createStagingTable(table_name,df,database_to_use,TIMESTAMP):
 		df = df.drop('duplicate_production_submission', 1)
 	if 'duplicate_session_submission' in df:
 		df = df.drop('duplicate_session_submission', 1)
-	if database_to_use == 'bight2018':
-		db = "bight2018"  # postgresql
+	if database_to_use == 'smcphab':
+		db = "smcphab"  # postgresql
 		dbtype = "postgresql"
-     		srcEngine = create_engine('postgresql://sde:dinkum@192.168.1.16:5432/bight2018')
+     		srcEngine = create_engine('postgresql://sde:dinkum@192.168.1.16:5432/smcphab')
      		srcEngine._metadata = MetaData(bind=srcEngine,schema='sde')
      		srcEngine._metadata.reflect(srcEngine) # get columns from existing table
      		srcTable = Table(table_name, srcEngine._metadata)
-     		destEngine = create_engine('postgresql://sde:dinkum@192.168.1.16:5432/bight2018')
+     		destEngine = create_engine('postgresql://sde:dinkum@192.168.1.16:5432/smcphab')
      		destEngine._metadata = MetaData(bind=destEngine,schema='sde')
 		errorLog(staging_table_name)
      		destTable = Table(staging_table_name, destEngine._metadata)
@@ -89,7 +89,7 @@ def createStagingTable(table_name,df,database_to_use,TIMESTAMP):
 			destTable.append_column(column.copy())
 	destTable.create()
 	try:
-		if database_to_use == 'bight2018':
+		if database_to_use == 'smcphab':
 			df.columns = [x.lower() for x in df.columns]
 			outcome = df.to_sql(name=staging_table_name,con=destEngine,if_exists='append',index=False)
 			# use odo instead of pandas - should be faster
@@ -119,7 +119,7 @@ def dcGetTableAndColumns(db,dbtype,eng):
 		query = eng.execute("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA='%s' and TABLE_NAME LIKE '%s'" % (db,"tbl%%"))
 	elif dbtype == "postgresql":
 		# added BASE TABLE filter - exclude views
-		query = eng.execute("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE='BASE TABLE' AND TABLE_CATALOG='%s' AND TABLE_NAME LIKE '%s'" % (db,"tbl%%"))
+		query = eng.execute("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE='BASE TABLE' AND TABLE_CATALOG='%s' AND TABLE_NAME LIKE '%s'" % (db,"tbl_%%"))
 	elif dbtype == "azure":
 		query = eng.execute("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_CATALOG ='%s' and TABLE_NAME LIKE '%s'" % (db,"tblToxicity%%")) # microsoftsql
 	errorLog(query)
@@ -301,19 +301,19 @@ def staging():
 	TIMESTAMP,extension = stagingFile.split('.')
 
         # check for existence of summary file
-        summary_load_file = '/var/www/checker/logs/%s-toxicity-summary.csv' % TIMESTAMP
+        summary_load_file = '/var/www/smc/logs/%s-toxicity-summary.csv' % TIMESTAMP
 	summary_load_file_exists = os.path.isfile(summary_load_file)
 
 	database_to_use = request.form['database'].lower()
 	errorLog(database_to_use)
 	database_type = request.form['type']
-	db = "bight2018"  # postgresql
+	db = "smcphab"  # postgresql
 	dbtype = "postgresql"
-	eng = create_engine('postgresql://sde:dinkum@192.168.1.16:5432/bight2018') # postgresql
+	eng = create_engine('postgresql://sde:dinkum@192.168.1.16:5432/smcphab') # postgresql
 	errorLog("Database to use: %s" % db)
 	errorLog("Type of database to connect to: %s" % dbtype)
 
-	inFile = "/var/www/checker/files/" + stagingFile
+	inFile = "/var/www/smc/files/" + stagingFile
 	df = pd.ExcelFile(inFile, keep_default_na=False, na_values=['NaN'])
 	df_tab_names = df.sheet_names
 	#print(df_tab_names)
@@ -359,11 +359,11 @@ def staging():
 			errorLog("# LOAD USING ODO #")
 			staging_summary_name = "staging_agency_tbltoxicitysummaryresults" + "_" + TIMESTAMP
 			errorLog(staging_summary_name)
-			srcEngine = create_engine('postgresql://sde:dinkum@192.168.1.16:5432/bight2018')
+			srcEngine = create_engine('postgresql://sde:dinkum@192.168.1.16:5432/smcphab')
 			srcEngine._metadata = MetaData(bind=srcEngine,schema='sde')
 			srcEngine._metadata.reflect(srcEngine) # get columns from existing table
 			srcTable = Table('tbltoxicitysummaryresults', srcEngine._metadata)
-			destEngine = create_engine('postgresql://sde:dinkum@192.168.1.16:5432/bight2018')
+			destEngine = create_engine('postgresql://sde:dinkum@192.168.1.16:5432/smcphab')
 			destEngine._metadata = MetaData(bind=destEngine,schema='sde')
 			errorLog(destEngine._metadata)
 			destTable = Table(staging_summary_name, destEngine._metadata)
@@ -376,7 +376,7 @@ def staging():
 					destTable.append_column(column.copy())
 			destTable.create()
 			errorLog("summary_load_file")
-			#summary_load_file = '/var/www/checker/logs/%s-toxicity-summary.csv' % TIMESTAMP
+			#summary_load_file = '/var/www/smc/logs/%s-toxicity-summary.csv' % TIMESTAMP
 			errorLog(summary_load_file)	
 			dfsummary = pd.read_csv(summary_load_file)
 			dfsummary.columns = [x.lower() for x in dfsummary.columns]
@@ -390,7 +390,7 @@ def staging():
 			#postgresql://username:password@hostname:port
 			# odo('myfile.*.csv', 'postgresql://hostname::tablename')  # Load CSVs to Postgres
 			outcome = dfsummary.to_sql(name=staging_summary_name,con=destEngine,if_exists='append',index=False)
-			#t = odo(dfsummary, 'postgresql://sde:dinkum@192.168.1.16:5432/bight2018::tbltoxicitysummaryresults')  # Load CSVs to Postgres
+			#t = odo(dfsummary, 'postgresql://sde:dinkum@192.168.1.16:5432/smcphab::tbltoxicitysummaryresults')  # Load CSVs to Postgres
 			errorLog(outcome)
 	except ValueError:
 		errorLog("Failed createStagingSummary")

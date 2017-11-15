@@ -13,13 +13,13 @@ def allowedFile(filename):
 def upload():
 	errorLog("Function - upload")
 	statusLog("Function - upload")
-	current_app.config['UPLOAD_FOLDER'] = '/var/www/checker/files'
+	current_app.config['UPLOAD_FOLDER'] = '/var/www/smc/files'
 	current_app.config['ALLOWED_EXTENSIONS'] = set(['csv','xls','xlsx'])
 	TIMESTAMP = current_app.timestamp
 
 	# set user variables - otherwise global variables will run endlessly
-	#www_log_file = 'http://data.sccwrp.org/checker/logs/%s.log' % TIMESTAMP
-	#current_app.log_file = '/var/www/checker/logs/%s.log' % TIMESTAMP
+	#www_log_file = 'http://data.sccwrp.org/smc/logs/%s.log' % TIMESTAMP
+	#current_app.log_file = '/var/www/smc/logs/%s.log' % TIMESTAMP
 
 	#errors_dict = {'total': 0, 'mia': 0, 'lookup': 0, 'duplicate': 0, 'logic': 0, 'custom': 0, 'match': 0}
 	# all values in errors_dict need to be set to 0 at start of application
@@ -54,7 +54,7 @@ def upload():
 					# return timestamp file to web application
 					filenames = modifiedfilename
 					# return this to internal application
-					current_app.infile = "/var/www/checker/files/" + newfilename
+					current_app.infile = "/var/www/smc/files/" + newfilename
 					message = newfilename
 					state = 0
 				except IOError:

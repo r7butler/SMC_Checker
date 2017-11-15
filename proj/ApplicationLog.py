@@ -12,7 +12,7 @@ log_file = ""
 def errorLog(message):
 	TIMESTAMP = current_app.timestamp
 	#TIMESTAMP = current_app.timestamp
-	log_file = '/var/www/checker/logs/%s.log' % TIMESTAMP
+	log_file = '/var/www/smc/logs/%s.log' % TIMESTAMP
 	try:
 		#print("log_file: %s" % log_file)
 		user_log = open(log_file, 'a')
@@ -39,7 +39,7 @@ def errorsCount(error_key):
 
 def statusLog(message):
 	TIMESTAMP = current_app.timestamp
-	status_file = '/var/www/checker/logs/%s-status.txt' % TIMESTAMP
+	status_file = '/var/www/smc/logs/%s-status.txt' % TIMESTAMP
 	try:
 		status_log = open(status_file, 'w')
 		# print debug messages to apache log and user debug file
@@ -55,11 +55,11 @@ def application():
 	gettime = int(time.time())
 	TIMESTAMP = str(gettime)
 	current_app.timestamp = TIMESTAMP
-	log_file = '/var/www/checker/logs/%s.log' % TIMESTAMP
-	status_file = '/var/www/checker/logs/%s-status.txt' % TIMESTAMP
+	log_file = '/var/www/smc/logs/%s.log' % TIMESTAMP
+	status_file = '/var/www/smc/logs/%s-status.txt' % TIMESTAMP
 	current_app.status_file = status_file
-	www_log_file = 'http://prochecker.sccwrp.org/checker/logs/%s.log' % TIMESTAMP
-	www_status_file = 'http://prochecker.sccwrp.org/checker/logs/%s-status.txt' % TIMESTAMP
+	www_log_file = 'http://checker.sccwrp.org/smc/logs/%s.log' % TIMESTAMP
+	www_status_file = 'http://checker.sccwrp.org/smc/logs/%s-status.txt' % TIMESTAMP
 	message = "start application"
 	user_log = open(log_file, 'a')
 	status_log = open(status_file, 'a')

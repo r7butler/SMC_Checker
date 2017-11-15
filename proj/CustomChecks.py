@@ -17,7 +17,7 @@ def custom():
 	sql_match_tables = current_app.sql_match_tables
 	errorLog("Custom: sql_match_tables: %s" % sql_match_tables)
 	# dictionary list of required tables by data type
-	required_tables_dict = {'toxicity': ['tbl_toxbatch','tbl_toxresults','tbl_toxwq'],'fish': ['tbltrawlfishabundance','tblfishbiomass'],'ocpw': ['tbl_ocpwlab']}
+	required_tables_dict = {'toxicity': ['tbl_toxbatch','tbl_toxresults','tbl_toxwq'],'fish': ['tbltrawlfishabundance','tblfishbiomass'],'csci': ['tbl_taxonomysampleinfo','tbl_taxonomyresults']}
 	for k,v in required_tables_dict.items():
 		if set(sql_match_tables) == set(v):
 			message = "Custom: Found exact match: %s, %s" % (k,v)

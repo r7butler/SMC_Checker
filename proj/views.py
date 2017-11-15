@@ -11,7 +11,7 @@ def index():
 
 @app.route('/clear')
 def clear():
-	eng = create_engine('postgresql://sde:dinkum@192.168.1.16:5432/bight2018') # postgresql
+	eng = create_engine('postgresql://sde:dinkum@192.168.1.16:5432/smcphab') # postgresql
 	#data = ({'val':'130716eeraNH'},{'val':'130716eeraNH '},{'val':'1307-S077 to S084'},{'val':'CLAEMD3A'},{'val':'CLAEMDRT3'},{'val':'CSD013'},{'val':'CSD014'},{'val':'eohRT719'},{'val':'EohSed719'})
 	statement = text("""DELETE FROM tbl_toxbatch""")
 	eng.execute(statement)
@@ -46,7 +46,7 @@ def send_log(path):
 	print("log route")
 	print(path)
 	#send_from_directory("/some/path/to/static", "my_image_file.jpg")
-	return send_from_directory('/var/www/checker/logs/', path)
+	return send_from_directory('/var/www/smc/logs/', path)
 
 @app.route('/mail', methods=['GET'])
 def mail():
@@ -74,7 +74,7 @@ def scraper():
 			layer = request.args.get("layer")
 			# filter actions
 			# help actions
-			help_layer = "bight2018" + str(layer)
+			help_layer = "smcphab" + str(layer)
 			run_url = "https://gis.sccwrp.org/arcgis/rest/services/{0}/FeatureServer/0/query?where=1=1&returnGeometry=false&outFields=*&f=json".format(help_layer)
 			#run_url = "https://gis.sccwrp.org/arcgis/rest/services/{0}/FeatureServer/0/query?where=1=1&outFields=agency,code&returnGeometry=false&f=json".format(help_layer)
 			print(run_url)
@@ -105,7 +105,7 @@ def status():
 	if request.args.get("t"):
 		timestamp = request.args.get("t")
 		print(timestamp)
-		status_file = "/var/www/checker/logs/" + timestamp + "-status.txt"
+		status_file = "/var/www/smc/logs/" + timestamp + "-status.txt"
 		status_log = open(status_file, 'r')
 		status_read = status_log.read()
     		response = jsonify({'code': 200,'message': str(status_read),'timestamp': timestamp})
@@ -115,7 +115,7 @@ def status():
 @app.route('/sandbox')
 def sandbox():
 	# sandbox to test pieces of code independently
-	inFile = '/var/www/checker/files/1503862398.xlsx'
+	inFile = '/var/www/smc/files/1503862398.xlsx'
 	df = pd.ExcelFile(inFile, keep_default_na=False, na_values=['NaN'])
       	df_tab_names = df.sheet_names
 	for sheet in df_tab_names:

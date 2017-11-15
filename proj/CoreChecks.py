@@ -168,7 +168,7 @@ def checkTableMetadata(db,dbtype,eng,table_match,df):
 			for e in v.errors:
 				# validation
 				# lookup
-				errorLog("v.errors: %s" % v.errors[e][0])
+				errorLog("DEBUG v.errors: %s" % v.errors[e][0])
 				if "float" in v.errors[e][0]:
 					#human_error = ("You have text ('%s') in a number field - <a href=http://192.168.1.24:5000/tbltoxicitybatchinformation/meta>help</a>" % row[e])
 					human_error = ("You have text ('%s') in a number field." % row[e])
@@ -512,7 +512,7 @@ def checkLookupCodes(db,dbtype,eng,table_match,df):
 				for item_number in (df_items[lower_item].index):
 					errorLog(item_number)
 					#xmessage = "LOOKUP[%s]: { type: lookup, column: %s, error: %s }" % (str(count),item,df_items[lower_item].loc[item_number])
-					human_error = ("The data inserted ('%s') does not match the lookup list <a href='http://checker.sccwrp.org/checker/scraper?action=help&layer=%s' target='_blank'>%s</a> for the column" % (df_items[lower_item].loc[item_number],lookup_list[item][0],lookup_list[item][0]))
+					human_error = ("The data inserted ('%s') does not match the lookup list <a href='http://checker.sccwrp.org/smc/scraper?action=help&layer=%s' target='_blank'>%s</a> for the column" % (df_items[lower_item].loc[item_number],lookup_list[item][0],lookup_list[item][0]))
 					unique_error = '{ "column": "%s", "error_type": "Lookup Fail", "error": "%s" }' % (item,human_error)
 					addErrorToList("errors",item_number,unique_error,df)
 					addErrorToList("lookup_error",item_number,unique_error,df)
