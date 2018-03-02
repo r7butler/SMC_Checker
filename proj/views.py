@@ -12,33 +12,12 @@ def index():
 @app.route('/clear')
 def clear():
 	eng = create_engine('postgresql://sde:dinkum@192.168.1.16:5432/smcphab') # postgresql
-	#data = ({'val':'130716eeraNH'},{'val':'130716eeraNH '},{'val':'1307-S077 to S084'},{'val':'CLAEMD3A'},{'val':'CLAEMDRT3'},{'val':'CSD013'},{'val':'CSD014'},{'val':'eohRT719'},{'val':'EohSed719'})
-	statement = text("""DELETE FROM tbl_toxbatch""")
+	statement = text("""DELETE FROM tbl_taxonomysampleinfo""")
 	eng.execute(statement)
-	statement2 = text("""DELETE FROM tbl_toxresults""")
+	statement2 = text("""DELETE FROM tbl_taxonomyresults""")
 	eng.execute(statement2)
-	statement3 = text("""DELETE FROM tbl_toxwq""")
+	statement3 = text("""DELETE FROM tmp_cscicore""")
 	eng.execute(statement3)
-	statement4 = text("""DELETE FROM tbltoxicitysummaryresults""")
-	eng.execute(statement4)
-	#for line in data:
-	#	print(line)
-	#	eng.execute(statement, **line)
-	'''
-	statement = text("""DELETE FROM tbltoxicityresults WHERE toxbatch = :val""")
-	for line in data:
-		print(line)
-		eng.execute(statement, **line)
-	statement = text("""DELETE FROM tbltoxicitywq WHERE toxbatch = :val""")
-	for line in data:
-		print(line)
-		eng.execute(statement, **line)
-	statement = text("""DELETE FROM tbltoxicitysummaryresults WHERE toxbatch = :val""")
-	for line in data:
-		print(line)
-		eng.execute(statement, **line)
-	eng.execute(station2)
-	'''
 	return "finished"
 
 @app.route('/logs/<path:path>')
@@ -134,6 +113,12 @@ def sandboxui():
 def errorApp():
 	print("error app")
 	return render_template('error.html')
+
+@app.route('/templates/<path:path>')
+def send_template(path):
+	print("template route")
+	print(path)
+	return send_from_directory('/var/www/smc/templates/', path)
 
 @app.route('/myjson')
 def myjson():

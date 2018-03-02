@@ -44,7 +44,12 @@ def csci():
 
 	# drop unnecessary columns
 	#summary.drop('result', axis=1, inplace=True)
-	bugs.drop(bugs[['fieldsampleid','unit','excludedtaxa','personnelcode_labeffort','personnelcode_results','enterdate','taxonomicqualifier','qacode','resultqualifiercode','labsampleid','benthicresultscomments','agencycode_labeffort','tmp_row','result','row','errors','lookup_error']], axis=1, inplace=True)
+	bugs.drop(bugs[['fieldsampleid','unit','excludedtaxa','personnelcode_labeffort','personnelcode_results','enterdate','taxonomicqualifier','qacode','resultqualifiercode','labsampleid','benthicresultscomments','agencycode_labeffort','tmp_row','result']], axis=1, inplace=True)
+	# if row exists drop row, errors, and lookup_error
+	if 'row' in bugs.columns:
+		bugs.drop(bugs[['row','errors']], axis=1, inplace=True)
+	if 'lookup_error' in bugs.columns:
+		bugs.drop(bugs[['lookup_error']], axis=1, inplace=True)
 	stations.drop(stations[['objectid','gdb_geomattr_data','shape']], axis=1, inplace=True)
 	# rename field
 	bugs = bugs.rename(columns={'stationcode': 'StationCode', 'sampledate': 'SampleDate', 'fieldreplicate': 'FieldReplicate', 'collectionmethodcode': 'CollectionMethodCode', 'finalid': 'FinalID', 'lifestagecode': 'LifeStageCode', 'baresult': 'BAResult', 'databasecode': 'DatabaseCode', 'sampleid': 'SampleID','distinctcode': 'Distinct'})

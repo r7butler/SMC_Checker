@@ -301,7 +301,7 @@ def staging():
 	TIMESTAMP,extension = stagingFile.split('.')
 
         # check for existence of summary file
-        summary_load_file = '/var/www/smc/logs/%s-toxicity-summary.csv' % TIMESTAMP
+        summary_load_file = '/var/www/smc/logs/%s.core.csv' % TIMESTAMP
 	summary_load_file_exists = os.path.isfile(summary_load_file)
 
 	database_to_use = request.form['database'].lower()
@@ -357,12 +357,12 @@ def staging():
 		if current_app.match and summary_load_file_exists:
 			# LOAD USING ODO
 			errorLog("# LOAD USING ODO #")
-			staging_summary_name = "staging_agency_tbltoxicitysummaryresults" + "_" + TIMESTAMP
+			staging_summary_name = "staging_agency_tmp_cscicore" + "_" + TIMESTAMP
 			errorLog(staging_summary_name)
 			srcEngine = create_engine('postgresql://sde:dinkum@192.168.1.16:5432/smcphab')
 			srcEngine._metadata = MetaData(bind=srcEngine,schema='sde')
 			srcEngine._metadata.reflect(srcEngine) # get columns from existing table
-			srcTable = Table('tbltoxicitysummaryresults', srcEngine._metadata)
+			srcTable = Table('tmp_cscicore', srcEngine._metadata)
 			destEngine = create_engine('postgresql://sde:dinkum@192.168.1.16:5432/smcphab')
 			destEngine._metadata = MetaData(bind=destEngine,schema='sde')
 			errorLog(destEngine._metadata)
@@ -371,17 +371,16 @@ def staging():
 				errorLog("srcTable.columns")
 				# get everthing to right of the dot on tbltoxicityresults.objectid
 				#if (tail != "id") or (tail != "objectid") or (tail != "shape") or (tail != "gdb_geomattr_data"):
-				if str(column) != "tbltoxicitysummaryresults.id":
+				if str(column) != "tmp_cscicore.id":
 					errorLog(column)
 					destTable.append_column(column.copy())
 			destTable.create()
 			errorLog("summary_load_file")
-			#summary_load_file = '/var/www/smc/logs/%s-toxicity-summary.csv' % TIMESTAMP
 			errorLog(summary_load_file)	
 			dfsummary = pd.read_csv(summary_load_file)
 			dfsummary.columns = [x.lower() for x in dfsummary.columns]
-			# drop temporary_row - used for checks
-			del dfsummary['tmp_row']
+			# drop row number which is the first column from csci core file
+			dfsummary.drop(dfsummary.columns[[0]], axis=1, inplace=True)
 			def getRandomTimeStamp(row):
 				row['objectid'] = int(TIMESTAMP) + int(row.name)
 				return row
@@ -397,8 +396,8 @@ def staging():
 	try:
 		if current_app.match and summary_load_file_exists:
 			errorLog("start moveStagingSummary")
-			destination_summary_fields = "stationid,latitude,longitude,shape,stationwaterdepth,stationwaterdepthunits,areaweight,coefficientvariance,stratum,lab,sampletypecode,toxbatch,species,concentration,endpoint,units,sqocategory,mean,n,stddev,pctcontrol,pvalue,tstat,sigeffect,qacode,controlvalue"
-			moveStagingToProduction(eng,staging_summary_name,'tbltoxicitysummaryresults',0,destination_summary_fields)
+			destination_summary_fields = "stationcode,sampleid,count,number_of_mmi_iterations,number_of_oe_iterations,pcnt_ambiguous_individuals,pcnt_ambiguous_taxa,e,mean_o,oovere,oovere_percentile,mmi,mmi_percentile,csci,csci_percentile"
+			moveStagingToProduction(eng,staging_summary_name,'tmp_cscicore',0,destination_summary_fields)
 	except ValueError:
 		errorLog("Failed moveStagingSummary")
 	#emailUser()
