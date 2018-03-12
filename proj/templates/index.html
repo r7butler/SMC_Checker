@@ -34,10 +34,14 @@
     transform: rotate(360deg);
   }
 }
+p.test {
+    width: 11em; 
+    border: 1px solid #000000;
+    word-wrap: break-word;
+}
 .lt-ie10 {
   float: right;
 }
-
 .loader {
   border: 4px solid #fff;
   border-right-color: transparent;
@@ -77,10 +81,17 @@ td {
 	width: 400px;
 	height: 400px;
 	margin-left: 29%;
+	margin-top: 2%;
 	background-size:400px 400px;
 	background-image: url(/images/drag.png);
 	background-repeat:no-repeat;
 	z-index: 1;
+}
+#one_main_image {
+	margin-left: 22%;
+	background-position: center;
+	opacity: 0.5;
+	z-index: 2;
 }
 .ui-overlay-a {
   background-color: #444444;
@@ -101,19 +112,42 @@ td {
   	width:100%;
   	text-align:right;
   }
+  .fileupload {
+	align: left;
+  }
 }
+#report {
+    font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;
+    border-collapse: collapse;
+    width: 100%;
+}
+#report td, #report th {
+    border: 1px solid #ddd;
+    padding: 8px;
+}
+#report tr:nth-child(even){background-color: #f2f2f2;}
+#report tr:hover {background-color: #ddd;}
+#report th {    
+    padding-top: 12px;
+    padding-bottom: 12px;
+    text-align: left;
+    background-color: #3B763E;
+    color: white;
+}  
 	</style>
-	<link rel="stylesheet" href="/checker/static/jquery.toast.css" />
+	<link rel="stylesheet" href="/smc/static/jquery.toast.css" />
+	<link rel="stylesheet" type="text/css" href="http://dev.jtsage.com/cdn/simpledialog/latest/jquery.mobile.simpledialog.min.css" /> 
 	<script src="http://code.jquery.com/jquery-1.11.1.min.js"></script>
 	<script src="http://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.js"></script>
-	<script src="/checker/static/jquery.toast.js"></script>
+	<script type="text/javascript" src="http://dev.jtsage.com/cdn/simpledialog/latest/jquery.mobile.simpledialog2.min.js"></script>
+	<script src="/smc/static/jquery.toast.js"></script>
 	<script type="text/javascript">
 		var $SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
 	</script>
 <script type="text/javascript">
 	// users are not allowed to make a final submission until they have submitted the proper custom checks (ie. tox, chem, fish, etc..)
 	var allowed_to_submit = 1;
-	var type_of_data = "";	// keep track of data submitted (toxicity, fish) for emailing committee
+	//var type_of_data = "";	// keep track of data submitted (toxicity, fish) for emailing committee
 	var business;
 	var custom;
 	var redundant;
@@ -122,7 +156,10 @@ td {
 	var table_match;
 	var status_timer;
 	var timestamp;
+	var email_login;
+	var agency;
 	function print_core_errors(server_object,error_title){
+		  console.log(server_object);
 		  $.each(server_object, function(array_key,array_val){
 			tab_id = "#tab"+array_key;
 			$('#tabs').append('<div id="tab'+ array_key +'" style="overflow-y:auto; height: 100%;"><br></div>');
@@ -131,7 +168,14 @@ td {
 				var body = '<h3>'+error_title+'</h3><table data-role="table" id="table-custom-2" data-mode="columntoggle" class="ui-body-d ui-shadow table-stripe ui-responsive table-stroke"><thead><tr class="ui-bar-d"><th data-priority="1">Row</th><th>Column</th><th>Error Type</th><th>Error/Incorrect Value</th></tr></thead><tbody>';
 				$.each(Object.keys(error_object), function(sk,sv){
 					$.each( error_object[sk], function( key, value ) {
-						var record = JSON.parse(value);
+						//console.log(value);
+						try {
+							var record = JSON.parse(value);
+						} catch(e) {
+							//alert(e);
+							message = e;
+							end_application("Application Failed","The application suffered a critical error. SCCWRP has been notified. The application will reload now","critical",message,email_login,agency,"unknown");
+						}
 						var columns = [];
 						var error_types = [];
 						var errors = [];
@@ -163,7 +207,10 @@ td {
 			$("#tabs").tabs("refresh");
 		  });
 	}
-	function end_application(h,t,i){
+	function end_application(h,t,i,m,l,a,d){
+		// d = type of data if known
+		// l = email address
+		// a = agency
 		//$('#message_window').dialog( "close" );
 		// if i = critical then email sccwrp
 		// if i = success plus h end of application email sccwrp and committee
@@ -184,15 +231,19 @@ td {
 		if (i == "success" && h == "Data Loaded Successful"){
     				$.ajax({
 					type: "GET",
-					url: $SCRIPT_ROOT + '/mail?action=' + i + '&type=' + type_of_data,
+					url: $SCRIPT_ROOT + '/mail?action=' + i + '&type=' + d + '&message=' + m + '&login=' + l + '&agency=' + a,
         				success: function(data) {
+						// probably need to adjust this if mail fails
 						console.log(data);
+						/*
 						var answer = confirm("Restart the application?");
 						if (answer == true){
-							reload_page();
+							//reload_page();
+							//report(); - moved into upload
 						} else {
 							// do nothing
 						}
+						*/
 					},
 					error: function(data){
 						console.log(data);
@@ -203,9 +254,15 @@ td {
 			alert("critical");
     				$.ajax({
 					type: "GET",
-					url: $SCRIPT_ROOT + '/mail?action=' + i,
+					url: $SCRIPT_ROOT + '/mail?action=' + i + '&type=' + d + '&message=' + m + '&login=' + l + '&agency=' + a,
         				success: function(data) {
 						console.log(data);
+						var answer = confirm("Restart the application?");
+						if (answer == true){
+							reload_page();
+						} else {
+							// do nothing
+						}
 					},
 					error: function(data){
 						console.log(data);
@@ -237,9 +294,15 @@ td {
             			status_timer = setTimeout(function(){ get_status(t); }, 3000);    
         		},
         		error: function(data) {
-				console.log("Application Error:"+ data.responseJSON.message);
+				console.log("Application may have timed out.:"+ data);
+				 message = "problem";
+                                if(data.responseJSON){
+                                	message = data.responseJSON.message;
+                                } else {
+					message = data.statusText;
+                           	}
 				end_loader('#core_progress','<span>Failed Core Checks <a href="#" data-role="button" data-icon="check" data-inl    ine="true" data-iconpos="notext"></a></span>');
-				end_application("Application Failed","The application suffered a critical error. SCCWRP has been notified. The application will reload now","error");
+				//end_application("Application Failed","The application suffered a critical error. SCCWRP has been notified. The application will reload now","error",message,email_login);
         		},
         		cache: false
     		});
@@ -252,242 +315,78 @@ td {
 	  $.toast().reset('all');
 	  location.href = "/smc";
 	}
-	function toxicology(){
-		console.log("toxicity routine");
+	function report(){
+		console.log("javascript report routine");
 		$.ajax({
-			url: $SCRIPT_ROOT + '/toxicity',
+			url: $SCRIPT_ROOT + '/report',
 			type: "POST",
 			data: "test",
 			processData: false,
 			contentType: false,
 			success: function(data){
-				//console.log(data);
+				console.log(data);
 				if(data.state === 0){
-					console.log("summary");
-					allowed_to_submit = 0;
-					type_of_data = "toxicity";
-					//console.log(data.summary);
-					//console.log(data.custom);
-					//console.log(data.redundant_custom);
-					custom = data.custom;
-					redundant_custom = data.redundant_custom;
-					summary_file = data.summary_file;
+					$.mobile.changePage( "#report", { transition: "pop"} );
+					$('#report_main').append(data.message);
+					$('#report_main').append(data.fieldnames);
+					//$('#report_main').append(data.fielddata);
+					//$.each(data.fieldata, function(array_key,array_val){
+					//console.log(array_key);
+					//});
+					report_string = "";
+					for(var i= 0; i < data.fielddata.length; ++i){
+						console.log(data.fielddata[i]['attributes']);
+						report_string = "<ul><li>"+ data.fielddata[i]['attributes']['lab'] + "</li><li>" + data.fielddata[i]['attributes']['parameter'] + "</li><li>" + data.fielddata[i]['attributes']['stationid'] + "</li><li>" + data.fielddata[i]['attributes']['submissionstatus'] + "</li></ul>";
+						$('#report_main').append(report_string);
+					}
 				}
 				if(data.state === 1){
-					console.log("failed toxicity checks");
-					console.log(data.message);
+					console.log("failed report");
 				}
-				end_loader('#custom_progress','<span>Completed Custom Checks <a href="#" data-role="button" data-icon="check" data-inline="true" data-iconpos="notext"></a></span>')
-				//$('#message_window').dialog( "close" );
-				finish();
 			},
 		    	error: function(data){
+				/* need to define login */
+				 message = "problem";
+				var login = "to do item";
 				console.log("Application Error:"+ data.responseJSON.message);
-				end_loader('#core_progress','<span>Failed Core Checks <a href="#" data-role="button" data-icon="check" data-inl    ine="true" data-iconpos="notext"></a></span>');
-				end_application("Application Failed","The application suffered a critical error. SCCWRP has been notified. The application will reload now","error");
+				if(data.responseJSON.message){
+					message = data.responseJSON.message;
+				} else {
+					message = "Missing data.responseJSON.message";
+				}
+				end_loader('#core_progress','<span>Failed Core Checks <a href="#" data-role="button" data-icon="check" data-inline="true" data-iconpos="notext"></a></span>');
+				end_application("Application Failed","The application suffered a critical error. SCCWRP has been notified. The application will reload now","error",message,login,"unknown");
     			}
 		})
 		.fail(function(response) {
 			console.log(response);
 		})
 	}	
-	function core(){
-		console.log("core routine");
-		$.ajax({
-			url: $SCRIPT_ROOT + '/core',
-			type: "POST",
-			data: "test",
-			processData: false,
-			contentType: false,
-			beforeSend: function(){
-				start_loader('#core_progress','<span>Running Core Checks <p class="lt-ie10"><i class="loader"></i></p></span>')
-			},
-			success: function(data){
-				console.log(data);
-				if(data.state === 0){
-					business = data.business;
-					redundant = data.redundant;
-					end_loader('#core_progress','<span>Completed Core Checks <a href="#" data-role="button" data-icon="check" data-inline="true" data-iconpos="notext"></a></span>')
-					custom();
-				}
-				if(data.state === 1){
-					console.log("Application Error:"+ data.message);
-					end_loader('#core_progress','<span>Failed Core Checks <a href="#" data-role="button" data-icon="check" data-inline="true" data-iconpos="notext"></a></span>')
-					//end_application("Application Failed","The application suffered a critical error. SCCWRP has been notified. The application will reload now","error");
-					finish();
-					// go to main page
-				}
-			},
-		    	error: function(data){
-				console.log("Application Error:"+ data.responseJSON.message);
-				end_loader('#core_progress','<span>Failed Core Checks <a href="#" data-role="button" data-icon="check" data-inline="true" data-iconpos="notext"></a></span>');
-				end_application("Application Failed","The application suffered a critical error. SCCWRP has been notified. The application will reload now","error");
-    			}
-		})
-	}	
-	function custom(){
-		console.log("custom routine");
-		$.ajax({
-			url: $SCRIPT_ROOT + '/custom',
-			type: "POST",
-			data: "test",
-			processData: false,
-			contentType: false,
-			beforeSend: function(){
-				start_loader('#custom_progress','<span>Custom Checks<p class="lt-ie10"><i class="loader"></i></p></span>')
-			},
-			success: function(data){
-				console.log(data);
-				if(data.state === 0){
-					//$('#message_window').dialog( "close" );
-					if(data.match === "fish"){
-						fish();
-					}
-					if(data.match === "csci"){
-						csci();
-					}
-					if(data.match === "toxicity"){
-						toxicology();
-					}
-				}
-				if(data.state === 1){
-					console.log("failed custom");
-					allowed_to_submit = 0;
-					$.toast('In order to make a final toxicity submission you must have all three tabs (batch, results, wq).');
-					end_loader('#custom_progress','<span>Completed Custom Checks <a href="#" data-role="button" data-icon="check" data-inline="true" data-iconpos="notext"></a></span>')
-					finish();
-				}
-			}
-		})
-	}	
-	function fish(){
-		console.log("fish routine");
-		$.ajax({
-			url: $SCRIPT_ROOT + '/fish',
-			type: "POST",
-			data: "test",
-			processData: false,
-			contentType: false,
-			success: function(data){
-				console.log(data);
-				end_loader('#custom_progress','<span>Completed Custom Checks <a href="#" data-role="button" data-icon="check" data-inline="true" data-iconpos="notext"></a></span>')
-				//$('#message_window').dialog( "close" );
-				finish();
-			}
-		})
-	}	
-	function csci(){
-		console.log("csci routine");
-		$.ajax({
-			url: $SCRIPT_ROOT + '/csci',
-			type: "POST",
-			data: "test",
-			processData: false,
-			contentType: false,
-			success: function(data){
-				console.log(data);
-				if(data.state === 0){
-					type_of_data = "csci";
-					allowed_to_submit = 0;
-					summary_file = data.summary_file;
-				}
-				end_loader('#custom_progress','<span>Completed Custom Checks <a href="#" data-role="button" data-icon="check" data-inline="true" data-iconpos="notext"></a></span>')
-				//$('#message_window').dialog( "close" );
-				finish();
-			}
-		})
-	}	
-	function match(){
-		console.log("match routine");
-		//console.log("load progress routine...");
-		$.ajax({
-			url: $SCRIPT_ROOT + '/match',
-			type: "POST",
-			data: "test",
-			processData: false,
-			contentType: false,
-			beforeSend: function(){
-				start_loader('#match_progress','<span>Match File <p class="lt-ie10"><i class="loader"></i></p></span>')
-			},
-			success: function(data){
-				//console.log(data);
-				if(data.table_match){
-					table_match = data.table_match;
-				} else {
-					alert("Critical Error: Missing the table_match variable");
-					return;
-				}
-				$.each(data.table_match, function(key,val){
-					var value_string = String(val);
-					var elements = value_string.split("-");
-					if(elements[4] === "True"){
-						$("#compare_list").append("<ul><li><strong>MATCH</strong> - Excel sheet "+elements[1]+" - Matched table "+elements[3]+" on columns:<p>"+elements[6]+"</p></li></ul>");
-					} else {
-						$("#compare_list").append("<ul><li><strong>NO MATCH</strong> - Excel sheet "+elements[1]+" - The closest matching table we could find was "+elements[3]+" on columns:<p>"+elements[6]+" - <font color=red>unmatched tab columns: ["+elements[7]+"]</font> - <font color=red>unmatched table columns: ["+elements[8]+"]</font></p></li></ul>");
-					}
-					$("#compare_list").append("<br>");
-				});
-				if(data.state === 0){
-					//console.log(data);
-					end_loader('#match_progress','<span>Matched File to Table <a href="#" data-role="button" data-icon="check" data-inline="true" data-iconpos="notext"></a></span>')
-					core();
-				}	
-				if(data.state === 1){
-					end_loader('#match_progress','<span>Failed Match <a href="index.html" data-role="button" data-icon="delete" data-inline="true" data-iconpos="notext"></a></span><br>'+data.message)
-					setTimeout(function(){ 
-						// go to main page but do no checks
-						//$('#message_window').dialog( "close" );
-						//$.mobile.changePage( "#two", { transition: "pop"} );
-						finish();
-					}, 3000);	
-					$("#compare_list").append("<ul><li>"+data.message+"</li></ul>");
-				}	
-			},
-		    	error: function(data){
-				alert("Major Error");
-				alert(data.status);
-				if(data.status === "504"){
-					alert("Caughtit!");
-				}
-				console.log("Application Error:");
-				console.log(data);
-				end_loader('#core_progress','<span>Failed Core Checks <a href="#" data-role="button" data-icon="check" data-inl    ine="true" data-iconpos="notext"></a></span>');
-				end_application("Application Failed","The application suffered a critical error. SCCWRP has been notified. The application will reload now","critical");
-    			}
-		})
-	}	
 	function presentation(table_match,redundant,redundant_custom,business,custom,summary_file){
 		console.log("presentation");
+		console.log(business);
 		console.log(summary_file);
 		var redundant_rows = [];
 		var redundant_custom_rows = [];
+		console.log(table_match);
 		$.each(table_match, function(tkey,tval){
-			//console.log("tkey:"+ tkey + " tval: "+ tval);
+			console.log("tkey:"+ tkey + " tval: "+ tval);
 			var value_string = String(tval);
 			var elements = value_string.split("-");
 			var tab_name = elements[1];
 			var tab_show = String(elements[4]);
-			//console.log(tab_show);	
+			console.log(tab_show);	
 			if(tab_show == "True"){
-				$("#tabsnav").navbar("destroy");
 				// create tab navigation button 
 				$('#tabsnav ul').append('<li><a href="#tab' + tkey + '">'+ tab_name + '</a></li>');
-				/* This code was removed because it was causing issues whenever at least one tab is not supposed to show (ie. one tab doesnt match any table in the database but other tabs do - when removed the page still ran properly - 30Aug17 
-				// create tab page
-				tab_id = "#tab"+tkey;
-				var tab_div = '<div id="tab'+ tkey +'" style="overflow-y:auto; height: 100%;"><br></div>';
-				$('#tabs').append(tab_div);
-				*/
 				$("#tabs").tabs();
 				$("#tabs").tabs("refresh");
 				$("#tabs").tabs('load', tkey);
-				// tkey was set to 2 meaning 3 tabs should be something else - use summary_file instead if(tkey == 2){
-				// if(summary_file && tkey == 2){ - this works properly for toxicity 
 				if(summary_file && tkey == 1){
 					$('#tabsnav ul').append('<li><a href="#tab3">CSCI</a></li>');
 					$('#tabs').append('<div id="tab3" style="overflow-y:auto; height: 100%;"><br><a href="http://checker.sccwrp.org/smc/logs/'+ summary_file + '.core.csv" target="_blank">CSCI component scores [Excel]</a> - <a href="http://checker.sccwrp.org/smc/logs/'+ summary_file + '.Suppl1_mmi.csv" target="_blank">Details about pMMI score [Excel]</a> - <a href="http://checker.sccwrp.org/smc/logs/'+ summary_file + '.Suppl1_grps.csv" target="_blank">Details on ref group membership [Excel]</a> - <a href="http://checker.sccwrp.org/smc/logs/'+ summary_file + '.Suppl1_OE.csv" target="_blank">Details about O/E score [Excel]</a> - <a href="http://checker.sccwrp.org/smc/logs/'+ summary_file + '.Suppl2_mmi.csv" target="_blank">Iteration-level details on pMMI score [Excel]</a> - <a href="http://checker.sccwrp.org/smc/logs/'+ summary_file + '.Suppl2_OE.csv" target="_blank">Iteration-level details on O/E score [Excel]</a></div>');
 				}
-		 		$("#tabsnav").navbar();
+		 		//$("#tabsnav").navbar();
 			}
 		}); // close table_match
 		if(redundant){
@@ -502,17 +401,20 @@ td {
 		  //console.log(business);
 		  print_core_errors(business,"Core Errors:");
 		}
-		if(Object.keys(redundant_custom).length !== 0){
+		if(redundant_custom){
+		  console.log("redundant_custom");
+		  console.log(redundant_custom);
+		  //if(Object.keys(redundant_custom).length !== 0){ -- issue with ie 9 disabled temporarily
 			console.log("redundant custom");
 			console.log(redundant_custom);
 			// get json from server into an object
 	  		var rerror_object = $.parseJSON(redundant_custom);
-		  	//print_core_errors(redundant_custom,"Redundant (Toxicity Errors):");
+		  	//print_core_errors(redundant_custom,"Redundant (Custom Errors):");
 			// check if we have data
 	  		if(rerror_object.length !== 0){
 				count = 0;
 			  	$.each(Object.keys(rerror_object), function(rk,rv){
-					var body = '<h3>Redundant (Toxicity Errors):</h3><table data-role="table" id="table-custom-1" class="ui-body-d ui-shadow table-stripe ui-responsive"><thead><tr class="ui-bar-d"><th>Rows</th><th>Column</th><th>Error Type</th><th>Error/Incorrect Value</th></tr></thead><tbody>';
+					var body = '<h3>Redundant (Custom Errors):</h3><table data-role="table" id="table-custom-1" class="ui-body-d ui-shadow table-stripe ui-responsive"><thead><tr class="ui-bar-d"><th>Rows</th><th>Column</th><th>Error Type</th><th>Error/Incorrect Value</th></tr></thead><tbody>';
 					// gets tab id - console.log(Object.keys(rerror_object[rk])[0]);	
 					console.log(Object.keys(rerror_object[rk])[0]);
 					if (Object.keys(rerror_object[rk])[0]){
@@ -524,7 +426,7 @@ td {
 							var record = JSON.parse(value);
 							var row = record[count].rows;
 							$.each( record[count].value, function ( mkey, mvalue ){
-								body += "<tr><td>"+row+"</td><td>"+mvalue.column+"</td><td>"+mvalue.error_type+"<td>"+mvalue.error+"</td></tr>";				
+								body += "<tr><td>"+row+"</td><td>"+mvalue.column+"</td><td>"+mvalue.error_type+"<td>"+mvalue.error+"</td></tr>";
 							});
 						})
 						body += "</tbody></table><br>";
@@ -535,9 +437,11 @@ td {
 			  	})
 				count++;
 	  		}
+		  //}
 		}
 		//console.log("custom");
-		if(Object.keys(custom).length !== 0){
+		if(custom){
+		  //if(Object.keys(custom).length !== 0){ -- issue with ie 9 disabled temporarily
 			 console.log("custom: "); 
 			 //console.log(custom); 
 			  var error_object = $.parseJSON(custom);
@@ -551,7 +455,7 @@ td {
 					var tab_holder = Object.keys(error_object[sk])[0].split('-');
 					tab_id = "#tab"+tab_holder[0];
 					console.log(tab_id);
-					var body = '<h3>Individual Toxicity Errors:</h3><table data-role="table" id="table-custom-2" data-mode="columntoggle" class="ui-body-d ui-shadow table-stripe ui-responsive table-stroke"><thead><tr class="ui-bar-d"><th data-priority="1">Row</th><th>Column</th><th>Error Type</th><th>Error/Incorrect Value</th></tr></thead><tbody>';
+					var body = '<h3>Individual Custom Errors:</h3><table data-role="table" id="table-custom-2" data-mode="columntoggle" class="ui-body-d ui-shadow table-stripe ui-responsive table-stroke"><thead><tr class="ui-bar-d"><th data-priority="1">Row</th><th>Column</th><th>Error Type</th><th>Error/Incorrect Value</th></tr></thead><tbody>';
 					$.each( error_object[sk], function( key, value ) {
 						var record = JSON.parse(value);
 						var columns = [];
@@ -581,6 +485,7 @@ td {
 				$("#tabs").tabs("refresh");
 				console.log("Empty");
 			}
+		    //} 
 		} // end of custom
 	}
 	function finish(){
@@ -592,7 +497,8 @@ td {
 			processData: false,
 			contentType: false,
 			success: function(data){
-				//console.log(data);
+				console.log(data);
+				$('#excel_file').append('<a href="'+data.excel+'" target="_blank">'+data.excel+'</a>');
 				//$('#message_window').dialog( "close" );
 				//$.mobile.changePage( "#two", { transition: "pop"} );
 				var error = JSON.parse(data.errors);
@@ -610,220 +516,433 @@ td {
 					$('#final_submit').show();
 				}
 				$("#total_errors").html(error.total);
-				$("#match_errors").html(error.match);
-				$("#mia_errors").html(error.mia);
-				$("#lookup_errors").html(error.lookup);
-				$("#duplicate_errors").html(error.duplicate);
-				$("#custom_errors").html(error.custom);
-				$.mobile.changePage( "#two", { transition: "pop"} );
-			}
-		})
-	}	
-	$(document).on( "pageinit", "#two", function( event ) {
-		//console.log("pageinit");
-		presentation(table_match,redundant,redundant_custom,business,custom,summary_file);
-// Tab initialization
-$('#tabs').tabs({
-    activate: function(event,ui) {
-	console.log(ui.newTab.index());
-        // You need Firebug or the developer tools on your browser open to see these
-        console.log(event);
-        // This will get you the index of the tab you selected
-        //console.log(event.options.selected);
-        // And this will get you it's name
-        // console.log(event.tab.text);
-    }
-});
-	});
-	$(document).ready(function(){
-
-		function application(){
-			console.log("app routine");
-			$.ajax({
-				url: $SCRIPT_ROOT + '/application',
-				type: "POST",
-				data: "test",
-				processData: false,
-				contentType: false,
-				success: function(data){
-					//console.log(data);
-					$('#log_file').append('<a href="'+data.log_file+'" target="_blank">'+data.log_file+'</a>');
-					//$('#status').append(data.status_file);
-					timestamp = data.timestamp;
-					get_status(data.timestamp);
-				},
-		    		error: function(data){
-					console.log("Application Error:"+ data.responseJSON.message);
-					end_loader('#core_progress','<span>Failed Core Checks <a href="#" data-role="button" data-icon="check" data-inl    ine="true" data-iconpos="notext"></a></span>');
-					end_application("Application Failed","The application suffered a critical error. SCCWRP has been notified. The application will reload now","error");
-    				}
-			})
-		}	
-		application();
-		/* disable events before drop */
-		$('#final_submit').hide();
-		$('html').on('dragenter',function(event){ event.stopPropagation(); event.preventDefault(); });
-		$('html').on('dragover',function(event){ event.stopPropagation(); event.preventDefault(); });
-		$('html').on('drop',function(event){
-			event.stopPropagation();
-			event.preventDefault();
-			var dropped_files = event.originalEvent.dataTransfer.files;
-			// if user drops more than one file in the interface alert and exit
-			if(dropped_files.length > 1){
-				alert("Please only submit one file at a time.");
-				return;
-			}
-			var formData = new FormData();
-			var database = $("#select-database").val();
-			$("#select-database select").val(database); 
-			var type = "none";
-			if($("#checkbox-checks-0").is(':checked')){
-				toxicity = "Yes";
-			} else {
-				toxicity = "No";
-			}
-			formData.append('timestamp', 'yes');
-			formData.append('database', database);
-			formData.append('type', type);
-			formData.append('toxicity', toxicity);
-			for(var i = 0; i < dropped_files.length; ++i){
-				/* submit as array to as file array - otherwise will fail */
-				formData.append('files[]', dropped_files[i]);
-			}
-			$.ajax({
-				url: $SCRIPT_ROOT + '/upload',
-				type: "POST",
-				data: formData,
-				processData: false,
-				contentType: false,
-				beforeSend: function(){
-					$.mobile.changePage('#message_window', {transition: 'pop', role: 'dialog'});
-					start_loader('#file_progress','<span>File Upload <p class="lt-ie10"><i class="loader"></i></p></span>')
-				},
-				success: function(data){
-					//console.log(data);
-					$("#original_file").html(data.original_file);
-					$("#modified_file").html(data.modified_file);
-					if(data.state === 0){
-						end_loader('#file_progress','<span>Finished Uploading File <a href="#" data-role="button" data-icon="check" data-inline="true" data-iconpos="notext"></a></span>')
-						match();
-					}
-					if(data.state === 1){
-						end_loader('#file_progress','<span>Failed Uploading <a href="index.html" data-role="button" data-icon="delete" data-inline="true" data-iconpos="notext"></a></span><br>'+data.message)
-					}
+					$("#match_errors").html(error.match);
+					$("#mia_errors").html(error.mia);
+					$("#lookup_errors").html(error.lookup);
+					$("#duplicate_errors").html(error.duplicate);
+					$("#custom_errors").html(error.custom);
+					$.mobile.changePage( "#two", { transition: "pop"} );
 				}
 			})
-		}); // html drop function
-			$("#final_submit").click(function(e){
-				e.stopImmediatePropagation();
-				e.preventDefault();
+	}	
+	function upload(dropped_files){
 				var formData = new FormData();
-				var submit_file = $('#modified_file').text();
-				//var database = $("#select-database :selected").text();
-				var database = "smcphab";
-				var type = "none";
-				formData.append('database', database);
-				formData.append('type', type);
-				formData.append('submit_file', submit_file);
-				get_status(timestamp); // turn on status logging
+				formData.append('login', email_login);
+				formData.append('agency', agency);
+				formData.append('usession', usession);
+				for(var i = 0; i < dropped_files.length; ++i){
+					/* submit as array to as file array - otherwise will fail */
+					formData.append('files[]', dropped_files[i]);
+				}
 				$.ajax({
-					url: $SCRIPT_ROOT + '/staging',
+					url: $SCRIPT_ROOT + '/upload',
 					type: "POST",
 					data: formData,
 					processData: false,
 					contentType: false,
 					beforeSend: function(){
-						$.mobile.changePage('#submit_message_window', {transition: 'pop', role: 'dialog'});
-						start_loader('#submit_progress','<span>Loading Data into Database<p class="lt-ie10"><i class="loader"></i></p></span>')
+						$.mobile.changePage('#message_window', {transition: 'pop', role: 'dialog'});
+						start_loader('#file_progress','<span>Processing File <p class="lt-ie10"><i class="loader"></i></p></span>')
 					},
 					success: function(data){
 						console.log(data);
-						end_loader('#submit_progress','<span>Loaded Data Successfully <a href="#" data-role="button" data-icon="check" data-inline="true" data-iconpos="notext"></a></span>')
-						// hold message for twenty second then let user know that app will reload
-						// send pertinent message to sccwrp staff - you will need to know which dataset was submitted
-						// action = toxicity, fish, etc... and record_count and who submitted (for later after authen)
-						end_application("Data Loaded Successful","Thank you for submitting your data. SCCWRP staff along with committee have been notified of your submission. The application will reload now","success");
+						$("#original_file").html(data.original_file);
+						$("#modified_file").html(data.modified_file);
+						if(data.state === 0){
+							end_loader('#file_progress','<span>Finished Uploading File <a href="#" data-role="button" data-icon="check" data-inline="true" data-iconpos="notext"></a></span>')
+							console.log("done with upload");
+							table_match = data.table_match;
+							business = data.business;
+							redundant = data.redundant;
+							custom = data.custom;
+							redundant_custom = data.redundant_custom;
+							console.log(redundant_custom)
+							summary_file = data.summary_file;
+
+                                			// when there are no errors we can make submission button available to load to staging
+                                			//if(error.total === 0 && allowed_to_submit === 0){ -- original probably dont need allowed_to_submit
+							// might want to move submission with errors to data.state === 1 - clean separation of code
+							if (data.errors) {
+								error = JSON.parse(data.errors);
+                                				if(error.total === 0){ 
+                                        				$.toast({
+										heading: 'Ready for Final Submission',
+										text: 'Data is clean and ready for final submission. Please use "Final Submit" button below.',
+										position: 'mid-center',
+										icon: 'success',
+										loader: false
+                                        				})
+									$('#final_submit').show();
+									// show submission type
+									$("#submission_type").html(data.datatype);
+									// show assignment table
+									$("#assignment_table").html(data.assignment);
+								}
+								$("#total_errors").html(error.total);
+								$("#match_errors").html(error.match);
+								$("#mia_errors").html(error.mia);
+								$("#lookup_errors").html(error.lookup);
+								$("#duplicate_errors").html(error.duplicate);
+								$("#custom_errors").html(error.custom);
+							}
+							if (data.excel){
+								$('#excel_file').append('<a href="'+data.excel+'" target="_blank">'+data.excel+'</a>');
+							}
+							$.each(table_match, function(key,val){
+								var value_string = String(val);
+								var elements = value_string.split("-");
+								if(elements[4] === "True"){
+									$("#compare_list").append("<ul><li><strong>MATCH</strong> - Excel sheet "+elements[1]+" - Matched table "+elements[3]+" on columns:<p>"+elements[6]+"</p></li></ul>");
+								} else {
+									/* working but has issue with word wrap */
+									$("#compare_list").append("<ul data-role='listview'><li style='word-wrap: break-word;'><strong>NO MATCH</strong> - Excel sheet "+elements[1]+" - The closest matching table we could find was "+elements[3]+" - <font color=red>unmatched tab columns: ["+elements[7]+"]</font> - <font color=red>unmatched table columns: ["+elements[8]+"]</font></p></li></ul>");
+									//$("#compare_list").append("<div style="white-space:nowrap;'><strong>NO MATCH</strong> - Excel sheet "+elements[1]+" - The closest matching table we could find was "+elements[3]+" on columns:<p><font size=1pt>"+elements[6]+"</font> - <font color=red>unmatched tab columns: ["+elements[7]+"]</font> - <font color=red>unmatched table columns: ["+elements[8]+"]</font></p></div>");
+									console.log("Match: "+ elements[6]);
+									console.log("No match tab: "+ elements[7]);
+									console.log("No match table: "+ elements[8]);
+								}
+								$("#compare_list").append("<br>");
+							});
+							console.log(business);	
+							presentation(table_match,redundant,redundant_custom,business,custom,summary_file);
+							// Tab initialization
+							$('#tabs').tabs({
+							    activate: function(event,ui) {
+								console.log(ui.newTab.index());
+								// You need Firebug or the developer tools on your browser open to see these
+								console.log(event);
+								// This will get you the index of the tab you selected
+								//console.log(event.options.selected);
+								// And this will get you it's name
+								// console.log(event.tab.text);
+							    }
+							});
+							$.mobile.changePage( "#two", { transition: "pop"} );
+						}
+						if(data.state === 1){
+							end_loader('#file_progress','<span>Failed Uploading <a href="index.html" data-role="button" data-icon="delete" data-inline="true" data-iconpos="notext"></a></span><br>'+data.message)
+						} 	
+					},	// end ajax upload
+                        		error: function(data){
+						console.log(data)
+						 message = "problem";
+                                		/* need to define login */
+                                		//var login = "to do item";
+                                		//console.log("Application Error:"+ data.responseJSON.message); - breaks if responseJSON isnt found
+                                		if(data.responseJSON){
+                                        		message = data.responseJSON.message;
+                                		} else {
+							message = data.statusText;
+                                        		//message = "Missing data.responseJSON.message";
+                                		}
+                                		if(data.status === "500"){
+                                        		console.log("Application failed. Please email file to SCCWRP.");
+                                        		//alert("Email file to SCCWRP");
+                                		}
+                                		if(data.status === "504"){
+                                        		console.log("Your file took to long to process. Please email file to SCCWRP.");
+                                        		//alert("Email file to SCCWRP");
+                                		}
+                                		end_loader('#core_progress','<span>Failed Core Checks <a href="#" data-role="button" data-icon="check" data-inline="true" data-iconpos="notext"></a></span>');                                   
+                                		end_application("Application Failed","The application suffered a critical error. SCCWRP has been notified. The application will reload now","critical",message,email_login,agency,"unknown"); 
+                        		}
+					//} may be needed
+				})
+
+
+	}
+		$(document).on( "pageinit", "#two", function( event ) {
+			console.log("pageinit");
+			//presentation(table_match,redundant,redundant_custom,business,custom,summary_file);
+	// Tab initialization
+	$('#tabs').tabs({
+	    activate: function(event,ui) {
+		console.log(ui.newTab.index());
+		// You need Firebug or the developer tools on your browser open to see these
+		console.log(event);
+		// This will get you the index of the tab you selected
+		//console.log(event.options.selected);
+		// And this will get you it's name
+		// console.log(event.tab.text);
+	    }
+	});
+		});
+		$(document).ready(function(){
+			//console.log("test");
+			//report();
+
+			function application(){
+				console.log("app routine");
+				$.ajax({
+					url: $SCRIPT_ROOT + '/application',
+					type: "POST",
+					data: "test",
+					processData: false,
+					contentType: false,
+					success: function(data){
+						//console.log(data);
+						//$('#status').append(data.status_file);
+						//alert(data.key); - show timestamp
+						timestamp = data.timestamp;
+						usession = data.key;
+						get_status(data.timestamp);
 					},
-		    			error: function(data){
-						console.log("Application Error:"+ data.responseJSON.message);
+					error: function(data){
+						console.log("Application Error:"+ data.responseJSON.message); 
+						 message = "problem";
+						if(data.responseJSON.message){
+							message = data.responseJSON.message;
+						} else {
+							message = "Missing data.responseJSON.message";
+						}
 						end_loader('#core_progress','<span>Failed Core Checks <a href="#" data-role="button" data-icon="check" data-inl    ine="true" data-iconpos="notext"></a></span>');
-						end_application("Application Failed","The application suffered a critical error. SCCWRP has been notified. The application will reload now","error");
-    					}
-				});
-			        // send signal to get_status to quit checking on status
-                		end_status();
-				$('#final').closest('.ui-btn').hide();
-			});
-			$("#notification_close").click(function(e,u){
-				console.log("notification_close");
-				//e.stopImmediatePropagation();
-    				//e.preventDefault();
-				//$('#notification_window').dialog( "close" );
-			});
-			$("#page_reload").click(function(e,u){
-				var answer = confirm("Are you sure you want to restart the application?");
-				if (answer == true){
-					e.stopImmediatePropagation();
-    					e.preventDefault();
-					reload_page();
+						end_application("Application Failed","The application suffered a critical error. SCCWRP has been notified. The application will reload now","error",message,email_login,agency,"unknown");
+					}
+				})
+			}	
+			application();
+
+
+			function login(){
+				console.log("login routine");
+				$('<div>').simpledialog2({
+					mode: 'blank',
+					width: 600,
+					top: 150,
+					headerText: 'SMC',
+					blankContent :
+					//'<div style="padding:10px 20px;"><h3>Please sign in</h3><input type="email" name="checker_login_email" id="checker_login_email" value="" placeholder="email" data-theme="a" autocomplete="checker_login_email"><input type="text" name="checker_login_agency" id="checker_login_agency" value="" placeholder="agency" data-theme="a" autocomplete="checker_login_agency"></div>'+
+					'<div style="padding:10px 20px;"><h3>Please sign in</h3><input type="email" name="checker_login_email" id="checker_login_email" value="" placeholder="email" data-theme="a" autocomplete="checker_login_email"><select name="checker_login_agency" id="checker_login_agency"><option value="AES Corporation">AES Corporation</option><option value="AMEC, Foster, & Wheeler">AMEC, Foster, & Wheeler</option><option value="Aquatic Bioassay and Consulting Laboratories">Aquatic Bioassay and Consulting Laboratories</option><option value="California State University at Channel Islands">California State University at Channel Islands</option><option value="Calscience">Calscience</option> <option value="Channel Islands National Marine Sanctuary">Channel Islands National Marine Sanctuary</option> <option value="Chevron USA Products Company">Chevron USA Products Company</option> <option value="City of Long Beach">City of Long Beach</option> <option value="City of Los Angeles Environmental Monitoring Division">City of Los Angeles Environmental Monitoring Division</option> <option value="City of Oceanside">City of Oceanside</option> <option value="City of Oxnard">City of Oxnard</option> <option value="City of San Diego">City of San Diego</option> <option value="City of Ventura">City of Ventura</option> <option value="Dancing Coyote Environmental">Dancing Coyote Environmental</option> <option value="Ecoanalysts INC">Ecoanalysts INC</option> <option value="EcoAnalysts, Inc">EcoAnalysts, Inc</option> <option value="Encina Waste Water Authority">Encina Waste Water Authority</option> <option value="Granite Canyon Marine Pollution Studies Lab">Granite Canyon Marine Pollution Studies Lab</option> <option value="Houston Industries Inc.">Houston Industries Inc.</option> <option value="Institute for Integrated Research on Materials, Environment and Society">Institute for Integrated Research on Materials, Environment and Society</option> <option value="Instituto de Investigacione Oceanologicas">Instituto de Investigacione Oceanologicas</option> <option value="Jet Propulsion Laboratory">Jet Propulsion Laboratory</option> <option value="Los Angeles County Department of Beaches and Harbors">Los Angeles County Department of Beaches and Harbors</option> <option value="Los Angeles County Dept. of Health Services">Los Angeles County Dept. of Health Services</option> <option value="Los Angeles County Regional Water Quality Control Board">Los Angeles County Regional Water Quality Control Board</option> <option value="Los Angeles County Sanitation Districts">Los Angeles County Sanitation Districts</option> <option value="Los Angeles Department of Water and Power">Los Angeles Department of Water and Power</option> <option value="Loyola Marymount University">Loyola Marymount University</option> <option value="Marine Biological Consulting">Marine Biological Consulting</option> <option value="Marine Corps Base Camp Pendleton">Marine Corps Base Camp Pendleton</option> <option value="Minerals Management Service">Minerals Management Service</option> <option value="National Park Service">National Park Service</option> <option value="Nautilus Environmental">Nautilus Environmental</option> <option value="NES Energy Inc.">NES Energy Inc.</option> <option value="NOAA County Health Services">NOAA County Health Services</option> <option value="Northwest Aquatic Sciences">Northwest Aquatic Sciences</option> <option value="Not Applicable">Not Applicable</option> <option value="NRG Energy Inc.">NRG Energy Inc.</option> <option value="Orange County Environmental Health Division">Orange County Environmental Health Division</option> <option value="Orange County Public Facilities and Resources">Orange County Public Facilities and Resources</option> <option value="Orange County Sanitation Districts">Orange County Sanitation Districts</option> <option value="PHYSIS Environmental Lab">PHYSIS Environmental Lab</option> <option value="Port of Los Angeles">Port of Los Angeles</option> <option value="Port of San Diego">Port of San Diego</option> <option value="Reliant Corporation">Reliant Corporation</option> <option value="San Diego County Department of Environmental Health">San Diego County Department of Environmental Health</option> <option value="San Diego Regional Water Quality Control Board">San Diego Regional Water Quality Control Board</option> <option value="San Elijo Joint Powers Authority">San Elijo Joint Powers Authority</option> <option value="Santa Ana Regional Water Quality Control Board">Santa Ana Regional Water Quality Control Board</option> <option value="Santa Barbara Health Care Services">Santa Barbara Health Care Services</option> <option value="Santa Monica Bay Restoration Commission">Santa Monica Bay Restoration Commission</option> <option value="Sea Ventures">Sea Ventures</option> <option value="Southern California Coastal Water Research Project">Southern California Coastal Water Research Project</option> <option value="Southern California Wetland Recovery Project">Southern California Wetland Recovery Project</option> <option value="Southern Orange County Water Authority">Southern Orange County Water Authority</option> <option value="Space and Naval Warfare Systems Command">Space and Naval Warfare Systems Command</option> <option value="State Water Resources Control Board">State Water Resources Control Board</option> <option value="The Bay Foundation - Santa Monica Bay Restoration Project">The Bay Foundation - Santa Monica Bay Restoration Project</option> <option value="Tijuana Estuary National Estuarine Research Reserve">Tijuana Estuary National Estuarine Research Reserve</option> <option value="United States Fish and Wildlife Service">United States Fish and Wildlife Service</option> <option value="United States Geological Survey">United States Geological Survey</option> <option value="University of California at Los Angeles">University of California at Los Angeles</option> <option value="University of California Santa Barbara">University of California Santa Barbara</option> <option value="URS Corporation">URS Corporation</option> <option value="Vantuna Research Group">Vantuna Research Group</option> <option value="Weck Labs">Weck Labs</option> <option value="Weston Solutions">Weston Solutions</option></select></div>'+
+				"<button rel='close' id='login_close' class='ui-btn ui-corner-all ui-shadow ui-btn-b ui-btn-icon-left ui-icon-check'>Sign in</button>"
+				})
+			}
+			login();
+
+			$("#login_close").click(function(e) {
+				//console.log($("#checker_login_email").val());
+				//console.log($("#checker_login_agency").val());
+				email_login = $("#checker_login_email").val();
+				agency = $("#checker_login_agency").val();
+				if (email_login && agency){
+					drop(email_login,agency);
 				} else {
-					// do nothing
+					/* needs to be fixed */
+					e.stopPropagation();
+					e.preventDefault();
+					alert("Email address and agency are required.");
+					login();
 				}
 			});
-		});
-	</script>
-  </head>
-  <div id="one" data-role="page">
-    <h3>Drag & Drop Single File to Run Checker</h3>
-    <div id="one_main" role="main" class="ui-content">
-      <!--  just in case we might use
-      <div data-role="controlgroup" data-type="horizontal" data-mini="true">
-    	<input type="checkbox" name="checkbox-checks-0" id="checkbox-checks-0" data-mini="true">
-	<label for="checkbox-checks-0">Toxicity Checks</label>
-      </div>
-      // -->
-	<!-- temporary - delete later
-	<div align="left" style="float: right;">
-		<h3>Messages</h3>
-		<ul id="message_center2" data-role="listview" data-inset="true">
-		<li><span>File Upload  <a href="#" data-role="button" data-icon="check" data-inline="true" data-iconpos="notext"></a></span></li>
-		<li><span>Match Table  <a href="#" data-role="button" data-icon="alert" data-inline="true" data-iconpos="notext"></a></span></li>
-		<li><span>Core Checks  <a href="#" data-role="button" data-icon="clock" data-inline="true" data-iconpos="notext"></a></span></li>
-		<li data-icon="arrow-r"><a href="#">Custom Checks</a></li>
-		<li><a href="#">Final Submission</a></li>
-		</ul>
-	</div>
-	<div data-role="popup" id="p" data-position-to="window" data-transition="turn"><p>This is a completely basic popup, no options set.</p></div>
-	<p><a id="test" href="#" data-role="button">Show page "two"</a></p>
-	// -->
-	<!-- <div id="status">Status</div> // -->
-    </div>
-  </div>
 
-  <div id="two" data-role="page">
-    <div id="main" role="main" class="ui-content">
-	<a href="#" class="ui-btn" id="page_reload" rel="external">Reload Application</a>
-	<div id="tabs" data-role="tabs"><div id="tabsnav" data-role="navbar"><ul><li><a href="#home" class="ui-btn-active">Submission Information</a></li></ul></div>
-	<div id="home">
-	<ul data-role="listview" data-inset="true" data-divider-theme="a">
-	  <li>
-		<h2>Dropped File</h2>
-		<p id="original_file"></p>
-		<p id="modified_file"></p>
-    	  </li>
-	  <li>
-		<h2>Excel Tab to Table Comparison</h2>
-		<p id="compare_list">
-	  </li>
-    	  <li><h2>Total Errors</h2> <span id="total_errors" class="ui-li-count"></span></li>
+			function drop(email_login,agency){
+				console.log("upload routine");
+				console.log(email_login);
+				console.log(agency);
+				console.log(usession);
+				/* disable events before drop */
+				$('#final_submit').hide();
+				$('html').on('dragenter',function(event){ event.stopPropagation(); event.preventDefault(); });
+				$('html').on('dragover',function(event){ event.stopPropagation(); event.preventDefault(); });
+				$('html').on('drop',function(event){
+					event.stopPropagation();
+					event.preventDefault();
+					var dropped_files = event.originalEvent.dataTransfer.files;
+					// if user drops more than one file in the interface alert and exit
+					if(dropped_files.length > 1){
+						alert("Please only submit one file at a time.");
+						return;
+					}
+					upload(dropped_files);
+				}); // html drop function
+			}
+				$("#final_submit").click(function(e){
+					e.stopImmediatePropagation();
+					e.preventDefault();
+					var formData = new FormData();
+					var submit_file = $('#modified_file').text();
+					var assignment_match = $('#assignment_table').text();
+					var submission_type = $('#submission_type').text();
+					//var database = $("#select-database :selected").text();
+					var database = "smcphab";
+					var type = "none";
+					formData.append('database', database);
+					formData.append('submission_type', submission_type);
+					formData.append('submit_file', submit_file);
+					formData.append('assignment', assignment_match);
+					formData.append('agency', agency);
+					formData.append('login', email_login);
+					get_status(timestamp); // turn on status logging
+					$.ajax({
+						url: $SCRIPT_ROOT + '/staging',
+						type: "POST",
+						data: formData,
+						processData: false,
+						contentType: false,
+						beforeSend: function(){
+							$.mobile.changePage('#submit_message_window', {transition: 'pop', role: 'dialog'});
+							start_loader('#submit_progress','<span>Loading Data into Database<p class="lt-ie10"><i class="loader"></i></p></span>')
+						},
+						success: function(data){
+							console.log(data);
+							if (data.report){
+								message = "success";
+								agency = data.agency;
+								submission_type = data.submission_type;
+								end_application("Data Loaded Successful","Thank you for submitting your data. SCCWRP staff along with committee have been notified of your submission.","success",message,email_login,agency,submission_type);
+                                        			$.mobile.changePage( "#report", { transition: "pop"} );
+                                        			//$('#report_main').append(data.report);
+                  						if(Object.keys(data.report).length !== 0){
+                          						var report_object = $.parseJSON(data.report);
+									console.log(report_object);
+                                        				agency_string = '<h3>Report for '+ agency + ':</h3><hr><img src="/images/green.png" width="25px" height="25px"> = Complete<br><img src="/images/red.png" width="15px" height="15px"> = Missing<br>NR = Not Required<hr>';
+									$('#report_main').append(agency_string);
+									report_table = "<table id='report'>";
+									if (submission_type == "field"){
+										report_header = "<tr><th>StationID</th><th>Trawl</th><th>Grab</th></tr>";
+									} else {
+										// get parameter elements and loop through to create extra headers
+										parameter_list = JSON.parse(data.parameters);
+										report_header = "<tr><th>StationID</th>";
+										$.each(parameter_list, function(index,parameter_element){
+											report_header += "<th>" + parameter_element + "</th>";
+										});
+											report_header += "</tr>";
+									}
+									$('#report_main').append(report_table);
+									$('#report_main').append(report_header);
+									for(var i= 0; i < report_object.length; ++i){
+									  report_string = "<tr><td>" + report_object[i].stationid + "</td>";
+									  if (submission_type != "field" ){
+										console.log(data.parameters)
+										parameter_list = JSON.parse(data.parameters);
+										console.log(parameter_list)	
+										// loop through each parameter element for each report record for complete,empty,or nr
+										$.each(parameter_list, function(index,parameter_element){
+										if (report_object[i].parameter == parameter_element && report_object[i].submissionstatus == "complete"){
+											report_string += '<td><img src="/images/green.png" width="25px" height="25px"></td>';
+										} else if (report_object[i].parameter == parameter_element && report_object[i].submissionstatus == "") {
+											report_string += '<td><img src="/images/red.png" width="15px" height="15px"></td>';
+										} else {
+											report_string += '<td><b>NR</b></td>';
+										}
+										});
+									  } else {
+										if (report_object[i].trawlagency == agency){
+											if (report_object[i].trawlsubmit == 'complete'){
+												report_string += '<td><img src="/images/green.png" width="25px" height="25px"></td>';
+											} else {
+												report_string += '<td><img src="/images/red.png" width="15px" height="15px"></td>';
+											}
+										} else {
+											report_string += '<td><b>NR</b></td>';
+										}
+										if (report_object[i].grabagency == agency){
+											if (report_object[i].grabsubmit == 'complete'){
+												report_string += '<td><img src="/images/green.png" width="25px" height="25px"></td>';
+											} else {
+												report_string += '<td><img src="/images/red.png" width="15px" height="15px"></td>';
+											}
+										} else {
+											report_string += '<td><b>NR</b></td>';
+										}
+									    }
+									    report_string += "</tr>";	
+									    $('#report_main').append(report_string);
+									  } // end for loop
+									  report_end_table = "</table>";
+									$('#report_main').append(report_end_table);
+								} // end if object.keys
+							} else {
+								console.log(data);
+								end_loader('#submit_progress','<span>Loaded Data Successfully <a href="#" data-role="button" data-icon="check" data-inline="true" data-iconpos="notext"></a></span>')
+								message = "problem";
+								// hold message for twenty second then let user know that app will reload
+								// send pertinent message to sccwrp staff - you will need to know which dataset was submitted
+								// action = toxicity, fish, etc... and record_count and who submitted (for later after authen)
+								end_application("Data Loaded Successful","Thank you for submitting your data. SCCWRP staff along with committee have been notified of your submission. The application will reload now","success",message,email_login,"unknown");
+								//report();
+							}
+						},
+						error: function(data){
+							console.log(data)
+							//console.log("Application Error:"+ data.responseJSON.message);
+							message = "problem";
+							if(data.responseJSON.message){
+								message = data.responseJSON.message;
+							} else {
+								message = "Missing data.responseJSON.message";
+							}
+							end_loader('#core_progress','<span>Failed Core Checks <a href="#" data-role="button" data-icon="check" data-inl    ine="true" data-iconpos="notext"></a></span>');
+							end_application("Application Failed","The application suffered a critical error. SCCWRP has been notified. The application will reload now","critical",message,email_login,agency,"unknown");
+						}
+					});
+					// send signal to get_status to quit checking on status
+					end_status();
+					$('#final').closest('.ui-btn').hide();
+				});
+				$("#notification_close").click(function(e,u){
+					console.log("notification_close");
+					//e.stopImmediatePropagation();
+					//e.preventDefault();
+					//$('#notification_window').dialog( "close" );
+				});
+				$("#page_reload").click(function(e,u){
+					var answer = confirm("Are you sure you want to restart the application?");
+					if (answer == true){
+						e.stopImmediatePropagation();
+						e.preventDefault();
+						reload_page();
+					} else {
+						// do nothing
+					}
+				});
+			});
+		</script>
+	  </head>
+	  <div id="one" data-role="page">
+	    <h3>Drag & Drop Single File to Run Checker</h3>
+		<!-- just in case there are agencies that cant use dragndrop - will need to rewrite upload function // -->
+		<div id="fileupload" name="fileupload" style="width: 250px">
+			<input type="file" id="files" name="files" onchange="upload(this.files);" style="width: 250px">
+		</div>
+	    <div id="one_main" role="main" class="ui-content">
+	    </div>
+		<div id="one_main_image">
+		<img src="/images/smc.jpg" />
+		</div>
+	  </div>
+
+	  <div id="two" data-role="page">
+	    <div id="main" role="main" class="ui-content">
+		<a href="#" class="ui-btn" id="page_reload" rel="external">Reload Application</a>
+		<div id="tabs" data-role="tabs"><div id="tabsnav" data-role="navbar"><ul><li><a href="#home" class="ui-btn-active">Submission Information</a></li></ul></div>
+		<div id="home">
+		<ul data-role="listview" data-inset="true" data-divider-theme="a">
+		  <li>
+			<h2>Dropped File</h2>
+			<p id="original_file"></p>
+			<p id="modified_file"></p>
+		  </li>
+		  <li>
+			<h2>Excel Tab to Table Comparison</h2>
+			<p id="compare_list">
+		  </li>
+	    	  <li><h2>Total Errors</h2> <span id="total_errors" class="ui-li-count"></span></li>
     	  <li><p><strong>Match</strong></p> <span id="match_errors" class="ui-li-count"></span></li>
     	  <li><p><strong>Missing/Incomplete</strong></p> <span id="mia_errors" class="ui-li-count"></span></li>
     	  <li><p><strong>Lookup Failure</strong></p> <span id="lookup_errors" class="ui-li-count"></span></li>
     	  <li><p><strong>Duplicates</strong></p> <span id="duplicate_errors" class="ui-li-count"></span></li>
-    	  <li><p><strong>Custom Toxicity</strong></p> <span id="custom_errors" class="ui-li-count"></span></li>
-    	  <li>
+    	  <li><p><strong>Custom</strong></p> <span id="custom_errors" class="ui-li-count"></span></li>
+    	  <li>
 		<h2>Log File</h2>
 		<p id="log_file"></p>
+		<h2>Print to Excel</h2>
+		<p id="excel_file"></p>
+		<h2>Submission Type</h2>
+		<p id="submission_type"></p>
+		<h2>Assignment Table</h2>
+		<p id="assignment_table"></p>
+    	  </li>
     	  </li>
 	</ul>
 	<div id="final"><button id="final_submit" type="submit" value="Final Submit"/>Final Submit</button></div>
@@ -849,10 +968,12 @@ $('#tabs').tabs({
     <div data-role="content" data-theme="a">
 		<ul id="message_center" data-role="listview" data-inset="true">
 			<li id="status">Status</li>
-			<li id="file_progress">File Upload</li>
+			<li id="file_progress">Processing File</li>
+			<!--
 			<li id="match_progress">Match File</li>
 			<li id="core_progress">Core Checks</li>
 			<li id="custom_progress">Custom Checks</li>
+			// -->
 		</ul>
     </div> <!-- close content // -->
   </div> <!-- close message window // -->
@@ -867,5 +988,11 @@ $('#tabs').tabs({
 		</ul>
     </div> <!-- close content // -->
   </div> <!-- close message window // -->
+  <div id="report" data-role="page">
+	<br>
+	<a href="#one" onclick="window.location.reload(true)">Go Back to Checker</a><br>
+    <div id="report_main" role="report_main" class="ui-content">
+    </div>
+  </div>
 
 </html>

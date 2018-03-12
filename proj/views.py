@@ -1,5 +1,5 @@
 from proj import app
-from flask import send_from_directory, render_template, request, jsonify
+from flask import send_from_directory, render_template, request, jsonify, json
 from sqlalchemy import create_engine, text
 import urllib, json
 import pandas as pd
@@ -16,9 +16,9 @@ def clear():
 	eng.execute(statement)
 	statement2 = text("""DELETE FROM tbl_taxonomyresults""")
 	eng.execute(statement2)
-	statement3 = text("""DELETE FROM tmp_cscicore""")
+	statement3 = text("""DELETE FROM tmp_cscicore WHERE stationcode = 'SMC01097'""")
 	eng.execute(statement3)
-	return "finished"
+	return "taxonomy clear finished"
 
 @app.route('/logs/<path:path>')
 def send_log(path):
@@ -37,7 +37,7 @@ def mail():
 	msg = Message("test flask email",
                   sender="admin@checker.sccwrp.org",
                   #recipients=["pauls@sccwrp.org"])
-                  recipients=["bightim-tox@sccwrp.org"])
+                  recipients=["smcim-tox@sccwrp.org"])
 	msg.body = "testing flask email - action = " + str(action)
 	with flask_app.app_context():
 		mail.send(msg)
@@ -53,7 +53,7 @@ def scraper():
 			layer = request.args.get("layer")
 			# filter actions
 			# help actions
-			help_layer = "smcphab" + str(layer)
+			help_layer = "smc" + str(layer)
 			run_url = "https://gis.sccwrp.org/arcgis/rest/services/{0}/FeatureServer/0/query?where=1=1&returnGeometry=false&outFields=*&f=json".format(help_layer)
 			#run_url = "https://gis.sccwrp.org/arcgis/rest/services/{0}/FeatureServer/0/query?where=1=1&outFields=agency,code&returnGeometry=false&f=json".format(help_layer)
 			print(run_url)
@@ -110,15 +110,35 @@ def sandboxui():
 	# sandbox to test various parts of user interface
 	return render_template('test.html')
 
+@app.route('/track')
+def track():
+	print("start track")
+	eng = create_engine('postgresql://b18read:1969$Harbor@192.168.1.16:5432/smcphab')
+	sql_session = "select login, agency, sessionkey, upload, match, mia, lookup, duplicates, extended_checks, extended_checks_type, submit, created_user, created_date from submission_tracking_table order by created_date"
+        print(sql_session)
+        session_results = eng.execute(sql_session)
+	print(session_results)
+        eng.dispose()
+	#session_json = json.dumps([dict(r) for r in session_results])
+	session_json = [dict(r) for r in session_results]
+	return render_template('track.html', session=session_json)
+
+@app.route('/report')
+def report():
+	print("start report")
+	eng = create_engine('postgresql://sde:dinkum@192.168.1.16:5432/smcphab') # postgresql
+	# field - sql = "select stationid,grabagency,trawlagency,grabsubmit,trawlsubmit from field_assignment_table where trawlagency = 'Los Angeles County Sanitation Districts' or grabagency = 'Los Angeles County Sanitation Districts' order by stationid asc"
+	sql = "select stationid,lab,parameter,submissionstatus from sample_assignment_table where lab = 'Nautilus Environmental' order by submissionstatus desc"
+        print(sql)
+        results = eng.execute(sql)
+	print(results)
+        eng.dispose()
+	report_results = [dict(r) for r in results]
+	return render_template('report.html', agency='Nautilus Environmental', submission_type='toxicity', report=report_results)
+
 def errorApp():
 	print("error app")
 	return render_template('error.html')
-
-@app.route('/templates/<path:path>')
-def send_template(path):
-	print("template route")
-	print(path)
-	return send_from_directory('/var/www/smc/templates/', path)
 
 @app.route('/myjson')
 def myjson():

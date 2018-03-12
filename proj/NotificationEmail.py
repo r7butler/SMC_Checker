@@ -8,7 +8,7 @@ from .ApplicationLog import *
 notification_email = Blueprint('notification_email', __name__)
 
 #### CREATE GENERIC FUNCTION
-### FOLLOWING VARIALBES: recipients(bight18-monitor,bight18-im,bight18-im-tox, etc...)
+### FOLLOWING VARIALBES: recipients(smc-monitor,smc-im,smc-im-tox, etc...)
 #### NEED TIMESTAMP or log file from ApplicationLog 
 def test_email():
 	# if action = critical then email sccwrp im with log file or at least link to log file and timestamp
@@ -16,27 +16,41 @@ def test_email():
 	action = ""
 	if request.args.get("action"):
 		action = request.args.get("action")
+	agency_return = ""
+	if request.args.get("agency"):
+		agency_return = request.args.get("agency")
+	login_return = ""
+	if request.args.get("login"):
+		login_return = request.args.get("login")
+	message_return = ""
+	if request.args.get("message"):
+		message_return = request.args.get("message")
 	type_of_data = ""
 	if request.args.get("type"):
 		type_of_data = request.args.get("type")
 	mail = Mail(current_app)
 	if action == "critical":
-		msg = Message("checker - application failure",
+		msg = Message("smc - application failure",
                 	sender="admin@checker.sccwrp.org",
                   	recipients=["pauls@sccwrp.org"])
-		msg.body = "critical body of email - action = " + str(action)
+		msg.body = "critical body of email - action = " + str(action) + " - " + str(message_return) + " - " + str(login_return)
 	if action == "success":
 		# if type_of_data = toxicity then email
 		# send_to = "b18im-tox" - toxicity committee
 		if type_of_data == "toxicity":
-			msg = Message("toxicity checker - successful data load",
+			msg = Message("toxicity smc - successful data load",
                   		sender="admin@checker.sccwrp.org",
-                  		recipients=["bight18im-tox@sccwrp.org"])
+                  		recipients=["b18im-tox@sccwrp.org"])
+		elif type_of_data == "field":
+			msg = Message("field smc - successful data load",
+                  		sender="admin@checker.sccwrp.org",
+                  		recipients=["b18im-field@sccwrp.org"])
 		else:
-			msg = Message("checker - successful data load",
+			msg = Message("smc - successful data load",
                   		sender="admin@checker.sccwrp.org",
                   		recipients=["pauls@sccwrp.org"])
-		msg.body = "successful body of email - action = " + str(action) + " - " + str(type_of_data)
+		#msg.body = "successful body of email - action = " + str(action) + " - " + str(type_of_data) + " - " + str(message_return) + " - " + str(login_return)
+		msg.body = "SCCWRP has received a successful %s submission from %s for %s. For future - the user submitted [row count] and [row count] were successfully entered into the database." % (str(type_of_data),str(login_return),str(agency_return))
 	mail.send(msg)
 	return "success"
 
@@ -46,7 +60,7 @@ def monitor():
 	mail = Mail(current_app)
 	msg = Message("test flask email",
                   sender="checker@sccwrp.org",
-                  recipients=["bight18-monitor@sccwrp.org"])
+                  recipients=["smc-monitor@sccwrp.org"])
 	msg.body = "testing flask email"
 	mail.send(msg)
 	return "success"

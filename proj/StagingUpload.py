@@ -1,5 +1,5 @@
 import os.path
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, render_template, request, jsonify
 import pandas as pd
 import numpy as np
 import urllib, json
@@ -14,392 +14,257 @@ import datetime
 from random import randint
 from .ApplicationLog import *
 
-def createStagingTable(table_name,df,database_to_use,TIMESTAMP):
-	errorLog("start createStagingTable")
-	statusLog("Create Staging Table")
-	errorLog(table_name)
-	errorLog(df.columns)
-	errorLog(TIMESTAMP)
-	# placeholder SCCWRP is for agency variable in future
-	staging_table_name = "staging_agency_" + table_name + "_" + TIMESTAMP
-     	# create engine, reflect existing columns, and create table object for oldTable
-	if 'field_error' in  df:
-		df = df.drop('field_error', 1)
-	if 'logic_error' in  df:
-		df = df.drop('logic_error', 1)
-	if 'lookup_error' in  df:
-		df = df.drop('lookup_error', 1)
-	if 'duplicate_production_submission' in  df:
-		df = df.drop('duplicate_production_submission', 1)
-	if 'duplicate_session_submission' in df:
-		df = df.drop('duplicate_session_submission', 1)
-	if database_to_use == 'smcphab':
-		db = "smcphab"  # postgresql
-		dbtype = "postgresql"
-     		srcEngine = create_engine('postgresql://sde:dinkum@192.168.1.16:5432/smcphab')
-     		srcEngine._metadata = MetaData(bind=srcEngine,schema='sde')
-     		srcEngine._metadata.reflect(srcEngine) # get columns from existing table
-     		srcTable = Table(table_name, srcEngine._metadata)
-     		destEngine = create_engine('postgresql://sde:dinkum@192.168.1.16:5432/smcphab')
-     		destEngine._metadata = MetaData(bind=destEngine,schema='sde')
-		errorLog(staging_table_name)
-     		destTable = Table(staging_table_name, destEngine._metadata)
-		def getRandomTimeStamp(row):
-			row['objectid'] = int(TIMESTAMP) + int(row.name)
-			return row
-		df = df.apply(getRandomTimeStamp, axis=1)
-		errorLog(df['objectid'])
-		# timestamp to date format - bug fix #4
-		timestamp_date = datetime.datetime.fromtimestamp(int(TIMESTAMP)).strftime('%Y-%m-%d %H:%M:%S')
-		df['created_user'] = "checker"
-		#df['created_date'] = "2017-07-13 21:51:00"
-		df['created_date'] = timestamp_date
-		df['last_edited_user'] = "checker"
-		#df['last_edited_date'] = "2017-07-13 21:51:00"
-		df['last_edited_date'] = timestamp_date
-	elif database_to_use == 'demo':
-		db = "demo2"  # postgresql
-     		srcEngine = create_engine('postgresql://sde:dinkum@192.168.1.16:5432/demo2')
-     		srcEngine._metadata = MetaData(bind=srcEngine,schema='sde')
-     		srcEngine._metadata.reflect(srcEngine) # get columns from existing table
-     		srcTable = Table(table_name, srcEngine._metadata)
-     		destEngine = create_engine('postgresql://sde:dinkum@192.168.1.16:5432/demo2')
-     		destEngine._metadata = MetaData(bind=destEngine,schema='sde')
-		errorLog(staging_table_name)
-		errorLog(destEngine._metadata)
-     		destTable = Table(staging_table_name, destEngine._metadata)
-		# add objectid column to dataframe
-		#df['objectid'] = int(uuid4().int & (1<<64)-1)
-		#df['objectid'] = int(uuid1().int>>64)
-		def getRandomTimeStamp(row):
-			row['objectid'] = int(TIMESTAMP) + int(row.name)
-			return row
-		df = df.apply(getRandomTimeStamp, axis=1)
-		errorLog(df['objectid'])
-     	# copy schema and create newTable from oldTable
-	#for dest_column in destTable.columns:
-	#	if dest_column == "id":
-	#		dest_column.drop()
-     	for column in srcTable.columns:
-		errorLog("srcTable.columns")
-		# get everthing to right of the dot on tbltoxicityresults.objectid
-		#if (tail != "id") or (tail != "objectid") or (tail != "shape") or (tail != "gdb_geomattr_data"):
-		if str(column) != "tbltoxicityresults.id":
-			errorLog(column)
-			destTable.append_column(column.copy())
-	destTable.create()
-	try:
-		if database_to_use == 'smcphab':
-			df.columns = [x.lower() for x in df.columns]
-			outcome = df.to_sql(name=staging_table_name,con=destEngine,if_exists='append',index=False)
-			# use odo instead of pandas - should be faster
-			#odo('myfile.*.csv', 'postgresql://hostname::tablename')
-			#outcome = odo(df, destEngine)  # Migrate dataframe to Postgres
-			#outcome = df.to_sql(name=staging_table_name,con=destEngine,flavor='mysql',if_exists='append',index=True,index_label="id")
-		elif database_to_use == 'bight2018geo':
-			# lowercase all column names in preparation for match
-			df.columns = [x.lower() for x in df.columns]
-			outcome = df.to_sql(name=staging_table_name,con=destEngine,if_exists='append',index=False)
-		elif database_to_use == 'demo':
-			# lowercase all column names in preparation for match
-			df.columns = [x.lower() for x in df.columns]
-			outcome = df.to_sql(name=staging_table_name,con=destEngine,if_exists='append',index=False)
-	except ValueError:
-		errorLog("failed df.to_sql")
-		errorLog(outcome)
-	errorLog("end createStagingTable")
-	return staging_table_name
-
-#### retrieves all of tables and columns in the database for use in matching by dcMatchColumnsToTable function ###
-def dcGetTableAndColumns(db,dbtype,eng):
-	errorLog("start dcGetTableAndColumns")
-	system_fields = current_app.system_fields # hidden database fields like id
-	sqlFields = {}
-	if dbtype == "mysql" or dbtype == "mysql-rest":
-		query = eng.execute("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA='%s' and TABLE_NAME LIKE '%s'" % (db,"tbl%%"))
-	elif dbtype == "postgresql":
-		# added BASE TABLE filter - exclude views
-		query = eng.execute("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE='BASE TABLE' AND TABLE_CATALOG='%s' AND TABLE_NAME LIKE '%s'" % (db,"tbl_%%"))
-	elif dbtype == "azure":
-		query = eng.execute("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_CATALOG ='%s' and TABLE_NAME LIKE '%s'" % (db,"tblToxicity%%")) # microsoftsql
-	errorLog(query)
-	#### if there are no tables returned then how can we proceed
-	errorLog(query.rowcount)
-	for x in query:
-		errorLog(x)
-		if dbtype == "mysql" or dbtype == "azure":
-			name_of_table = x.TABLE_NAME # mysql and microsoftsql
-			sql = "select column_name from information_schema.columns where table_name = '%s'" % name_of_table # to be used with all databases
-		elif dbtype == "postgresql":
-			name_of_table = x.table_name # postgresql
-			sql = "select column_name from information_schema.columns where table_name = '%s'" % name_of_table # to be used with all databases
-		elif dbtype == "mysql-rest":
-			name_of_table = x.TABLE_NAME # mysql
-			sql = "SELECT COLUMN_COMMENT FROM INFORMATION_SCHEMA.COLUMNS WHERE table_name = '%s'" % name_of_table # to be used with survey only
-		errorLog(sql)
-		subquery = eng.execute(sql)
-		for y in subquery:
-			# setdefault - If key is in the dictionary, return its value. If not, insert key with a value of default and return default. default defaults to None.
-			if dbtype == "mysql-rest":
-				sqlFields.setdefault(name_of_table,[]).append(y.COLUMN_COMMENT) #  user for survey
-			else:
-				if y.column_name not in system_fields:
-					sqlFields.setdefault(name_of_table,[]).append(y.column_name) #  used for all databases
-		subquery.close()
-	query.close()
-	errorLog("end dcGetTableAndColumns")
-	return sqlFields
-
-def dcMatchColumnsToTable(tab_name,tab,sqlFields,tabCounter):
-	# purpose: does the data match a table, if not we should let user know which table it matches closest to
-	# result: true, false/matched table or closest matching table/columns matched
-	# tab_name = name of tab or sheet being worked on
-	# tab = rows of data in the individual tab or sheet
-	# sqlFields = dictionary of tables and columns in database
-	# tabCounter = numeric identity of tab or sheet being worked on
-	errorLog("start dcMatchColumnsToTable")
-	statusLog("Check Matching Columns to Table")
-	matchset = False # if we can match the tab or sheet to a table then this gets returned at bottom
-	match = [] # matched columns to return
-	nomatch = [] # unmatched columns to return
-	tabColumns = [] # list of lowercase column names for matching
-	counter_key = ""
-	tabCount = len(tab.columns) # how many columns are in the tab or sheet
-	#tabColumns.append([x.lower() for x in tab.columns]) # lowercase tab.columns - easiest way to match against sql fields
-	tableCountList = [] # total match for each table to tab comparison - ie. tblresult = 8, tblbatch = 3, etc..
-	for table in sqlFields:
-		# TURN ON FOR DEBUGGING
-		errorLog("-----Loop through table: %s" % table)
-		tableCount = 0
-		# loop through each column in a table
-		collect_columns = []
-		# failed columns 
-		# minus id
-		columnCount = len(sqlFields[table]) # how many columns are in the table
-		errorLog("columnCount: %s" % columnCount)
-		for column in sqlFields[table]:
-			#errorLog("-------------Loop through columns in table: %s" % column)
-			# check each column in the excel against a database column
-			for field in tab.columns:
-				#lowercase column name
-				lcolumn = column.lower()
-				# TURN ON FOR DEBUGGIN
-				#errorLog("field: %s and lcolumn: %s" % (field,lcolumn))
-				# re.match is not an exact match it needs a $ at end of searched element to make it so
-				find_field = field.lower() + "$"
-				m = re.match(find_field, lcolumn)
-				if m:
-					# increment count for table
-					collect_columns.append(str(m.group(0)))
-					tableCount += 1
-					# TURN ON FOR DEBUGGIN
-					#errorLog("-------------------------Matched: %s -- TableCount: %s" % (m.group(0), tableCount))
-		errorLog("##### We were able to match sheet - %s to table - %s the following times: %s #######" % (tab_name,table,tableCount))
-		#errorLog("##### columnCount: %s" % columnCount)
-		#counter[counter_key] = collect_columns
-		tableCountList.append(tableCount)
-		#errorLog("##### tableCount: %s and columnCount: %s" % (tableCount,columnCount))
-		#if tableCount >= tabCount:
-		# the total number of columns in a table must match the total number of matched columns in a tab or sheet
-		if tableCount == tabCount:
-			# TURN ON FOR DEBUGGIN
-			#errorLog("-----+Sheet %s is matched to table %s with count %s" % (tab_name,table,str(tableCount)))
-			#counter_key = str(tabCounter) + "-" + tab_name + "-" + str(tabCount) + "-" + table + "-" + "True" + "-" + str(tableCount) + "-" + str(collect_columns) 
-			counter_key = str(tabCounter) + "-" + tab_name + "-" + str(tabCount) + "-" + table + "-" + "True" + "-" + str(tableCount) + "-" + str(','
-.join(collect_columns)) 
-			matchset = True
-			match.append(counter_key)
-			# what do we do if we have multiple tables in a database that are duplicates
-			# try to match table name to sheet name - or at least give that priority
-			# we can skip checking for other tables but we need to remove any others found
-			if tab_name == table and len(match) > 1:
-				item_to_keep = len(match) - 1
-				count = 0
-				while item_to_keep != count:
-					match.pop(count)
-					count = count + 1
-				# TURN ON FOR DEBUGGIN print("EQUAL: %s" % match)
-				# TURN ON FOR DEBUGGIN print("EQUALCOUNT: %s" % len(match))
-				return True, match
-			#errorLog("tab is set to: %s and value is: %s" % (matchset, match))
-		else:
-			# find columns that do not match return to user
-			collect_failed_columns = set(tab.columns)^set(collect_columns)
-			counter_key = str(tabCounter) + "-" + tab_name + "-" + str(tabCount) + "-" + table + "-" + "False" + "-" + str(tableCount) + "-" + str(','.join(collect_columns)) + "-" + str(','.join(collect_failed_columns))
-			nomatch.append(counter_key)
-			#errorLog("tab is set to: %s and value is: %s" % (matchset, nomatch))
-	if matchset == True:
-		return True, match
-	else:
-		# we need to find the closest match in the nomatch list - the largest tabCount
-		#tchColumnsToTable max gives you the largest element in list - index on the outer gives you the element index
-		if max(tableCountList):
-			closest_match = tableCountList.index(max(tableCountList))
-		# in case there are no matches
-		else:
-			#closest_match = tableCountList[0]
-			closest_match = 0
-			nomatch[0] = "%s-%s-%s-%s-%s-%s" % (str(tabCounter),tab_name,str(tabCount),"None","False","No match for tab")
-		#errorLog(closest_match)
-		#errorLog(nomatch[0])
-		errorsCount("match")
-		return False, nomatch[closest_match]
-	errorLog("end dcMatchColumnsToTable")
-
-
-def moveStagingToProduction(eng,staging,destination,records,fieldlist):
-	errorLog("start moveStagingToProduction")
-	statusLog("Move Staging to Production")
-	# we will need the engine, staging table name, destination table name, and sql fields
-	errorLog("staging table: %s" % staging)
-	errorLog("destination table: %s" % destination)
-	# change table to view - this code only gets used when we are dealing with geodatabase versioned or archived tables
-	# there are some additional fields that get created and you can only submit changes directly through the view not the tables
-	#destination = destination + "_evw"
-	errorLog("records submitted: %s" % records)
-	errorLog("destination fields: %s" % fieldlist)
-	errorLog("destination type: %s" % type(fieldlist))
-	fields = fieldlist
-	#sql = "insert into sde." + destination + " ("+ fields + ") select " + fields + " from sde." + staging
-	#insert into tblfieldversion_evw (objectid, globalid) values (sde.next_rowid('bight18','tblfieldversion_evw'), sde.next_globalid());
-	#test = "'sde','tblfieldversion_evw'"
-	#sql = 'insert into "' + destination + '" (objectid, globalid, created_user, created_date, last_edited_user, last_edited_date, '+ fields + ') select sde.next_rowid('sde','tblfieldversion_evw'), sde.next_globalid(), created_user, created_date, last_edited_user, last_edited_date, ' + fields + ' from "' + staging + '"'
-	sql = 'insert into "' + destination + '" (objectid, globalid, created_user, created_date, last_edited_user, last_edited_date, '+ fields + ') select sde.next_rowid(%s,%s), sde.next_globalid(), created_user, created_date, last_edited_user, last_edited_date, ' + fields + ' from "' + staging + '"'
-	errorLog(sql)
-	status = eng.execute(sql,"sde",destination)
-	errorLog(status)
-	if not status:
-		errorLog("inside failed status")
-		raise Error, eng.error
-		errorLog(eng.error)
-	status.close()
-	#### AFTER WE MOVE DATA - WE NEED TO EXPORT STAGING TABLE TO A FILE FOR BACKUP - THEN REMOVE STAGING TABLE ####
-	#### CLEANUP OF STAGING TABLES IS BETTER AS A NIGHTLY CRONJOB
-	# for this work we will need to get SQL Fields for each dataframe/table (minus id and timestamp) and then use sqlalchemy to submit dataframe-tab
-	# insert into tblToxicityBatchInformation select * from SCCWRP_tblToxicityBatchInformation
-	#insert into tblToxicityBatchInformation (ToxBatch,LabCode,Species,Protocol,TestStartDate,Matrix,ActualTestDuration,ActualTestDurationUnits,TargetTestDuration,TargetTestDurationUnits,TestAcceptability,Comments,ReferenceBatch) select ToxBatch,LabCode,Species,Protocol,TestStartDate,Matrix,ActualTestDuration,ActualTestDurationUnits,TargetTestDuration,TargetTestDurationUnits,TestAcceptability,Comments,ReferenceBatch from SCCWRP_tblToxicityBatchInformation
-	#insert into tblToxicityResults (StationID,SampleCollectDate,ToxBatch,Matrix,LabCode,Species,Dilution,Treatment,Concentration,ConcentrationUnits,EndPoint,LabRep,Result,ResultUnits,QACode,SampleTypeCode,FieldReplicate,Comments) select StationID,SampleCollectDate,ToxBatch,Matrix,LabCode,Species,Dilution,Treatment,Concentration,ConcentrationUnits,EndPoint,LabRep,Result,ResultUnits,QACode,SampleTypeCode,FieldReplicate,Comments from SCCWRP_tblToxicityResults
-	#insert into tblToxicityWQ (StationID,ToxBatch,WQMatrix,Dilution,Treatment,Concentration,ConcentrationUnits,TimePoint,Parameter,Qualifier,Result,ResultUnits,LabRep,LabCode,SampleTypeCode,Comments) select StationID,ToxBatch,WQMatrix,Dilution,Treatment,Concentration,ConcentrationUnits,TimePoint,Parameter,Qualifier, Result,ResultUnits,LabRep,LabCode,SampleTypeCode,Comments from SCCWRP_tblToxicityWQ
-	return
-
-
 staging_upload = Blueprint('staging_upload', __name__)
 
 @staging_upload.route("/staging", methods=["POST"])
 
 def staging():
-	errorLog("START STAGING")
 	errorLog("Blueprint - Staging")
 	message = "Staging: Start upload."
 	statusLog(message)
-	TIMESTAMP = current_app.timestamp
-	MATCH = current_app.match
-	errorLog("START STAGING: %s" % TIMESTAMP)
-	#stagingFile = request.data
-	stagingFile = request.form['submit_file']
-	# get timestamp from filename - everthing to left of dot
-	TIMESTAMP,extension = stagingFile.split('.')
+	login = request.form['login']
+	errorLog("login: %s" % login)
+	agency = request.form['agency']
+	errorLog("agency: %s" % agency)
+	submission_type = request.form['submission_type']
+	errorLog("submission_type: %s" % submission_type)
+	assignment = request.form['assignment']
+	errorLog("assignment: %s" % assignment)
+	state = 0
+	TIMESTAMP=str(session.get('key'))
+	errorLog("Processing submission: %s" % TIMESTAMP)
 
-        # check for existence of summary file
-        summary_load_file = '/var/www/smc/logs/%s.core.csv' % TIMESTAMP
-	summary_load_file_exists = os.path.isfile(summary_load_file)
-
-	database_to_use = request.form['database'].lower()
-	errorLog(database_to_use)
-	database_type = request.form['type']
-	db = "smcphab"  # postgresql
-	dbtype = "postgresql"
-	eng = create_engine('postgresql://sde:dinkum@192.168.1.16:5432/smcphab') # postgresql
-	errorLog("Database to use: %s" % db)
-	errorLog("Type of database to connect to: %s" % dbtype)
-
-	inFile = "/var/www/smc/files/" + stagingFile
+	# load clean file 
+	inFile = "/var/www/smc/files/" + TIMESTAMP + "-export.xlsx"
+	errorLog(inFile)
 	df = pd.ExcelFile(inFile, keep_default_na=False, na_values=['NaN'])
-	df_tab_names = df.sheet_names
-	#print(df_tab_names)
-	sqlFields = dcGetTableAndColumns(db,dbtype,eng)
-	errorLog(sqlFields)
-	tabCounter = 0
+	# tab name will match table in database exactly since it is coming from the export file
+       	df_tab_names = df.sheet_names
+	errorLog("df_tab_names: %s" % df_tab_names)
 	for tab in df_tab_names:
-		tab_name = tab
-		#tab = df.parse(tab) # use below instead used elsewhere
-		tab = pd.read_excel(inFile, keep_default_na=False, na_values=['NaN'], sheetname = tab)
-		# dont lowercase for postgresql may need to create a routine to check tab.columns = sql.columns
-		#tab.columns = [x.lower() for x in tab.columns]
-		match_result, match_fields = dcMatchColumnsToTable(tab_name,tab,sqlFields,tabCounter)
-		#errorLog(tab.columns)
-		errorLog("match_result: %s, match_fields: %s" % (match_result,match_fields))
-		# routine used for getting case sensitive excel file field names
-		#tmp_fields = tab.columns.values.tolist()
-		#tmp_list = []
-		#for t in tmp_fields:
-		#	tmp_list.append('"'+str(t)+'"')
-		#destination_fields = ','.join(tmp_list) # big issue lowercase or not
-		#destination_fields = tab.columns.values.tolist()
+		table_name = tab
+		df = pd.read_excel(inFile, keep_default_na=False, na_values=['NaN'], sheetname = tab)
+		#destination_fields = df.columns.values.tolist()
+		#errorLog("destination_fields: %s" % destination_fields)
+		# get number of records - checksum
+		df_number_of_rows = len(df.index)
 
-		if match_result == True:
-			split_match_fields = match_fields[0].split('-')
-			errorLog(split_match_fields)
-			destination_table = split_match_fields[3]	
-			number_of_records = split_match_fields[5]	
-			destination_fields = split_match_fields[6].lower() # - lowercasing names doesnt work
-			try:
-				staging_table = createStagingTable(destination_table,tab,database_to_use,TIMESTAMP)
-			except ValueError:
-				errorLog("Failed createStagingTable")
-			try:
-				moveStagingToProduction(eng,staging_table,destination_table,number_of_records,destination_fields)
-			except ValueError:
-				errorLog("Failed moveStagingToProduction")
-		tabCounter = tabCounter + 1
-	try:
-		# if we have a table match and summary file exists then attempt to load summary into database
-		if current_app.match and summary_load_file_exists:
-			# LOAD USING ODO
-			errorLog("# LOAD USING ODO #")
-			staging_summary_name = "staging_agency_tmp_cscicore" + "_" + TIMESTAMP
-			errorLog(staging_summary_name)
-			srcEngine = create_engine('postgresql://sde:dinkum@192.168.1.16:5432/smcphab')
-			srcEngine._metadata = MetaData(bind=srcEngine,schema='sde')
-			srcEngine._metadata.reflect(srcEngine) # get columns from existing table
-			srcTable = Table('tmp_cscicore', srcEngine._metadata)
-			destEngine = create_engine('postgresql://sde:dinkum@192.168.1.16:5432/smcphab')
-			destEngine._metadata = MetaData(bind=destEngine,schema='sde')
-			errorLog(destEngine._metadata)
-			destTable = Table(staging_summary_name, destEngine._metadata)
-			for column in srcTable.columns:
-				errorLog("srcTable.columns")
-				# get everthing to right of the dot on tbltoxicityresults.objectid
-				#if (tail != "id") or (tail != "objectid") or (tail != "shape") or (tail != "gdb_geomattr_data"):
-				if str(column) != "tmp_cscicore.id":
-					errorLog(column)
-					destTable.append_column(column.copy())
-			destTable.create()
-			errorLog("summary_load_file")
-			errorLog(summary_load_file)	
-			dfsummary = pd.read_csv(summary_load_file)
-			dfsummary.columns = [x.lower() for x in dfsummary.columns]
-			# drop row number which is the first column from csci core file
-			dfsummary.drop(dfsummary.columns[[0]], axis=1, inplace=True)
+		# drop non essential columns - not necessary since coming from originating file instead of global dataframe
+		if 'row' in df:
+			df = df.drop('row', 1)
+		if 'tmp_row' in df:
+			df = df.drop('tmp_row', 1)
+		if 'field_errors' in df:
+			df = df.drop('field_errors', 1)
+		if 'toxicity_errors' in df:
+			df = df.drop('toxicity_errors', 1)
+		if 'custom_errors' in df:
+			df = df.drop('custom_errors', 1)
+		errorLog("Show columns to load: %s" % df.columns)
+		df_column_names = str(','.join(df.columns))
+
+		# placeholder SCCWRP is for agency variable in future
+		staging_table_name = "staging_agency_" + table_name + "_" + TIMESTAMP
+		errorLog("Staging table to load to: %s" % staging_table_name)
+
+		# make copy of table to load and fix columns
+		try:
+			errorLog("Make copy of table: %s" % table_name)
+     			src_engine = create_engine('postgresql://sde:dinkum@192.168.1.16:5432/smcphab')
+			src_engine._metadata = MetaData(bind=src_engine)
+			src_engine._metadata.reflect(src_engine)
+			src_table = Table(table_name, src_engine._metadata)
+			errorLog(src_table)
+			dest_engine = create_engine('postgresql://sde:dinkum@192.168.1.16:5432/smcphab')
+			dest_engine._metadata = MetaData(bind=dest_engine,schema='sde')
+			dest_tbl = Table(staging_table_name, dest_engine._metadata)
+			errorLog(dest_tbl)
+			errorLog("End make copy of table...")
+
+			# the fields below are required for all geodatabase feature access tables
 			def getRandomTimeStamp(row):
 				row['objectid'] = int(TIMESTAMP) + int(row.name)
 				return row
-			dfsummary = dfsummary.apply(getRandomTimeStamp, axis=1)
-			errorLog(dfsummary['objectid'])
-			#postgresql://username:password@hostname:port
-			# odo('myfile.*.csv', 'postgresql://hostname::tablename')  # Load CSVs to Postgres
-			outcome = dfsummary.to_sql(name=staging_summary_name,con=destEngine,if_exists='append',index=False)
-			#t = odo(dfsummary, 'postgresql://sde:dinkum@192.168.1.16:5432/smcphab::tbltoxicitysummaryresults')  # Load CSVs to Postgres
+			df = df.apply(getRandomTimeStamp, axis=1)
+			errorLog(df['objectid'])
+			# timestamp to date format - bug fix #4
+			timestamp_date = datetime.datetime.fromtimestamp(int(TIMESTAMP)).strftime('%Y-%m-%d %H:%M:%S')
+			df['created_user'] = "checker"
+			df['created_date'] = timestamp_date
+			df['last_edited_user'] = "checker"
+			df['last_edited_date'] = timestamp_date
+
+			# create columns in staging table based upon originating table
+     			for column in src_table.columns:
+				errorLog(column)
+				dest_tbl.append_column(column.copy())
+			# now create staging table
+			dest_tbl.create()
+
+			# load dataframe to staging table
+			outcome = df.to_sql(name=staging_table_name,con=dest_engine,if_exists='append',index=False)
 			errorLog(outcome)
-	except ValueError:
-		errorLog("Failed createStagingSummary")
+			# use odo instead of pandas - should be faster
+			#odo('myfile.*.csv', 'postgresql://hostname::tablename')
+			#outcome = odo(df, destEngine)  # Migrate dataframe to Postgres
+			#outcome = df.to_sql(name=staging_table_name,con=destEngine,flavor='mysql',if_exists='append',index=True,index_label="id")
+			# close engine connections
+       			src_engine.dispose()
+       			dest_engine.dispose()
+		except ValueError:
+			message = "Critical Error: Failed to create a copy of table: %s and load to staging." % table_name
+			errorLog(message)
+			state = 1
+
+		# need to do some checksums also on row count for each
+		# dont attempt to load to production unless all dataframes load successfully
+		try:
+			errorLog("Loading staging to production for table: %s" % table_name)
+			# dont run production unless staging succeeded
+			if state == 0:
+     				eng = create_engine('postgresql://sde:dinkum@192.168.1.16:5432/smcphab')
+				# works but below is more precise - sql = 'INSERT INTO %s (SELECT * FROM %s)' % (table_name,staging_table_name)
+				sql = 'INSERT INTO "' + table_name + '" (objectid, globalid, created_user, created_date, last_edited_user, last_edited_date, '+ df_column_names + ') select sde.next_rowid(%s,%s), sde.next_globalid(), created_user, created_date, last_edited_user, last_edited_date, ' + df_column_names + ' from "' + staging_table_name + '"'
+				errorLog(sql)
+				# "sde" and table_name below are used to populate next_rowid in sql statement
+				status = eng.execute(sql,"sde",table_name)
+				errorLog(status)
+				if not status:
+					errorLog("inside failed status")
+					raise Error, eng.error
+					errorLog(eng.error)
+				status.close()
+       				eng.dispose()
+		except ValueError:
+			errorLog("Failed to create production table: %s" % table_name)
+
+		except ValueError:
+			message = "Critical Error: Failed to create production table: %s" % table_name
+			errorLog(message)
+			state = 1
+	# end for
+	if state == 0:
+        	# set submit in submission tracking table
+ 		eng = create_engine('postgresql://sde:dinkum@192.168.1.16:5432/smcphab')
+		sql_session = "update submission_tracking_table set submit = 'yes' where sessionkey = '%s'" % TIMESTAMP
+		session_results = eng.execute(sql_session)
+     		eng.dispose()
+	else:
+ 		eng = create_engine('postgresql://sde:dinkum@192.168.1.16:5432/smcphab')
+		sql_session = "update submission_tracking_table set submit = 'no' where sessionkey = '%s'" % TIMESTAMP
+		session_results = eng.execute(sql_session)
+     		eng.dispose()
+
+	### REPORT ###
+	# pull in sample/field assignment table and use the records in it to toggle submissionstatus column in respective tables 
+	# first check to find out which we need to handle sample or field table 
 	try:
-		if current_app.match and summary_load_file_exists:
-			errorLog("start moveStagingSummary")
-			destination_summary_fields = "stationcode,sampleid,count,number_of_mmi_iterations,number_of_oe_iterations,pcnt_ambiguous_individuals,pcnt_ambiguous_taxa,e,mean_o,oovere,oovere_percentile,mmi,mmi_percentile,csci,csci_percentile"
-			moveStagingToProduction(eng,staging_summary_name,'tmp_cscicore',0,destination_summary_fields)
+		# dont run the code below unless every above was successfull and assignment is set
+		if assignment and state == 0:
+			errorLog("Produce report for: %s" % assignment)
+			# Pull information from assignment table and toggle in database
+			assignment_file = '/var/www/smc/files/%s-assignment.csv' % TIMESTAMP
+			assignment_table = pd.read_csv(assignment_file)
+			errorLog(assignment_table)
+			state = 0
+			# dont run code below if field - removed check submission_type now
+			#if 'samplingorganization' in assignment_table:
+			#	state = 1
 	except ValueError:
-		errorLog("Failed moveStagingSummary")
-	#emailUser()
+		# we were unable to find the assignment or load assignment table from csv
+		message = "Critical Error: Failed to load assignment file."
+		errorLog(message)
+		state = 1
+
+	# once we have the file loaded we can use the records to toggle
+	try:
+		# dont run the code below unless every above was successfull
+		if assignment and state == 0 and submission_type != 'field':
+			errorLog("set sample_assignment_table:")
+			# put reporting module here and output to template file
+			# call assignment table and toggle records submissionstatus = "complete"
+			#print result.groupby(['stationid','lab','species']).size().to_frame(name = 'count').reset_index()
+			#stationid                lab                    species  count
+			#0       0000  City of San Diego     Eohaustorius estuarius     29
+			#2   B18-8002  City of San Diego     Eohaustorius estuarius      1
+			# may need to update last_edited_user and last_edited_date also
+			eng = create_engine('postgresql://sde:dinkum@192.168.1.16:5432/smcphab') # postgresql
+			for index, row in assignment_table.iterrows():
+				#errorLog(row['stationid'],row['lab'],row['species'])
+				sql = "update sample_assignment_table set submissionstatus = 'complete', submissiondate = '%s' where stationid = '%s' and lab = '%s' and parameter = '%s'" % (timestamp_date,row['stationid'],row['lab'],row['species'])
+				errorLog(sql)
+				status = eng.execute(sql)
+				errorLog(status)
+			eng.dispose()
+			status = 0
+		if assignment and state == 0 and submission_type == 'field':
+			errorLog("set field_submission_table:")
+			#assignment_table = occupation.groupby(['stationid','samplingorganization','collectiontype','stationfail','abandoned']).size().to_frame(name = 'count').reset_index()
+			# B18-9202,Los Angeles County Sanitation Districts,Grab,None or No Failure,No,1
+			# B18-9202,Los Angeles County Sanitation Districts,Trawl 10 Minutes,Other - another reason not listed why site was abandoned,Yes,1
+			eng = create_engine('postgresql://sde:dinkum@192.168.1.16:5432/smcphab') # postgresql
+			for index, row in assignment_table.iterrows():
+				if row['collectiontype'] == 'Grab':
+					sql = "update field_assignment_table set grabsubmit = 'complete', grabstationfail = '%s', grababandoned = '%s', grabsubmissiondate = '%s' where stationid = '%s' and grabagency = '%s'" % (row['stationfail'],row['abandoned'],timestamp_date,row['stationid'],row['samplingorganization'])
+					errorLog(sql)
+					status = eng.execute(sql)
+					errorLog(status)
+				if row['collectiontype'] == 'Trawl 10 Minutes' or row['collectiontype'] == 'Trawl 5 Minutes':
+					sql = "update field_assignment_table set trawlsubmit = 'complete', trawlstationfail = '%s', trawlabandoned = '%s', trawlsubmissiondate = '%s' where stationid = '%s' and trawlagency = '%s'" % (row['stationfail'],row['abandoned'],timestamp_date,row['stationid'],row['samplingorganization'])
+					errorLog(sql)
+					status = eng.execute(sql)
+					errorLog(status)
+			eng.dispose()
+			status = 0
+	except ValueError:
+		# we failed to connect or toggle records in assignment table
+		message = "Critical Error: Failed to connect to database or update records in assignment table."
+		errorLog(message)
+		state = 1
+
+	try:
+		# dont run the code below unless all above was successfull
+		if assignment and state == 0 and submission_type != 'field':
+			submission_type_uc = submission_type.title()
+			eng = create_engine('postgresql://sde:dinkum@192.168.1.16:5432/smcphab') # postgresql
+			sql = "select stationid,lab,parameter,submissionstatus from sample_assignment_table where lab = '%s' order by submissionstatus desc" % agency
+			sql_parameters = "select distinct parameter from sample_assignment_table where datatype = '%s'" % submission_type_uc
+			errorLog(sql)
+			errorLog(sql_parameters)
+			report_results = eng.execute(sql)
+			parameter_results = eng.execute(sql_parameters)
+			errorLog(report_results)
+			errorLog(parameter_results)
+			eng.dispose()
+			report_results_json = json.dumps([dict(r) for r in report_results])
+			parameter_list = json.dumps([r for r, in parameter_results])
+			state = 0
+		if assignment and state == 0 and submission_type == 'field':
+			eng = create_engine('postgresql://sde:dinkum@192.168.1.16:5432/smcphab') # postgresql
+			sql = "select stationid,grabagency,trawlagency,grabsubmit,trawlsubmit from field_assignment_table where trawlagency = '%s' or grabagency = '%s' order by stationid asc" % (agency,agency)
+			errorLog(sql)
+			report_results = eng.execute(sql)
+			errorLog(report_results)
+			eng.dispose()
+			report_results_json = json.dumps([dict(r) for r in report_results])
+			parameter_list = []
+			state = 0
+	except ValueError:
+		#  we failed to get existing records
+		message = "Critical Error: Failed to connect to database and retrieve report records from assignment table."
+		errorLog(message)
+		state = 1
+
+        # set submit in submission tracking table
+        sql_session = "update submission_tracking_table set submit = 'yes' where sessionkey = '%s'" % TIMESTAMP
+        session_results = eng.execute(sql_session)
+	# user is finished so get rid of session key	
+	session.pop('key', None)
 	errorLog("END STAGING")
-	return jsonify(data=stagingFile)
+	if assignment and state == 0:
+		errorLog(status)
+		#return jsonify({'data': render_template('report.html', report=status)})
+		#return render_template('report.html', agency=agency, submission_type=submission_type, report=report_results_json) 
+		return jsonify(message=message,state=state, agency=agency, submission_type=submission_type, parameters=parameter_list, report=report_results_json)
+	else:
+		return jsonify(message=message,state=state,data=TIMESTAMP)

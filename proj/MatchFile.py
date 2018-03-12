@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, current_app
+from flask import Blueprint, request, jsonify
 import os, collections
 import pandas as pd
 import re
@@ -48,7 +48,7 @@ def getTableAndColumns(db,dbtype,eng):
 	errorLog("end getTableAndColumns")
 	return sqlFields
 
-def matchColumnsToTable(tab_name,tab,sqlFields,tabCounter):
+def matchColumnsToTable(tab_name,tab,sqlFields,tabCounter,errors_dict):
 	# purpose: does the data match a table, if not we should let user know which table it matches closest to
 	# result: true, false/matched table or closest matching table/columns matched
 	# tab_name = name of tab or sheet being worked on
@@ -95,9 +95,13 @@ def matchColumnsToTable(tab_name,tab,sqlFields,tabCounter):
 		#errorLog("##### tableCount: %s and columnCount: %s" % (tableCount,columnCount))
 		#if tableCount >= tabCount:
 		# the total number of columns in a table must match the total number of matched columns in a tab or sheet
-		if tableCount == tabCount:
+		#if tableCount == tabCount: - this is wrong it should be tableCount == columnCount
+		#errorLog("tableCount/tabCount: %s/%s" % (tableCount,tabCount))
+		errorLog("tableCount/columnCount: %s/%s" % (tableCount,columnCount))
+		# new code added 16jan18
+		if tableCount == columnCount:
 			# TURN ON FOR DEBUGGING
-			errorLog("DEBUGGING tab count/column count: %s/%s" % (tabCount,columnCount))
+			errorLog("\n\nFOUND tab count/column count: %s/%s" % (tabCount,columnCount))
 			errorLog("-----+Sheet %s is matched to table %s with count %s" % (tab_name,table,str(columnCount)))
 			#counter_key = str(tabCounter) + "-" + tab_name + "-" + str(tabCount) + "-" + table + "-" + "True" + "-" + str(tableCount) + "-" + str(collect_columns) 
 			counter_key = str(tabCounter) + "-" + tab_name + "-" + str(tabCount) + "-" + table + "-" + "True" + "-" + str(tableCount) + "-" + str(','.join(collect_columns)) 
@@ -112,17 +116,18 @@ def matchColumnsToTable(tab_name,tab,sqlFields,tabCounter):
 				while item_to_keep != count:
 					match.pop(count)
 					count = count + 1
-				# TURN ON FOR DEBUGGIN print("EQUAL: %s" % match)
-				# TURN ON FOR DEBUGGIN print("EQUALCOUNT: %s" % len(match))
+				errorLog("EQUAL: %s" % match)
+				errorLog("EQUALCOUNT: %s" % len(match))
 				return True, match
-			#errorLog("tab is set to: %s and value is: %s" % (matchset, match))
+			errorLog("tab is set to: %s and value is: %s" % (matchset, match))
+			errorLog("END FOUND\n\n")
 		else:
 			# find columns that failed to match - also get columns that do not match
 			# successfully matched columns = collect_columns
 			# failed match columns = collect__failed_columns
-			errorLog("DEBUG")
-			errorLog("tab.columns: %s" % tab.columns)
-			errorLog("collect_columns: %s" % collect_columns)
+			errorLog("find columns that failed to match - also get columns that do not match")
+			#errorLog("tab.columns: %s" % tab.columns)
+			#errorLog("collect_columns: %s" % collect_columns)
 			# carrot operator acts as an xor below
 			collect_failed_columns = set(tab.columns)^set(collect_columns)
 			collect_failed_table_columns = set(sqlFields[table])^set(collect_columns)
@@ -147,7 +152,7 @@ def matchColumnsToTable(tab_name,tab,sqlFields,tabCounter):
 			nomatch[0] = "%s-%s-%s-%s-%s-%s" % (str(tabCounter),tab_name,str(tabCount),"None","False","No match for tab")
 		#errorLog(closest_match)
 		#errorLog(nomatch[0])
-		errorsCount("match")
+		errorsCount(errors_dict,"match")
 		return False, nomatch[closest_match]
 	errorLog("end matchColumnsToTable")
 
@@ -155,28 +160,30 @@ def matchColumnsToTable(tab_name,tab,sqlFields,tabCounter):
 match_file = Blueprint('match_file', __name__)
 
 @match_file.route("/match", methods=["POST"])
-def match():
+def match(infile,errors_dict):
 	errorLog("Function - match")
 	statusLog("Attempting to Match Tab to Table")
-	inFile = current_app.infile
+	errorLog("DEBUG")
+	#inFile = current_app.infile
+	inFile = infile
+	#errorLog(inFile)
 	message = ""
 	match_tables = []
-	sql_match_tables = current_app.sql_match_tables
+	#sql_match_tables = current_app.sql_match_tables
 	match_sheets_to_tables = {}
 	# dictionaries by default are unorder we are using ordered dictionary to store dataframes
-	#errorLog("Issue: %s" % current_app.all_dataframes)
-	#all_dataframes = current_app.all_dataframes
 	# create new dictionary and assign it to global all_dataframes variable
 	all_dataframes = collections.OrderedDict()
 	sql_match_tables = []
-	current_app.all_dataframes = all_dataframes	
-	current_app.sql_match_tables = sql_match_tables
+	#current_app.all_dataframes = all_dataframes	
+	#current_app.sql_match_tables = sql_match_tables
 
 	try:
 		errorLog("run basic checks on file before proceeding")
 		if os.stat(inFile).st_size == 0:
 			message = "Critical error: file is empty"
-			errorsCount("match")
+			errorLog(message)
+			errorsCount(errors_dict,"match")
 			state = 1
 		else: 
 			# place excel file into a dataframe
@@ -205,71 +212,98 @@ def match():
 				for tab in df_tab_names:
 					# name only
 					tab_name = tab
+					# drop any tab_name = lookups which is a reserved word added 15jan18
+					if tab_name == 'lookups':
+						errorLog('The application is skipping sheet "%s" because it is named "lookups" which is reserved' % tab_name)
+						continue
 					# assign actual data in tab to tab
 					#tab = df.parse(tab)
 					# added code to fix issue: Pandas interprets cell values with NA as NaN bug #3
-					tab = pd.read_excel(inFile, keep_default_na=False, na_values=['NaN'], sheetname = tab)
+					# changed back on 22feb18 due to multiple blank rows causing application to fail
+					# decision was made that the checker should not accept NA or NAN (reserved words)
+					#tab = pd.read_excel(inFile, keep_default_na=False, na_values=['NaN'], sheetname = tab)
+					tab = pd.read_excel(inFile, sheetname = tab)
 					if tab.empty:
-						errorLog('The application is skipping sheet "%s" because it is empty' % tab)
+						message = "tab %s has no matching table" % tab_name
+						errorLog(message)
+						errorsCount(errors_dict,"match")
 						# if the sheet is blank skip to the next sheet
 						continue
 		                        # clean up sheet before doing anything else
-                        		# drop all empty columns
-                        		tab.dropna(axis=1, how='all')
+                        		# drop all empty columns - not working properly - picks up comments as empty
+                        		#tab.dropna(axis=1, how='all', inplace=True)
                         		# drop all empty rows
-                        		tab.dropna(axis=0, how='all')
+                        		#tab.dropna(axis=0, how='all', inplace=True)
+					# drop all columns that should never be in file
+					if 'errors' in tab.columns:
+						tab.drop(tab[['errors']], axis=1, inplace=True)
+					if 'custom_errors' in tab.columns:
+						tab.drop(tab[['custom_errors']], axis=1, inplace=True)
+					if 'custom_warnings' in tab.columns:
+						tab.drop(tab[['custom_warnings']], axis=1, inplace=True)
+					if 'field_error' in tab.columns:
+						tab.drop(tab[['field_error']], axis=1, inplace=True)
+					if 'lookup_error' in tab.columns:
+						tab.drop(tab[['lookup_error']], axis=1, inplace=True)
+					if 'duplicate_production_submission' in tab.columns:
+						tab.drop(tab[['duplicate_production_submission']], axis=1, inplace=True)
+					if 'duplicate_session_submission' in tab.columns:
+						tab.drop(tab[['duplicate_session_submission']], axis=1, inplace=True)
 					# lower case column names
-					try:	
-						tab.columns = [x.lower() for x in tab.columns]
-						errorLog('Match: tab_name: %s' % tab_name)
-						errorLog('Match: tab: %s' % tab)
-						statusLog('Attempting to match sheet %s' % tab_name)
-						match_result, match_fields = matchColumnsToTable(tab_name,tab,sqlFields,tabCounter)
-						errorLog('Match: result: %s' % match_result)
-						if match_result == True:
-							#errorLog('Match: fields: %s' % match_fields)
-							match_tables.append(match_fields)
-							# get split key to get matching table
-							split_match_fields = match_fields[0].split('-')
-							# field three is matched table
-							table_match = split_match_fields[3]
-							statusLog('Matched sheet %s to %s' % (tab_name,table_match))
-							sql_match_tables.append(str(table_match))
-							match_sheets_to_tables[tabCounter] = str(str(tabCounter) + " - " + df.sheet_names[tabCounter] + " - " + table_match)
-							#match_sheets_to_tables[count] = str(str(count) + " - " + df.sheet_names[count] + " - " + table_match)
-							tab_and_table = str(str(tabCounter) + " - " + df.sheet_names[tabCounter] + " - " + table_match)
-							#tab_and_table = str(str(count) + " - " + df.sheet_names[count] + " - " + table_match)
-							all_dataframes[tab_and_table] = tab
-							errorLog(message)
-							#count = count + 1
-						else:
-							message = "tab %s has no matching table" % tab_name
-							errorLog(message)
-							match_tables.append(match_fields)
-							#  if no tab match we must increment error count
-							#errorsCount("match")
-						tabCounter = tabCounter + 1
-						message = "match_tables: %s" % match_tables
-					except:
-						message = "Critical error: We attempted to lowercase the column names for tab: %s and failed." % tab_name
-						#[u'1-results-18-tbltoxicityresults-True-18-stationid,toxbatch,matrix,labcode,species,dilution,treatment,concentration,concentrationunits,endpoint,labrep,result,resultunits,qacode,sampletypecode,fieldreplicate,samplecollectdate,comments']]"
-						if match_tables:
-							message_string = "%s-%s-0-none-False-0-failed_to_lowercase_columns" % (tabCounter,tab_name)
-							test = []
-							test.append(message_string)
-							match_tables.append(test)
-						state = 1
+					tab.columns = [x.lower() for x in tab.columns]
+					errorLog('Match: tab_name: %s' % tab_name)
+					#errorLog('Match: tab: %s' % tab)
+					statusLog('Attempting to match sheet %s' % tab_name)
+					match_result, match_fields = matchColumnsToTable(tab_name,tab,sqlFields,tabCounter,errors_dict)
+					errorLog('Match: result: %s' % match_result)
+					if match_result == True:
+						#errorLog('Match: fields: %s' % match_fields)
+						match_tables.append(match_fields)
+						# get split key to get matching table
+						split_match_fields = match_fields[0].split('-')
+						# field three is matched table
+						table_match = split_match_fields[3]
+						errorLog('Matched sheet %s to %s' % (tab_name,table_match))
+						statusLog('Matched sheet %s to %s' % (tab_name,table_match))
+						sql_match_tables.append(str(table_match))
+						match_sheets_to_tables[tabCounter] = str(str(tabCounter) + " - " + df.sheet_names[tabCounter] + " - " + table_match)
+						#match_sheets_to_tables[count] = str(str(count) + " - " + df.sheet_names[count] + " - " + table_match)
+						tab_and_table = str(str(tabCounter) + " - " + df.sheet_names[tabCounter] + " - " + table_match)
+						#tab_and_table = str(str(count) + " - " + df.sheet_names[count] + " - " + table_match)
+						all_dataframes[tab_and_table] = tab
+						errorLog(message)
+						#count = count + 1
+					else:
+						message = "tab %s has no matching table" % tab_name
+						errorLog(message)
+						match_tables.append(match_fields)
+						#  if no tab match we must increment error count
+						#errorsCount(errors_dict,"match")
+					tabCounter = tabCounter + 1
+					message = "match_tables: %s" % match_tables
+					#except:
+					#	message = "Critical error: We attempted to lowercase the column names for tab: %s and failed." % tab_name
+					#	errorLog(message)
+					#	#[u'1-results-18-tbltoxicityresults-True-18-stationid,toxbatch,matrix,labcode,species,dilution,treatment,concentration,concentrationunits,endpoint,labrep,result,resultunits,qacode,sampletypecode,fieldreplicate,samplecollectdate,comments']]"
+					#	if match_tables:
+					#		message_string = "%s-%s-0-none-False-0-failed_to_lowercase_columns" % (tabCounter,tab_name)
+					#		test = []
+					#		test.append(message_string)
+					#		match_tables.append(test)
+					#	state = 1
 				#errorLog("all_dataframes count: %s" % len(all_dataframes))
 				# we were unable to match any of the excel tabs to database tables
-				if len(all_dataframes) == 0:
-					message = "Critical Error: Failed to match any excel tabs to database tables."
-					state = 1
-					errorsCount("match")
-				else:
-					state = 0
+				#if len(all_dataframes) == 0:	 -> not necessary tagged inside of match columns to table
+				#	message = "Critical Error: Failed to match any excel tabs to database tables."
+				#	state = 1
+				#	errorsCount(errors_dict,"match")
+				#else:
+				#	state = 0
+		errorLog(match_tables)
 		errorLog(message)
+		return all_dataframes, sql_match_tables, match_tables
 	except ValueError:
 		message = "Critical Error: Failed to run matching checks."	
 		errorLog(message)
 		state = 1
-	return jsonify(message=message,state=state,table_match=match_tables)
+	#return jsonify(message=message,state=state,table_match=match_tables)

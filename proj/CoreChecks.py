@@ -1,8 +1,9 @@
-from flask import Blueprint, request, jsonify, current_app
+from flask import Blueprint, request, jsonify, session
 import json
 import pandas as pd
 import numpy as np
 import cerberus
+from sqlalchemy import create_engine, exc
 import re
 from cerberus import Validator, SchemaError, errors
 #from time import sleep
@@ -33,7 +34,7 @@ def addErrorToList(error_column, row, error_to_add,df):
 		errorLog("Core: Row: %s, Error To Add: %s" % (int(row),error_to_add))
 	return df
 
-def checkDuplicatesInProduction(db,dbtype,eng,table_match,df):
+def checkDuplicatesInProduction(db,dbtype,eng,table_match,errors_dict,df):
 	errorLog("Core: start checkDuplicatesInProduction")
 	statusLog("Check Duplicates in Production for table: %s" % table_match)
 	if dbtype == "mysql" or dbtype == "mysql-rest":
@@ -93,11 +94,11 @@ def checkDuplicatesInProduction(db,dbtype,eng,table_match,df):
 		unique_error = '{ "column": "", "error_type": "Duplicate Production Submission", "error": "%s" }' % (human_error)
 		addErrorToList("errors",index,unique_error,df)
 		addErrorToList("duplicate_production_submission",index,unique_error,df)
-		errorsCount("duplicate")
+		errorsCount(errors_dict,"duplicate")
 	errorLog("Core: end checkDuplicatesInProduction")
 	return df
 
-def checkDuplicatesInSession(db,dbtype,eng,table_match,df):
+def checkDuplicatesInSession(db,dbtype,eng,table_match,errors_dict,df):
 	errorLog("Core: start checkDuplicatesInSession")
 	statusLog("Check Duplicates in Session for table: %s" % table_match)
 	if dbtype == "mysql" or dbtype == "mysql-rest":
@@ -149,26 +150,27 @@ def checkDuplicatesInSession(db,dbtype,eng,table_match,df):
 				#else:
 				#	df.ix[int(item_number), 'errors'] = xmessage
 				df.ix[int(item_number), 'row'] = str(item_number)
-				errorsCount("duplicate")
+				errorsCount(errors_dict,"duplicate")
 			count = count + 1
 	errorLog("end checkDuplicatesInSession")
 	return df
 
 
 # check submission against database metadata
-def checkTableMetadata(db,dbtype,eng,table_match,df):
+def checkTableMetadata(db,dbtype,eng,table_match,errors_dict,df):
 	def checkConstraint(row_number,row,schema):
 		errorLog("Core: Validate row_number: %s, row: %s, schema: %s" % (row_number,row,schema))
         	result = v.validate(row,schema)
         	if(result):
-        		print("Core: Successful validation: %s " % result)
+        		errorLog("Core: Successful validation: %s " % result)
 		else:
-                	print("Core: Failed validation: %s " % result)
+                	errorLog("Core: Failed validation: %s " % result)
 			count = 0
 			for e in v.errors:
 				# validation
 				# lookup
-				errorLog("DEBUG v.errors: %s" % v.errors[e][0])
+				errorLog(e)
+				errorLog("v.errors: %s" % v.errors[e][0])
 				if "float" in v.errors[e][0]:
 					#human_error = ("You have text ('%s') in a number field - <a href=http://192.168.1.24:5000/tbltoxicitybatchinformation/meta>help</a>" % row[e])
 					human_error = ("You have text ('%s') in a number field." % row[e])
@@ -177,14 +179,17 @@ def checkTableMetadata(db,dbtype,eng,table_match,df):
 					human_error = "You left a required field empty"
 					unique_error = '{"column": "%s", "error_type": "Data Type", "error": "%s"}' % (e,human_error)
 				else:
-					#unique_error = '{"row": "%s", "column": "%s", "error_type": "Data Type", "error": "%s/%s"}' % (row_number,e,v.errors[e],row[e])
-					unique_error = '{"column": "%s", "error_type": "Data Type", "error": "%s/%s"}' % (e,v.errors[e],row[e])
+					# there may be an issue with using row[e] instead of just row - for now will leave as is 5nov17
+					errorLog("column: %s, error: %s, row: %s" % (e,v.errors[e],row[e])); # removed 4nov17 may have issues
+					#errorLog("column: %s, error: %s, row: %s" % (e,v.errors[e],row)); # replacement 4nov17
+					#unique_error = '{"column": "%s", "error_type": "Data Type", "error": "%s"}' % (e,v.errors[e]) # replacement 4nov17 
+					unique_error = '{"column": "%s", "error_type": "Data Type", "error": "%s/%s"}' % (e,v.errors[e],row[e]) # removed 4nov17 may have issues
 					#unique_error = json.dumps(unique_error_string, ensure_ascii=True)
-				#errorLog("Core: field_unique_error: %s" % unique_error)
+				errorLog("Core: field_unique_error: %s" % unique_error)
 				# redundant_error = "{ row: %s, column: %s, error_type: 'Data Type', error: %s }" % (row_number,e,v.errors[e])
 				addErrorToList("errors",row_number,unique_error,df)
 				addErrorToList("field_error",row_number,unique_error,df)
-				errorsCount('mia')
+				errorsCount(errors_dict,'mia')
 				count = count + 1
 			# ix index must be an int or it wont work
 			df.ix[int(row_number), 'row'] = str(row_number)
@@ -306,7 +311,7 @@ def checkTableMetadata(db,dbtype,eng,table_match,df):
 	except:
 		raise ValueError('Failed to convert dataframe to json.')
 	### end matchTableMetadata
-	print("Core: end checkTableMetadata")
+	errorLog("Core: end checkTableMetadata")
 	return df
 
 def getIndividualErrors(df):
@@ -410,7 +415,7 @@ def getRedundantErrors(check,df):
 	return tmp_dict
 	#return - why is this here?
 
-def checkLookupCodes(db,dbtype,eng,table_match,df):
+def checkLookupCodes(db,dbtype,eng,table_match,errors_dict,df):
 	errorLog("Core: start checkLookupCodes")
 	statusLog("Check Lookup Codes for table: %s" % table_match)
 	match_dataframe_to_tables = df.keys() # removed commment out on 9feb17
@@ -516,21 +521,24 @@ def checkLookupCodes(db,dbtype,eng,table_match,df):
 					unique_error = '{ "column": "%s", "error_type": "Lookup Fail", "error": "%s" }' % (item,human_error)
 					addErrorToList("errors",item_number,unique_error,df)
 					addErrorToList("lookup_error",item_number,unique_error,df)
-					errorsCount("lookup")
+					errorsCount(errors_dict,"lookup")
 					count = count + 1
-	print("Core: end checkLookupCodes")
+	errorLog("Core: end checkLookupCodes")
 	return df
 
 core_checks = Blueprint('core_checks', __name__)
 
 @core_checks.route("/core", methods=["POST"])
-def core():
+def core(all_dataframes,sql_match_tables,errors_dict):
 	errorLog("Blueprint - Core")
 	statusLog("Starting Core Checks...")
-	all_dataframes = current_app.all_dataframes
+	#print(all_dataframes)
+	#print(sql_match_tables)
+	#all_dataframes = current_app.all_dataframes
 	db = current_app.db
 	dbtype = current_app.dbtype
 	eng = current_app.eng
+	TIMESTAMP=str(session.get('key'))
 	sheet_names = []
 	# return error variables
 	data_checks = {}
@@ -557,43 +565,101 @@ def core():
 			errorLog("Core: tablename: %s" % table_name)
 			### DATABASE BUSINESS RULES CHECKS ###
 			try:
-				# check field requirements, types, and sizes - SIZES TO DO
-				dataframe = checkTableMetadata(db,dbtype,eng,table_name,all_dataframes[dataframe])
+				# check for empty rows
+				errorLog("Check for empty rows:")
+				empty_rows = all_dataframes[dataframe].index[all_dataframes[dataframe].isnull().all(1)].tolist()
+				errorLog(empty_rows)
+				if empty_rows:
+					for item_number in empty_rows:
+						errorLog("Add empty row error to list: %s" % item_number)
+			                        unique_error = '{ "column": "", "error_type": "Empty Row", "error": "Empty row please remove." }'
+                                		addErrorToList("errors",item_number,unique_error,all_dataframes[dataframe])
+						errorsCount(errors_dict,'mia')
+                                	#tab.dropna(axis=0, how='all', inplace=True)
+	                        	# drop all empty rows
+                                	all_dataframes[dataframe].dropna(axis=0, how='all', inplace=True)
+					state = 1
+				else:
+					state = 0
 			except ValueError:
-				message = "Critical Error: Failed to run checkTableMetadata"
-				errorLog("Issue: %s on %s" % (message,table_name))
+				message = "Critical Error: Failed to run check for empty rows."
 				state = 1
 			if state != 1:
 				try:
-					dataframe = checkLookupCodes(db,dbtype,eng,table_name,dataframe)
+					# check field requirements, types, and sizes - SIZES TO DO
+					checkTableMetadata(db,dbtype,eng,table_name,errors_dict,all_dataframes[dataframe])
+					errorLog("state: %s" % state)
+					errorLog(all_dataframes[dataframe])
+        				eng = create_engine('postgresql://sde:dinkum@192.168.1.16:5432/smcphab') # postgresql
+					sql_session = "update submission_tracking_table set mia = 'yes' where sessionkey = '%s'" % TIMESTAMP
+        				session_results = eng.execute(sql_session)
+        				eng.dispose()
+				except ValueError:
+					message = "Critical Error: Failed to run checkTableMetadata"
+					errorLog("Issue: %s on %s" % (message,table_name))
+					#errorLog(all_dataframes[dataframe])
+        				eng = create_engine('postgresql://sde:dinkum@192.168.1.16:5432/smcphab') # postgresql
+					sql_session = "update submission_tracking_table set mia = 'no' where sessionkey = '%s'" % TIMESTAMP
+        				session_results = eng.execute(sql_session)
+        				eng.dispose()
+					#state = 1
+			if state != 1:
+				try:
+					errorLog("db: %s, dbtype: %s, eng: %s, table_name: %s" % (db,dbtype,eng,table_name))
+					errorLog(all_dataframes[dataframe])	
+					checkLookupCodes(db,dbtype,eng,table_name,errors_dict,all_dataframes[dataframe])
+        				eng = create_engine('postgresql://sde:dinkum@192.168.1.16:5432/smcphab') # postgresql
+					sql_session = "update submission_tracking_table set lookup = 'yes' where sessionkey = '%s'" % TIMESTAMP
+        				session_results = eng.execute(sql_session)
+        				eng.dispose()
 				except ValueError:
 					message = "Critical Error: Failed to run checkLookupCodes"
+        				eng = create_engine('postgresql://sde:dinkum@192.168.1.16:5432/smcphab') # postgresql
+					sql_session = "update submission_tracking_table set lookup = 'no' where sessionkey = '%s'" % TIMESTAMP
+        				session_results = eng.execute(sql_session)
+        				eng.dispose()
 					state = 1
 			if state != 1:
 				try:
-					dataframe = checkDuplicatesInSession(db,dbtype,eng,table_name,dataframe)
+					checkDuplicatesInSession(db,dbtype,eng,table_name,errors_dict,all_dataframes[dataframe])
+        				eng = create_engine('postgresql://sde:dinkum@192.168.1.16:5432/smcphab') # postgresql
+					sql_session = "update submission_tracking_table set duplicates = 'yes' where sessionkey = '%s'" % TIMESTAMP
+        				session_results = eng.execute(sql_session)
+        				eng.dispose()
 				except ValueError:
 					message = "Critical Error: Failed to run checkDuplicatesInSession"
+        				eng = create_engine('postgresql://sde:dinkum@192.168.1.16:5432/smcphab') # postgresql
+					sql_session = "update submission_tracking_table set duplicates = 'no' where sessionkey = '%s'" % TIMESTAMP
+        				session_results = eng.execute(sql_session)
+        				eng.dispose()
 					state = 1
 			if state != 1:
 				try:
-					dataframe = checkDuplicatesInProduction(db,dbtype,eng,table_name,dataframe)
+					checkDuplicatesInProduction(db,dbtype,eng,table_name,errors_dict,all_dataframes[dataframe])
+        				eng = create_engine('postgresql://sde:dinkum@192.168.1.16:5432/smcphab') # postgresql
+					sql_session = "update submission_tracking_table set duplicates = 'yes' where sessionkey = '%s'" % TIMESTAMP
+        				session_results = eng.execute(sql_session)
+        				eng.dispose()
 				except ValueError:
 					message = "Critical Error: Failed to run checkDuplicatesInProduction"
+        				eng = create_engine('postgresql://sde:dinkum@192.168.1.16:5432/smcphab') # postgresql
+					sql_session = "update submission_tracking_table set duplicates = 'no' where sessionkey = '%s'" % TIMESTAMP
+        				session_results = eng.execute(sql_session)
+        				eng.dispose()
 					state = 1
 			# retrieve all the errors that were found - to json - return to browser
 			try:
-				if 'errors' in  dataframe:
-					list_errors.append(getIndividualErrors(dataframe))
+				if 'errors' in all_dataframes[dataframe]:
+					list_errors.append(getIndividualErrors(all_dataframes[dataframe]))
 					#data_checks = getIndividualErrors(dataframe)
-				if 'field_error' in  dataframe:
-					list_redundant_errors.append(getRedundantErrors("field_error",dataframe))
-				if 'lookup_error' in  dataframe:
-					list_redundant_errors.append(getRedundantErrors("lookup_error",dataframe))
-				if 'duplicate_production_submission' in  dataframe:
-					list_redundant_errors.append(getRedundantErrors("duplicate_production_submission",dataframe))
-				if 'duplicate_session_submission' in dataframe:
-					list_redundant_errors.append(getRedundantErrors("duplicate_session_submission",dataframe))
+				if 'field_error' in all_dataframes[dataframe]:
+					list_redundant_errors.append(getRedundantErrors("field_error",all_dataframes[dataframe]))
+				if 'lookup_error' in all_dataframes[dataframe]:
+					list_redundant_errors.append(getRedundantErrors("lookup_error",all_dataframes[dataframe]))
+				if 'duplicate_production_submission' in all_dataframes[dataframe]:
+					list_redundant_errors.append(getRedundantErrors("duplicate_production_submission",all_dataframes[dataframe]))
+				if 'duplicate_session_submission' in all_dataframes[dataframe]:
+					list_redundant_errors.append(getRedundantErrors("duplicate_session_submission",all_dataframes[dataframe]))
 				#data_checks[count] = str(list_errors)
 				#data_checks = str(list_errors)
 				data_checks[count] = json.dumps(list_errors, ensure_ascii=True)
@@ -608,8 +674,10 @@ def core():
 		#state = 0
 		#errorLog(json.loads(data_checks))
 		#errorLog(json.dumps(data_checks, ensure_ascii=True))
+		print("End core checks")
+		return data_checks, data_checks_redundant, errors_dict
 	except ValueError:
 		message = "Critical Error: Failed to run core checks"	
 		errorLog(message)
 		state = 1
-	return jsonify(message=message,state=state,business=data_checks,redundant=data_checks_redundant)
+	#return jsonify(message=message,state=state,business=data_checks,redundant=data_checks_redundant)
