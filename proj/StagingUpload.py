@@ -26,6 +26,12 @@ def staging():
 	errorLog("login: %s" % login)
 	agency = request.form['agency']
 	errorLog("agency: %s" % agency)
+	owner = request.form['owner']
+	errorLog("owner: %s" % owner)
+	year = request.form['year']
+	errorLog("year: %s" % year)
+	project = request.form['project']
+	errorLog("project: %s" % project)
 	submission_type = request.form['submission_type']
 	errorLog("submission_type: %s" % submission_type)
 	assignment = request.form['assignment']

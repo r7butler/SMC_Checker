@@ -1,18 +1,19 @@
 <html>
 <body>
-<div>
+<h3> {{ helplayer }} </h3>
 <table>
-{% for f in field %}
-	{{ f }}
-	<tr><th>{{ f['name'] }}</th></tr>
+<tr>
+{% for name in fieldnames %}
+	<th> {{ name }} </th>
 {% endfor %}
-
-{% for item in data %}
-	{% for values in item['attributes'] %}
-		<tr><td>{{ item['attributes'][values] }}</td></tr>
+</tr>
+{% for row in data %}
+	<tr>
+	{% for name in fieldnames %}
+		<td>{{ row['attributes'][name] }}</td>
 	{% endfor %}
+	</tr>
 {% endfor %}
 </table>
-</div>
 </body>
 </html>

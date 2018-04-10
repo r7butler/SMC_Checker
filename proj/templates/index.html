@@ -158,6 +158,35 @@ td {
 	var timestamp;
 	var email_login;
 	var agency;
+			function application(){
+				console.log("app routine");
+				$.ajax({
+					url: $SCRIPT_ROOT + '/application',
+					type: "POST",
+					data: "test",
+					processData: false,
+					contentType: false,
+					success: function(data){
+						//console.log(data);
+						//$('#status').append(data.status_file);
+						console.log(data.key); // - show timestamp
+						timestamp = data.timestamp;
+						usession = data.key;
+						get_status(data.timestamp);
+					},
+					error: function(data){
+						console.log("Application Error:"+ data.responseJSON.message); 
+						 message = "problem";
+						if(data.responseJSON.message){
+							message = data.responseJSON.message;
+						} else {
+							message = "Missing data.responseJSON.message";
+						}
+						end_loader('#core_progress','<span>Failed Core Checks <a href="#" data-role="button" data-icon="check" data-inl    ine="true" data-iconpos="notext"></a></span>');
+						end_application("Application Failed","The application suffered a critical error. SCCWRP has been notified. The application will reload now","error",message,email_login,agency,"unknown");
+					}
+				})
+			}	
 	function print_core_errors(server_object,error_title){
 		  console.log(server_object);
 		  $.each(server_object, function(array_key,array_val){
@@ -281,6 +310,28 @@ td {
 		//console.log(endmsg);
 		$(lyr).html(endmsg).enhanceWithin();
 	}	
+	function get_agency() {
+    		$.ajax({
+			type: "GET",
+			url: $SCRIPT_ROOT + '/agency',
+        		success: function(data) {
+           			console.log(data);
+				$("#checker_login_owner").html(data)
+        		},
+        		error: function(data) {
+				console.log("Application may have timed out.:"+ data);
+				 message = "problem";
+                                if(data.responseJSON){
+                                	message = data.responseJSON.message;
+                                } else {
+					message = data.statusText;
+                           	}
+				end_loader('#core_progress','<span>Failed Core Checks <a href="#" data-role="button" data-icon="check" data-inl    ine="true" data-iconpos="notext"></a></span>');
+				//end_application("Application Failed","The application suffered a critical error. SCCWRP has been notified. The application will reload now","error",message,email_login);
+        		},
+        		cache: false
+    		});
+	}
 	function get_status(t) {
     		$.ajax({
 			type: "GET",
@@ -529,7 +580,37 @@ td {
 				var formData = new FormData();
 				formData.append('login', email_login);
 				formData.append('agency', agency);
+				formData.append('owner', owner);
+				formData.append('year', year);
+				formData.append('project', project);
 				formData.append('usession', usession);
+				// look to see if original_file is set
+				var original_file_set = $("#original_file").text();
+				console.log(original_file_set);
+				// if its set then this is a re-submission
+				if (original_file_set){
+					console.log("set");
+					// restart application - need to clear dom
+					application();
+					// remove tabs from container
+					var tab_count = $('#tabs').length + 1;
+					console.log("tab count: "+tab_count);
+					for(var t = 1; t < tab_count; ++t){
+						console.log("t: "+t);
+        					var tab = $( "#tabs" ).find(".ui-tabs-nav li:eq("+t+")").remove();
+						console.log(tab);
+					}
+        				$("#tabs").tabs("refresh");
+					// clear indicators
+					$("#compare_list").html('');
+					$("#log_file").html('');
+					$("#excel_file").html('');
+					$("#submission_type").html('');
+					$("#assignment_type").html('');
+				} else {
+					console.log("notset");
+				}
+				// call application first
 				for(var i = 0; i < dropped_files.length; ++i){
 					/* submit as array to as file array - otherwise will fail */
 					formData.append('files[]', dropped_files[i]);
@@ -558,7 +639,15 @@ td {
 							redundant_custom = data.redundant_custom;
 							console.log(redundant_custom)
 							summary_file = data.summary_file;
-
+							if(data.message){
+							$.toast({
+								heading: 'Just to let you know',
+								text: data.message,
+								position: 'mid-center',
+								icon: 'info',
+								loader: false
+							})
+							}
                                 			// when there are no errors we can make submission button available to load to staging
                                 			//if(error.total === 0 && allowed_to_submit === 0){ -- original probably dont need allowed_to_submit
 							// might want to move submission with errors to data.state === 1 - clean separation of code
@@ -592,10 +681,10 @@ td {
 								var value_string = String(val);
 								var elements = value_string.split("-");
 								if(elements[4] === "True"){
-									$("#compare_list").append("<ul><li><strong>MATCH</strong> - Excel sheet "+elements[1]+" - Matched table "+elements[3]+" on columns:<p>"+elements[6]+"</p></li></ul>");
+									$("#compare_list").append("<ul><li><strong style='color: green;'>ALL REQUIRED FIELDS ARE PRESENT</strong> - Excel sheet "+elements[1]+" - Matched table "+elements[3]+" on columns:<p>"+elements[6]+"</p></li></ul>");
 								} else {
 									/* working but has issue with word wrap */
-									$("#compare_list").append("<ul data-role='listview'><li style='word-wrap: break-word;'><strong>NO MATCH</strong> - Excel sheet "+elements[1]+" - The closest matching table we could find was "+elements[3]+" - <font color=red>unmatched tab columns: ["+elements[7]+"]</font> - <font color=red>unmatched table columns: ["+elements[8]+"]</font></p></li></ul>");
+									$("#compare_list").append("<ul data-role='listview'><li style='word-wrap: break-word;'><strong style='color: red;'>MISSING REQUIRED FIELDS</strong> - Excel sheet "+elements[1]+" - The closest matching table we could find was "+elements[3]+" - <font color=red>unmatched tab columns: ["+elements[7]+"]</font> - <font color=red>unmatched table columns: ["+elements[8]+"]</font></p></li></ul>");
 									//$("#compare_list").append("<div style="white-space:nowrap;'><strong>NO MATCH</strong> - Excel sheet "+elements[1]+" - The closest matching table we could find was "+elements[3]+" on columns:<p><font size=1pt>"+elements[6]+"</font> - <font color=red>unmatched tab columns: ["+elements[7]+"]</font> - <font color=red>unmatched table columns: ["+elements[8]+"]</font></p></div>");
 									console.log("Match: "+ elements[6]);
 									console.log("No match tab: "+ elements[7]);
@@ -617,6 +706,8 @@ td {
 								// console.log(event.tab.text);
 							    }
 							});
+							console.log("refresh tab");
+							$("#tabs").tabs("refresh");
 							$.mobile.changePage( "#two", { transition: "pop"} );
 						}
 						if(data.state === 1){
@@ -671,38 +762,7 @@ td {
 			//console.log("test");
 			//report();
 
-			function application(){
-				console.log("app routine");
-				$.ajax({
-					url: $SCRIPT_ROOT + '/application',
-					type: "POST",
-					data: "test",
-					processData: false,
-					contentType: false,
-					success: function(data){
-						//console.log(data);
-						//$('#status').append(data.status_file);
-						//alert(data.key); - show timestamp
-						timestamp = data.timestamp;
-						usession = data.key;
-						get_status(data.timestamp);
-					},
-					error: function(data){
-						console.log("Application Error:"+ data.responseJSON.message); 
-						 message = "problem";
-						if(data.responseJSON.message){
-							message = data.responseJSON.message;
-						} else {
-							message = "Missing data.responseJSON.message";
-						}
-						end_loader('#core_progress','<span>Failed Core Checks <a href="#" data-role="button" data-icon="check" data-inl    ine="true" data-iconpos="notext"></a></span>');
-						end_application("Application Failed","The application suffered a critical error. SCCWRP has been notified. The application will reload now","error",message,email_login,agency,"unknown");
-					}
-				})
-			}	
 			application();
-
-
 			function login(){
 				console.log("login routine");
 				$('<div>').simpledialog2({
@@ -712,19 +772,55 @@ td {
 					headerText: 'SMC',
 					blankContent :
 					//'<div style="padding:10px 20px;"><h3>Please sign in</h3><input type="email" name="checker_login_email" id="checker_login_email" value="" placeholder="email" data-theme="a" autocomplete="checker_login_email"><input type="text" name="checker_login_agency" id="checker_login_agency" value="" placeholder="agency" data-theme="a" autocomplete="checker_login_agency"></div>'+
-					'<div style="padding:10px 20px;"><h3>Please sign in</h3><input type="email" name="checker_login_email" id="checker_login_email" value="" placeholder="email" data-theme="a" autocomplete="checker_login_email"><select name="checker_login_agency" id="checker_login_agency"><option value="AES Corporation">AES Corporation</option><option value="AMEC, Foster, & Wheeler">AMEC, Foster, & Wheeler</option><option value="Aquatic Bioassay and Consulting Laboratories">Aquatic Bioassay and Consulting Laboratories</option><option value="California State University at Channel Islands">California State University at Channel Islands</option><option value="Calscience">Calscience</option> <option value="Channel Islands National Marine Sanctuary">Channel Islands National Marine Sanctuary</option> <option value="Chevron USA Products Company">Chevron USA Products Company</option> <option value="City of Long Beach">City of Long Beach</option> <option value="City of Los Angeles Environmental Monitoring Division">City of Los Angeles Environmental Monitoring Division</option> <option value="City of Oceanside">City of Oceanside</option> <option value="City of Oxnard">City of Oxnard</option> <option value="City of San Diego">City of San Diego</option> <option value="City of Ventura">City of Ventura</option> <option value="Dancing Coyote Environmental">Dancing Coyote Environmental</option> <option value="Ecoanalysts INC">Ecoanalysts INC</option> <option value="EcoAnalysts, Inc">EcoAnalysts, Inc</option> <option value="Encina Waste Water Authority">Encina Waste Water Authority</option> <option value="Granite Canyon Marine Pollution Studies Lab">Granite Canyon Marine Pollution Studies Lab</option> <option value="Houston Industries Inc.">Houston Industries Inc.</option> <option value="Institute for Integrated Research on Materials, Environment and Society">Institute for Integrated Research on Materials, Environment and Society</option> <option value="Instituto de Investigacione Oceanologicas">Instituto de Investigacione Oceanologicas</option> <option value="Jet Propulsion Laboratory">Jet Propulsion Laboratory</option> <option value="Los Angeles County Department of Beaches and Harbors">Los Angeles County Department of Beaches and Harbors</option> <option value="Los Angeles County Dept. of Health Services">Los Angeles County Dept. of Health Services</option> <option value="Los Angeles County Regional Water Quality Control Board">Los Angeles County Regional Water Quality Control Board</option> <option value="Los Angeles County Sanitation Districts">Los Angeles County Sanitation Districts</option> <option value="Los Angeles Department of Water and Power">Los Angeles Department of Water and Power</option> <option value="Loyola Marymount University">Loyola Marymount University</option> <option value="Marine Biological Consulting">Marine Biological Consulting</option> <option value="Marine Corps Base Camp Pendleton">Marine Corps Base Camp Pendleton</option> <option value="Minerals Management Service">Minerals Management Service</option> <option value="National Park Service">National Park Service</option> <option value="Nautilus Environmental">Nautilus Environmental</option> <option value="NES Energy Inc.">NES Energy Inc.</option> <option value="NOAA County Health Services">NOAA County Health Services</option> <option value="Northwest Aquatic Sciences">Northwest Aquatic Sciences</option> <option value="Not Applicable">Not Applicable</option> <option value="NRG Energy Inc.">NRG Energy Inc.</option> <option value="Orange County Environmental Health Division">Orange County Environmental Health Division</option> <option value="Orange County Public Facilities and Resources">Orange County Public Facilities and Resources</option> <option value="Orange County Sanitation Districts">Orange County Sanitation Districts</option> <option value="PHYSIS Environmental Lab">PHYSIS Environmental Lab</option> <option value="Port of Los Angeles">Port of Los Angeles</option> <option value="Port of San Diego">Port of San Diego</option> <option value="Reliant Corporation">Reliant Corporation</option> <option value="San Diego County Department of Environmental Health">San Diego County Department of Environmental Health</option> <option value="San Diego Regional Water Quality Control Board">San Diego Regional Water Quality Control Board</option> <option value="San Elijo Joint Powers Authority">San Elijo Joint Powers Authority</option> <option value="Santa Ana Regional Water Quality Control Board">Santa Ana Regional Water Quality Control Board</option> <option value="Santa Barbara Health Care Services">Santa Barbara Health Care Services</option> <option value="Santa Monica Bay Restoration Commission">Santa Monica Bay Restoration Commission</option> <option value="Sea Ventures">Sea Ventures</option> <option value="Southern California Coastal Water Research Project">Southern California Coastal Water Research Project</option> <option value="Southern California Wetland Recovery Project">Southern California Wetland Recovery Project</option> <option value="Southern Orange County Water Authority">Southern Orange County Water Authority</option> <option value="Space and Naval Warfare Systems Command">Space and Naval Warfare Systems Command</option> <option value="State Water Resources Control Board">State Water Resources Control Board</option> <option value="The Bay Foundation - Santa Monica Bay Restoration Project">The Bay Foundation - Santa Monica Bay Restoration Project</option> <option value="Tijuana Estuary National Estuarine Research Reserve">Tijuana Estuary National Estuarine Research Reserve</option> <option value="United States Fish and Wildlife Service">United States Fish and Wildlife Service</option> <option value="United States Geological Survey">United States Geological Survey</option> <option value="University of California at Los Angeles">University of California at Los Angeles</option> <option value="University of California Santa Barbara">University of California Santa Barbara</option> <option value="URS Corporation">URS Corporation</option> <option value="Vantuna Research Group">Vantuna Research Group</option> <option value="Weck Labs">Weck Labs</option> <option value="Weston Solutions">Weston Solutions</option></select></div>'+
+					'<div style="padding:10px 20px;"><h3>Your Email Address:</h3><input type="email" name="checker_login_email" id="checker_login_email" value="" placeholder="email" data-theme="a" autocomplete="checker_login_email">'+
+					'<h3>Your Agency/Lab:</h3><select name="checker_login_agency" id="checker_login_agency">'+
+					{% for a in agencies %}
+						'<option value="{{ a['agencycode'] }}">{{ a['agencyname'] }}</option>'+
+					{% endfor %}
+					'</select>'+
+					'<h3>Who is the Data Owner:</h3><select name="checker_login_owner" id="checker_login_owner">'+
+					{% for o in owners %}
+						'<option value="{{ o['agencycode'] }}">{{ o['agencyname'] }}</option>'+
+					{% endfor %}
+					'<option value="Other">Other</option></select>'+
+					'<h3>What is the Sampling Year:</h3><select name="checker_login_year" id="checker_login_year"><option value="2018">2018</option><option value="2017">2017</option></select>'+
+					'<h3>What is the Project:</h3><select name="checker_login_project" id="checker_login_project"><option value="SMC">SMC</option><option value="Other">Other</option></select></div>'+
 				"<button rel='close' id='login_close' class='ui-btn ui-corner-all ui-shadow ui-btn-b ui-btn-icon-left ui-icon-check'>Sign in</button>"
 				})
 			}
 			login();
+			//get_agency();
+
+			$("#checker_login_owner").change(function(e,u){
+				if (this.value === "Other"){
+					var other = prompt("Please enter value:");
+					if (other != null){
+						$('<option>').val(''+other+'').text(''+other+'').appendTo('#checker_login_owner');
+						$("#checker_login_owner").val(''+other+'');
+						$("#checker_login_owner").selectmenu('refresh');
+					}
+				}
+			});
+			$("#checker_login_project").change(function(e,u){
+				if (this.value === "Other"){
+					var other = prompt("Please enter value:");
+					if (other != null){
+						$('<option>').val(''+other+'').text(''+other+'').appendTo('#checker_login_project');
+						$("#checker_login_project").val(''+other+'');
+						$("#checker_login_project").selectmenu('refresh');
+					}
+				}
+			});
 
 			$("#login_close").click(function(e) {
-				//console.log($("#checker_login_email").val());
-				//console.log($("#checker_login_agency").val());
 				email_login = $("#checker_login_email").val();
 				agency = $("#checker_login_agency").val();
+				owner = $("#checker_login_owner").val();
+				year = $("#checker_login_year").val();
+				project = $("#checker_login_project").val();
+				// put in code to check that email address is an email address
 				if (email_login && agency){
-					drop(email_login,agency);
+					drop(email_login,agency,owner,year,project);
 				} else {
 					/* needs to be fixed */
 					e.stopPropagation();
@@ -734,10 +830,13 @@ td {
 				}
 			});
 
-			function drop(email_login,agency){
+			function drop(email_login,agency,owner,year,project){
 				console.log("upload routine");
 				console.log(email_login);
 				console.log(agency);
+				console.log(owner);
+				console.log(year);
+				console.log(project);
 				console.log(usession);
 				/* disable events before drop */
 				$('#final_submit').hide();

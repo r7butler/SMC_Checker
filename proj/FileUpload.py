@@ -152,6 +152,19 @@ def upload():
 	errorLog(login)
 	agency = request.form['agency']
 	errorLog(agency)
+	owner = request.form['owner']
+	errorLog(owner)
+	year = request.form['year']
+	errorLog(year)
+	project = request.form['project']
+	errorLog(project)
+	if project != "Other":
+		# rafi wants project_code left empty if user selects Other - jeff will add the project_code manually
+		project_code = "%s_%s_%s" % (owner,project,year)
+	else:
+		project_code = ""
+	login_info = "%s-%s-%s-%s-%s" % (login,agency,owner,year,project)
+	errorLog(project_code)
 	TIMESTAMP=str(session.get('key'))
 	timestamp_date = datetime.datetime.fromtimestamp(int(TIMESTAMP)).strftime('%Y-%m-%d %H:%M:%S')
 	errorLog(TIMESTAMP)
@@ -272,7 +285,7 @@ def upload():
 							assignment_table = "sample"
 							return jsonify(message=message,state=state,table_match=match_tables, business=data_checks,redundant=data_checks_redundant,custom=custom_checks,redundant_custom=custom_redundant_checks,errors=errors_count,excel=excel_link,assignment=assignment_table,original_file=originalfilename,modified_file=newfilename,datatype=match_dataset)
 						elif match_dataset == "taxonomy" and total_count == 0:
-							assignment_table, custom_checks, custom_redundant_checks, summary_checks, summary_results_link = taxonomy(all_dataframes,sql_match_tables,errors_dict)
+							assignment_table, custom_checks, custom_redundant_checks, summary_checks, summary_results_link, message = taxonomy(all_dataframes,sql_match_tables,errors_dict,project_code,login_info)
         						eng = create_engine('postgresql://sde:dinkum@192.168.1.16:5432/smcphab') # postgresql
 							sql_session = "update submission_tracking_table set extended_checks = 'yes', extended_checks_type = '%s' where sessionkey = '%s'" % (match_dataset,TIMESTAMP)
         						session_results = eng.execute(sql_session)

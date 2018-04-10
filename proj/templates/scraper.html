@@ -1,19 +1,39 @@
 <html>
+<head>
+  <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.16/css/jquery.dataTables.min.css">
+  <style>
+	.datatablerowhighlight {
+    		background-color: #ECFFB3 !important;
+	}
+  </style>
+  <script type="text/javascript" language="javascript" src="https://code.jquery.com/jquery-1.12.4.js"></script>
+  <script type="text/javascript" language="javascript" src="https://cdn.datatables.net/1.10.16/js/jquery.dataTables.min.js"></script>
+  <script type="text/javascript">
+  	$(document).ready( function () {
+    		$('#mytable').DataTable( { "pageLength": -1 } );
+	} );
+  </script>
+</head>
 <body>
-<h3> {{ helplayer }} </h3>
-<table>
-<tr>
-{% for name in fieldnames %}
-	<th> {{ name }} </th>
-{% endfor %}
-</tr>
-{% for row in data %}
+<table id="mytable" class="display">
+{% for k in scraper %}
+	{% if loop.index == 1 %}
+		<thead>
+		<tr>
+		{% for t in k.keys() %}
+		<th class="datatablerowhighlight"> {{ t }} </th>
+		{% endfor %}
+		</tr>
+		</thead>
+		<tbody>
+	{% endif %}
 	<tr>
-	{% for name in fieldnames %}
-		<td>{{ row['attributes'][name] }}</td>
+	{% for key,value in k.iteritems() %}
+		<td> {{ value }} </td>
 	{% endfor %}
 	</tr>
 {% endfor %}
+	</tbody>
 </table>
 </body>
 </html>

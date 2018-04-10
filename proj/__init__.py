@@ -25,7 +25,7 @@ app.config['CORS_HEADERS'] = 'Content-Type'
 app.secret_key = 'any random string'
 app.infile = ""
 # list of database fields that should not be queried on - removed status could be a problem 9sep17 - added trawl calculated fields
-app.system_fields = ["id", "objectid", "globalid", "gdb_geomattr_data", "shape", "record_timestamp", "timestamp","errors","lastchangedate","toxbatchrecordid","toxicityresultsrecordid","trawloverdistance","trawldeckdistance","trawldistance","trawlovertime","trawldecktime","trawltimetobottom","trawltime","trawldistancetonominaltarget","picture_url", "coordinates", "device_type", "qcount","created_user","created_date","last_edited_user","last_edited_date","gdb_from_date","gdb_to_date","gdb_archive_oid"]
+app.system_fields = ["id", "objectid", "globalid", "gdb_geomattr_data", "shape", "record_timestamp", "timestamp","errors","lastchangedate","project_code","toxbatchrecordid","toxicityresultsrecordid","trawloverdistance","trawldeckdistance","trawldistance","trawlovertime","trawldecktime","trawltimetobottom","trawltime","trawldistancetonominaltarget","picture_url", "coordinates", "device_type", "qcount","created_user","created_date","last_edited_user","last_edited_date","gdb_from_date","gdb_to_date","gdb_archive_oid"]
 # set the database connection string, database, and type of database we are going to point our application at
 app.eng = create_engine('postgresql://sde:dinkum@192.168.1.16:5432/smcphab')
 app.db = "smcphab"
