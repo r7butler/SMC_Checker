@@ -102,10 +102,10 @@ def staging():
 
 			# new fields from login - added 16apr18
 			df['login_email'] = login
-			df['login_agency'] = login_agency
-			df['login_owner'] = login_owner
-			df['login_year'] = login_year
-			df['login_project'] = login_project
+			df['login_agency'] = agency
+			df['login_owner'] = owner
+			df['login_year'] = year
+			df['login_project'] = project
 
 			# create columns in staging table based upon originating table
      			for column in src_table.columns:
@@ -137,7 +137,7 @@ def staging():
 			if state == 0:
      				eng = create_engine('postgresql://sde:dinkum@192.168.1.16:5432/smcphab')
 				# works but below is more precise - sql = 'INSERT INTO %s (SELECT * FROM %s)' % (table_name,staging_table_name)
-				sql = 'INSERT INTO "' + table_name + '" (objectid, globalid, created_user, created_date, last_edited_user, last_edited_date, '+ df_column_names + ') select sde.next_rowid(%s,%s), sde.next_globalid(), created_user, created_date, last_edited_user, last_edited_date, ' + df_column_names + ' from "' + staging_table_name + '"'
+				sql = 'INSERT INTO "' + table_name + '" (objectid, globalid, created_user, created_date, last_edited_user, last_edited_date, login_email, login_agency, login_owner, login_year, login_project, '+ df_column_names + ') select sde.next_rowid(%s,%s), sde.next_globalid(), created_user, created_date, last_edited_user, last_edited_date, login_email, login_agency, login_owner, login_year, login_project, ' + df_column_names + ' from "' + staging_table_name + '"'
 				errorLog(sql)
 				# "sde" and table_name below are used to populate next_rowid in sql statement
 				status = eng.execute(sql,"sde",table_name)
