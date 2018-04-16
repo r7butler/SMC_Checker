@@ -869,6 +869,9 @@ td {
 					formData.append('submit_file', submit_file);
 					formData.append('assignment', assignment_match);
 					formData.append('agency', agency);
+					formData.append('owner', owner);
+					formData.append('year', year);
+					formData.append('project', project);
 					formData.append('login', email_login);
 					get_status(timestamp); // turn on status logging
 					$.ajax({
