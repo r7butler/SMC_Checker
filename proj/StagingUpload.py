@@ -100,6 +100,13 @@ def staging():
 			df['last_edited_user'] = "checker"
 			df['last_edited_date'] = timestamp_date
 
+			# new fields from login - added 16apr18
+			df['login_email'] = login
+			df['login_agency'] = login_agency
+			df['login_owner'] = login_owner
+			df['login_year'] = login_year
+			df['login_project'] = login_project
+
 			# create columns in staging table based upon originating table
      			for column in src_table.columns:
 				errorLog(column)

@@ -778,15 +778,24 @@ td {
 						'<option value="{{ a['agencycode'] }}">{{ a['agencyname'] }}</option>'+
 					{% endfor %}
 					'</select>'+
-					'<h3>Who is the Data Owner:</h3><select name="checker_login_owner" id="checker_login_owner">'+
+					'<h3 title="Owner Information">Who is the Data Owner: <a id="toast_owner" class="my-tooltip-btn ui-btn ui-alt-icon ui-nodisc-icon ui-btn-inline ui-icon-info ui-btn-icon-notext" title="Learn more">Learn more</a></h3><select name="checker_login_owner" id="checker_login_owner">'+
 					{% for o in owners %}
 						'<option value="{{ o['agencycode'] }}">{{ o['agencyname'] }}</option>'+
 					{% endfor %}
 					'<option value="Other">Other</option></select>'+
-					'<h3>What is the Sampling Year:</h3><select name="checker_login_year" id="checker_login_year"><option value="2018">2018</option><option value="2017">2017</option></select>'+
+					'<h3>What is the Sampling Year:</h3><select name="checker_login_year" id="checker_login_year"><option value="2018">2018</option><option value="2017">2017</option><option value="2016">2016</option><option value="2015">2015</option></select>'+
 					'<h3>What is the Project:</h3><select name="checker_login_project" id="checker_login_project"><option value="SMC">SMC</option><option value="Other">Other</option></select></div>'+
 				"<button rel='close' id='login_close' class='ui-btn ui-corner-all ui-shadow ui-btn-b ui-btn-icon-left ui-icon-check'>Sign in</button>"
 				})
+				$("#toast_owner").click(function(e,u){
+					$.toast({
+						heading: 'Message',
+						text: 'Data owners message',
+						position: 'mid-center',
+						icon: 'info',
+						loader: false
+                                        })
+				});
 			}
 			login();
 			//get_agency();
@@ -802,8 +811,7 @@ td {
 				}
 			});
 			$("#checker_login_project").change(function(e,u){
-				if (this.value === "Other"){
-					var other = prompt("Please enter value:");
+				if (this.value === "Other"){ var other = prompt("Please enter value:");
 					if (other != null){
 						$('<option>').val(''+other+'').text(''+other+'').appendTo('#checker_login_project');
 						$("#checker_login_project").val(''+other+'');
@@ -1048,6 +1056,7 @@ td {
     	  </li>
 	</ul>
 	<div id="final"><button id="final_submit" type="submit" value="Final Submit"/>Final Submit</button></div>
+	</div>
 	</div>
       </div>
     </div>
