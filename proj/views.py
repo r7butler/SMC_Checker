@@ -6,6 +6,7 @@ import urllib, json
 import pandas as pd
 import numpy as np
 import psycopg2
+from pandas import DataFrame
 import folium
 
 @app.route('/')
@@ -107,29 +108,41 @@ def scraper():
 	if request.args.get("action"):
 		action = request.args.get("action")
 		message = str(action)
-		#scraper_fields = []
-		#scraper_json = {}
 		if request.args.get("layer"):
 			layer = request.args.get("layer")
-			# layer should start with lu - make sure it does if not dont proceed
+			# layer should start with lu - if not return empty - this tool is only for lookup lists
 			if layer.startswith("lu_"):
-				eng = create_engine('postgresql://smcread:1969$Harbor@192.168.1.16:5432/smcphab')
+				# unfortunately readonly user doesnt have access to information_schema
+				#eng = create_engine('postgresql://smcread:1969$Harbor@192.168.1.16:5432/smcphab')
+				eng = create_engine('postgresql://sde:dinkum@192.168.1.16:5432/smcphab') # postgresql
 				# below should be more sanitized
 				# https://stackoverflow.com/questions/39196462/how-to-use-variable-for-sqlite-table-name?rq=1
 				# check to make sure table exists before proceeding
-				sql = "select * from %s" % layer
-				#scraper_results = eng.execute(sql)
-				#if eng.dialect.has_table(eng, layer):
-				sql = "select * from %s" % layer
+				# get primary key for lookup list
+				sql_primary = "SELECT DISTINCT(kcu.column_name) FROM information_schema.table_constraints AS tc JOIN information_schema.key_column_usage AS kcu ON tc.constraint_name = kcu.constraint_name JOIN information_schema.constraint_column_usage AS ccu ON ccu.constraint_name = tc.constraint_name WHERE constraint_type = 'PRIMARY KEY' AND tc.table_name='%s'" % layer
 				try:
-					scraper_results = eng.execute(sql)
-					print(scraper_results)
-					eng.dispose()
-					scraper_json = [dict(r) for r in scraper_results]
-					return render_template('scraper.html', scraper=scraper_json)
-				# if sql error just return empty
+					primary_key_result = eng.execute(sql_primary)
+					# there should be only one primary key
+					primary_key = primary_key_result.fetchone()
+					print "primary_key: %s" % primary_key
+					try:
+						# get all fields first
+						sql_results = eng.execute("select * from %s order by %s asc" % (layer,primary_key[0]))
+						scraper_results = DataFrame(sql_results.fetchall())
+						scraper_results.columns = sql_results.keys()
+						# for smc we only want columns with code or description in the name
+						show_cols = [col for col in scraper_results.columns if 'code' in col or 'description' in col or 'unitname' in col]
+						scraper_results = scraper_results[show_cols]
+						# turn dataframe into dictionary object
+						scraper_json = scraper_results.to_dict('records')
+						# give jinga the listname, primary key (to highlight row), and fields/rows
+						return render_template('scraper.html', list=layer, primary=primary_key[0], scraper=scraper_json)
+					# if sql error just return empty 
+					except Exception as err:
+						return "empty"
 				except Exception as err:
 					return "empty"
+				eng.dispose()
 			else:
 				return "empty"
 

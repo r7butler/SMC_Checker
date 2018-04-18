@@ -15,13 +15,18 @@
   </script>
 </head>
 <body>
+<h3>Lookup list: {{ list }}</h3><hr>
 <table id="mytable" class="display">
 {% for k in scraper %}
 	{% if loop.index == 1 %}
 		<thead>
 		<tr>
 		{% for t in k.keys() %}
-		<th class="datatablerowhighlight"> {{ t }} </th>
+			{% if t == primary: %}
+				<th class="datatablerowhighlight"><h6>Lookup list value:</h6> {{ t }} </th>
+			{% else %}
+				<th> {{ t }} </th>
+			{% endif %}
 		{% endfor %}
 		</tr>
 		</thead>
