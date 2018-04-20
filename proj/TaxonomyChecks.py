@@ -4,7 +4,6 @@ import numpy as np
 import json
 from sqlalchemy import create_engine, exc, Table, Column, Integer, Unicode, MetaData, String, Text, update, and_, select, func, types
 from pandas import DataFrame
-from InternalEmail import *
 from .ApplicationLog import *
 
 def addErrorToList(error_column, row, error_to_add,df):
@@ -121,6 +120,16 @@ def taxonomy(all_dataframes,sql_match_tables,errors_dict,project_code,login_info
 	owner = str(login_info[2])
 	year = str(login_info[3])
 	project = str(login_info[4])
+
+        assignment_table = ""
+        custom_checks = ""
+        summary_checks = ""
+        summary_results_link = ""
+        custom_redundant_checks = ""
+        custom_errors = []
+        custom_warnings = []
+        custom_redundant_errors = []
+        custom_redundant_warnings = []
 
 	TIMESTAMP=str(session.get('key'))
 	# add submitted table names to list
@@ -321,7 +330,7 @@ def taxonomy(all_dataframes,sql_match_tables,errors_dict,project_code,login_info
 
 						### IMPORTANT LOAD ONE CSCI FIELD FROM CSV FILE AND MAP IT TO EXISTING BUGS/STATIONS DATAFRAME THEN OUTPUT TO CSV LOAD FILE FOR IMPORT
 						### AT STAGING INTO DATABASES
-						message = "Finished building csci files:"
+						message = "Success CSCI"
 						errorLog(message)
 						state = 0
 					except subprocess.CalledProcessError as e:
@@ -334,29 +343,20 @@ def taxonomy(all_dataframes,sql_match_tables,errors_dict,project_code,login_info
 						errorLog(message)
 						state = 0
 				else:
-					message = "smc - failed to build csci - stations not found in delineated table"
-					mail_body = "The following user: %s with agency/lab: %s attempted to submit data for owner: %s, project: %s, sampled year: %s, but the csci portion of the checker failed to process the following un-delineated stations: %s" % (login,agency,owner,project,year,unique_stations)
+					message = "Failed CSCI delineate"
+					#mail_body = "The following user: %s with agency/lab: %s attempted to submit data for owner: %s, project: %s, sampled year: %s, but the csci portion of the checker failed to process the following un-delineated stations: %s" % (login,agency,owner,project,year,unique_stations)
 					# let sccwrp know that a user is submitting data for a station that is not deliniated we will not be able process csci score
-					errorLog(mail_body)
-					status = internal_email("notify","checker@checker.sccwrp.org",["pauls@sccwrp.org"],message,mail_body)
-					if status == 1:
-						errorLog("failed to email sccwrp")
-					else:
-						errorLog("emailed sccwrp")
+					#errorLog(mail_body)
+					#status = internal_email("notify","checker@checker.sccwrp.org",["pauls@sccwrp.org"],message,mail_body)
+					#if status == 1:
+					#	errorLog("failed to email sccwrp")
+					#else:
+					#	errorLog("emailed sccwrp")
 					state = 0
 		except ValueError:
-			message = "Major Error: Failed to run csci"	
+			message = "Failed CSCI routine"	
 			errorLog(message)
 			state = 0
-		assignment_table = ""
-		custom_checks = ""
-		summary_checks = ""
-		summary_results_link = ""
-		custom_redundant_checks = ""
-		custom_errors = []
-		custom_warnings = []
-		custom_redundant_errors = []
-		custom_redundant_warnings = []
 		for dataframe in all_dataframes.keys():
 			if 'custom_errors' in all_dataframes[dataframe]:
 				custom_errors.append(getCustomErrors(all_dataframes[dataframe],dataframe,'custom_errors'))
@@ -370,9 +370,7 @@ def taxonomy(all_dataframes,sql_match_tables,errors_dict,project_code,login_info
 		custom_redundant_checks = json.dumps(custom_redundant_errors, ensure_ascii=True)
 		## END RETRIEVE ERRORS ##
 		# get filenames from fileupload routine
-		#message = "Finished with taxonomy checks..."	
 		errorLog(message)
-		#state = 0
 		#assignment_table = result.groupby(['stationid','lab','analyteclass']).size().to_frame(name = 'count').reset_index()
 		# lets reassign the analyteclass field name to species so the assignment query will run properly - check StagingUpload.py for details
 		#assignment_table = assignment_table.rename(columns={'analyteclass': 'species'})

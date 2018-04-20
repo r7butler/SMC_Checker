@@ -157,6 +157,7 @@ td {
 	var status_timer;
 	var timestamp;
 	var email_login;
+	var delineate;
 	var agency;
 			function application(){
 				console.log("app routine");
@@ -640,13 +641,21 @@ td {
 							console.log(redundant_custom)
 							summary_file = data.summary_file;
 							if(data.message){
-							$.toast({
-								heading: 'Just to let you know',
-								text: data.message,
-								position: 'mid-center',
-								icon: 'info',
-								loader: false
-							})
+								$.toast({
+									heading: 'Just to let you know',
+									text: data.message,
+									position: 'mid-center',
+									icon: 'info',
+									loader: false
+								})
+								if(data.message == "Failed CSCI delineate"){
+									//alert("set variable");
+									delineate = "no";
+								}
+								if(data.message == "Failed CSCI routine"){
+									//alert("set variable");
+									delineate = "no";
+								}
 							}
                                 			// when there are no errors we can make submission button available to load to staging
                                 			//if(error.total === 0 && allowed_to_submit === 0){ -- original probably dont need allowed_to_submit
@@ -881,6 +890,7 @@ td {
 					formData.append('year', year);
 					formData.append('project', project);
 					formData.append('login', email_login);
+					formData.append('delineate', delineate);
 					get_status(timestamp); // turn on status logging
 					$.ajax({
 						url: $SCRIPT_ROOT + '/staging',

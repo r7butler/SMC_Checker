@@ -12,6 +12,7 @@ import re
 import random 
 import datetime
 from random import randint
+from InternalEmail import *
 from .ApplicationLog import *
 
 staging_upload = Blueprint('staging_upload', __name__)
@@ -36,6 +37,8 @@ def staging():
 	errorLog("submission_type: %s" % submission_type)
 	assignment = request.form['assignment']
 	errorLog("assignment: %s" % assignment)
+	delineate = request.form['delineate']
+	errorLog("delineate: %s" % delineate)
 	state = 0
 	TIMESTAMP=str(session.get('key'))
 	errorLog("Processing submission: %s" % TIMESTAMP)
@@ -274,6 +277,16 @@ def staging():
 	# user is finished so get rid of session key	
 	session.pop('key', None)
 	errorLog("END STAGING")
+	# check delineate variable and email sccwrp
+	if delineate == "no":
+		mail_body = "The following user: %s with agency/lab: %s attempted to submit data for owner: %s, project: %s, sampled year: %s, but the csci portion of the checker failed to process un-delineated stations." % (login,agency,owner,project,year)
+		errorLog(mail_body)
+		status = internal_email("notify","checker@checker.sccwrp.org",["pauls@sccwrp.org"],message,mail_body)
+		if status == 1:
+			errorLog("failed to email sccwrp")
+		else:
+			errorLog("emailed sccwrp")
+		
 	if assignment and state == 0:
 		errorLog(status)
 		#return jsonify({'data': render_template('report.html', report=status)})
