@@ -2,6 +2,7 @@
   <head>
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
 	<link rel="stylesheet" href="http://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.css" />
+	<link href='http://fonts.googleapis.com/css?family=Roboto+Slab:400,700' rel='stylesheet' type='text/css'>
 	<style>
 		* {
 			font-family: 'Open Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
@@ -265,15 +266,13 @@ td {
         				success: function(data) {
 						// probably need to adjust this if mail fails
 						console.log(data);
-						/*
 						var answer = confirm("Restart the application?");
 						if (answer == true){
-							//reload_page();
+							reload_page();
 							//report(); - moved into upload
 						} else {
 							// do nothing
 						}
-						*/
 					},
 					error: function(data){
 						console.log(data);
@@ -641,19 +640,15 @@ td {
 							console.log(redundant_custom)
 							summary_file = data.summary_file;
 							if(data.message){
-								$.toast({
-									heading: 'Just to let you know',
-									text: data.message,
-									position: 'mid-center',
-									icon: 'info',
-									loader: false
-								})
-								if(data.message == "Failed CSCI delineate"){
-									//alert("set variable");
-									delineate = "no";
-								}
-								if(data.message == "Failed CSCI routine"){
-									//alert("set variable");
+								if(data.message == "Failed to run csci"){
+									$.toast({
+										heading: 'Failed CSCI',
+										text: 'You have submitted sites for which we do not delineated data. We are unable to process your CSCI scores. SCCWRP will be notified on final submission.' ,
+										position: 'mid-center',
+										icon: 'warning',
+										loader: false,
+										hideAfter: false
+									})
 									delineate = "no";
 								}
 							}
@@ -686,13 +681,21 @@ td {
 							if (data.excel){
 								$('#excel_file').append('<a href="'+data.excel+'" target="_blank">'+data.excel+'</a>');
 							}
+							if (data.map){
+								console.log(data.map);
+								var m = '1. <a href="' + data.map + '" target="_blank">Click to view map check</a> (opens in new window)<br>';
+								m += '2. Conduct a visual check of the location/s you have submitted.<br>';
+								m += '3. Close the view map check window<br>';
+								m += '4. Click the "Close" button below to return to main navigation page.<br>';
+								$('#map_content').append(m);
+							}
 							$.each(table_match, function(key,val){
 								var value_string = String(val);
 								var elements = value_string.split("-");
 								if(elements[4] === "True"){
 									$("#compare_list").append("<ul><li><strong style='color: green;'>ALL REQUIRED FIELDS ARE PRESENT</strong> - Excel sheet "+elements[1]+" - Matched table "+elements[3]+" on columns:<p>"+elements[6]+"</p></li></ul>");
 								} else {
-									/* working but has issue with word wrap */
+									// working but has issue with word wrap 
 									$("#compare_list").append("<ul data-role='listview'><li style='word-wrap: break-word;'><strong style='color: red;'>MISSING REQUIRED FIELDS</strong> - Excel sheet "+elements[1]+" - The closest matching table we could find was "+elements[3]+" - <font color=red>unmatched tab columns: ["+elements[7]+"]</font> - <font color=red>unmatched table columns: ["+elements[8]+"]</font></p></li></ul>");
 									//$("#compare_list").append("<div style="white-space:nowrap;'><strong>NO MATCH</strong> - Excel sheet "+elements[1]+" - The closest matching table we could find was "+elements[3]+" on columns:<p><font size=1pt>"+elements[6]+"</font> - <font color=red>unmatched tab columns: ["+elements[7]+"]</font> - <font color=red>unmatched table columns: ["+elements[8]+"]</font></p></div>");
 									console.log("Match: "+ elements[6]);
@@ -718,6 +721,10 @@ td {
 							console.log("refresh tab");
 							$("#tabs").tabs("refresh");
 							$.mobile.changePage( "#two", { transition: "pop"} );
+							if(data.map){
+								$.mobile.changePage('#map_window', {transition: 'pop', role: 'dialog'});
+								//$.mobile.changePage('/smc/logs/1524576746-map.html', { role: "dialog" } );
+							}
 						}
 						if(data.state === 1){
 							end_loader('#file_progress','<span>Failed Uploading <a href="index.html" data-role="button" data-icon="delete" data-inline="true" data-iconpos="notext"></a></span><br>'+data.message)
@@ -787,7 +794,7 @@ td {
 						'<option value="{{ a['agencycode'] }}">{{ a['agencyname'] }}</option>'+
 					{% endfor %}
 					'</select>'+
-					'<h3 title="Owner Information">Who is the Data Owner: <a id="toast_owner" class="my-tooltip-btn ui-btn ui-alt-icon ui-nodisc-icon ui-btn-inline ui-icon-info ui-btn-icon-notext" title="Learn more">Learn more</a></h3><select name="checker_login_owner" id="checker_login_owner">'+
+					'<h3 title="Owner Information">Who is the Data Owner: <a id="toast_owner" class="my-tooltip-btn ui-btn ui-alt-icon ui-nodisc-icon ui-btn-inline ui-icon-info ui-btn-icon-notext" title="Learn more" style="background: white;">Learn more</a></h3><select name="checker_login_owner" id="checker_login_owner">'+
 					{% for o in owners %}
 						'<option value="{{ o['agencycode'] }}">{{ o['agencyname'] }}</option>'+
 					{% endfor %}
@@ -796,10 +803,10 @@ td {
 					'<h3>What is the Project:</h3><select name="checker_login_project" id="checker_login_project"><option value="SMC">SMC</option><option value="Other">Other</option></select></div>'+
 				"<button rel='close' id='login_close' class='ui-btn ui-corner-all ui-shadow ui-btn-b ui-btn-icon-left ui-icon-check'>Sign in</button>"
 				})
-				$("#toast_owner").click(function(e,u){
+				$("#toast_owner").mouseover(function(e,u){
 					$.toast({
 						heading: 'Message',
-						text: 'Data owners message',
+						text: 'Please indicate the data owner below. Typically, the agency that funded sample collection or analysis is the data owner [NOT OWNERS!]. Data owners may be contacted to authorize early release of data. If you have questions about data ownership, please contact Raphael Mazor at raphaelm@sccwrp.org',
 						position: 'mid-center',
 						icon: 'info',
 						loader: false
@@ -1109,6 +1116,15 @@ td {
 		</ul>
     </div> <!-- close content // -->
   </div> <!-- close message window // -->
+  <div data-role="page" data-theme="a" id="map_window" data-add-back-btn="true">
+    <div data-role="header" data-theme="a">
+		<h1 id="map_header">Map Content</h1>
+    </div>
+    <div data-role="content" data-theme="a">
+		<ul id="map_content" data-role="listview" data-inset="true">
+    </div>
+	<a href="#two" data-role="button" data-rel="back" data-theme="a" class="ui-button ui-shadow ui-corner-all ui-widget ui-button-a" role="button">Close</a>
+  </div>
   <div id="report" data-role="page">
 	<br>
 	<a href="#one" onclick="window.location.reload(true)">Go Back to Checker</a><br>

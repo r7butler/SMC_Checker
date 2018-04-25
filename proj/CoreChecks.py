@@ -317,6 +317,11 @@ def checkTableMetadata(db,dbtype,eng,table_match,errors_dict,df):
 def getIndividualErrors(df):
 	errorLog("Core: start getIndividualErrors")
 	tmp_dict = {}
+	# remove carriage returns - added 23apr18 to fix bug
+        if 'errors' in df:      
+                df['errors'] = df['errors'].str.replace(r'\r\n','')
+                df['errors'] = df['errors'].str.replace(r'\r','')
+                df['errors'] = df['errors'].str.replace(r'\n','')
 	#  clear dataframe of rows that have no errors
 	dfjson = df
         dfjson = dfjson[pd.notnull(dfjson['row'])]
@@ -517,7 +522,8 @@ def checkLookupCodes(db,dbtype,eng,table_match,errors_dict,df):
 				for item_number in (df_items[lower_item].index):
 					errorLog(item_number)
 					#xmessage = "LOOKUP[%s]: { type: lookup, column: %s, error: %s }" % (str(count),item,df_items[lower_item].loc[item_number])
-					human_error = ("The data inserted ('%s') does not match the lookup list <a href='http://checker.sccwrp.org/smc/scraper?action=help&layer=%s' target='_blank'>%s</a> for the column" % (df_items[lower_item].loc[item_number],lookup_list[item][0],lookup_list[item][0]))
+					# added strip to remove double quotes in error field bug - 23apr2018
+					human_error = ("The data inserted ('%s') does not match the lookup list <a href='http://checker.sccwrp.org/smc/scraper?action=help&layer=%s' target='_blank'>%s</a> for the column" % (df_items[lower_item].loc[item_number].strip('"'),lookup_list[item][0],lookup_list[item][0]))
 					unique_error = '{ "column": "%s", "error_type": "Lookup Fail", "error": "%s" }' % (item,human_error)
 					addErrorToList("errors",item_number,unique_error,df)
 					addErrorToList("lookup_error",item_number,unique_error,df)

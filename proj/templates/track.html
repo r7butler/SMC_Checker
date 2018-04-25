@@ -1,0 +1,12 @@
+<html>
+<body>
+<table border="1">
+<th>Login</th><th>Agency</th><th>SesssionKey</th><th>Upload</th><th>Match</th><th>Mia</th><th>Lookup</th><th>Duplicates</th><th>Extended Checks</th><th>Extended Checks Type</th><th>Submit</th><th>Created User</th><th>Create Date</th><th>Log File</th>
+{% for s in session %}
+	<tr>
+	<td>{{ s.login }}</td><td>{{ s.agency }}</td><td>{{ s.sessionkey }}</td><td>{{ s.upload }}</td><td>{{ s.match }}</td><td>{{ s.mia }}</td><td>{{ s.lookup }}</td><td>{{ s.duplicates }}</td><td>{{ s.extended_checks }}</td><td>{{ s.extended_checks_type }}</td><td>{{ s.submit }}</td><td>{{ s.created_user }}</td><td>{{ s.created_date }}</td><td>http://checker.sccwrp.org/smc/logs/{{ s.sessionkey }}.log</td>
+	</tr>
+{% endfor %}
+</table>
+</body>
+</html>
