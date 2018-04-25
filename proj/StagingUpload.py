@@ -286,6 +286,14 @@ def staging():
 			errorLog("failed to email sccwrp")
 		else:
 			errorLog("emailed sccwrp")
+	if project != "SMC":
+		mail_body = "The following user: %s with agency/lab: %s attempted to submit data for owner: %s, project: %s, sampled year: %s. The user selected 'Other' for project." % (login,agency,owner,project,year)
+		errorLog(mail_body)
+		status = internal_email("notify","checker@checker.sccwrp.org",["pauls@sccwrp.org"],message,mail_body)
+		if status == 1:
+			errorLog("failed to email sccwrp")
+		else:
+			errorLog("emailed sccwrp")
 		
 	if assignment and state == 0:
 		errorLog(status)

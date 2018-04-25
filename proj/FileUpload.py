@@ -5,6 +5,7 @@ import json
 from sqlalchemy import create_engine, exc
 from werkzeug import secure_filename
 import xlsxwriter
+import folium
 from .ApplicationLog import *
 from MatchFile import match
 from CoreChecks import core
@@ -45,6 +46,22 @@ def exportToFile(all_dataframes,TIMESTAMP):
 					all_dataframes[dataframe].drop(['row'], axis = 1, inplace = True)
 				if 'tmp_row' in all_dataframes[dataframe]:
 					all_dataframes[dataframe].drop(['tmp_row'], axis = 1, inplace = True)
+				# code specific to taxonomy sampleinfo and results - fill empties with -88 and 1/1/1980 added 25apr18
+			       	if table_name == 'tbl_taxonomysampleinfo':
+				       	# for future - call database and get integer, decimal, and date fields that are required
+				       	# replace empty integer and decimal and date values with nulls
+					errorLog(all_dataframes[dataframe]['replicatename'])
+					all_dataframes[dataframe].loc[:, ['replicatename','numberjars','percentsamplecounted','targetorganismcount','actualorganismcount','extraorganismcount','qcorganismcount','discardedorganismcount']] = all_dataframes[dataframe].loc[:, ['replicatename','numberjars','percentsamplecounted','targetorganismcount','actualorganismcount','extraorganismcount','qcorganismcount','discardedorganismcount']].fillna(-88)
+					#all_dataframes[dataframe]['replicatename','numberjars','targetorganismcount','actualorganismcount','extraorganismcount','qcorganismcount','discardedorganismcount'] = all_dataframes[dataframe]['replicatename','numberjars','targetorganismcount','actualorganismcount','extraorganismcount','qcorganismcount','discardedorganismcount'].astype('int')
+					for column_name in ['replicatename','numberjars','targetorganismcount','actualorganismcount','extraorganismcount','qcorganismcount','discardedorganismcount']:
+						all_dataframes[dataframe][column_name] = all_dataframes[dataframe][column_name].astype('int')
+				       	set_date = datetime.datetime.strptime("01/01/1950","%m/%d/%Y").strftime('%m/%d/%Y')
+				       	#all_dataframes[dataframe]['replicatecollectiondate'].replace(r'^\s*$', set_date, regex=True, inplace = True)
+					all_dataframes[dataframe]['replicatecollectiondate'] = all_dataframes[dataframe]['replicatecollectiondate'].fillna(set_date)
+			       	if table_name == 'tbl_taxonomyresults':
+				       	set_date = datetime.datetime.strptime("01/01/1950","%m/%d/%Y").strftime('%m/%d/%Y')
+					all_dataframes[dataframe]['enterdate'] = all_dataframes[dataframe]['enterdate'].fillna(set_date)
+				errorLog(all_dataframes[dataframe])
 
 				# write dataframe to excel worksheet
 				errorLog("write dataframe to export writer:")
@@ -61,6 +78,7 @@ def exportToFile(all_dataframes,TIMESTAMP):
 					# create worksheet object
 					worksheet = excel_writer.sheets[table_name]
 					# if there are errors or custom_errors process them - there will only be one type (errors or custom_errors)
+					errorLog("if there are errors or custom_errors process them - there will only be one type (errors or custom_errors)")
 					if 'errors' in all_dataframes[dataframe]:
                 				dfc = all_dataframes[dataframe].loc[~all_dataframes[dataframe]['errors'].isnull()]['errors']
 						output_column_name = 'errors'
@@ -68,8 +86,15 @@ def exportToFile(all_dataframes,TIMESTAMP):
                 				dfc = all_dataframes[dataframe].loc[~all_dataframes[dataframe]['custom_errors'].isnull()]['custom_errors']
 						output_column_name = 'custom_errors'
                 			# there can be multiple errors in a row lets make them tuples of dicts
+
 					dfc = dfc.apply(lambda x: eval(x))
+
+					errorLog("there can be multiple errors in a row lets make them tuples of dicts")
+                			#dfc = dfc.apply(lambda x: eval(x))
+					errorLog(dfc)
+
 					# create color formatting
+					errorLog("create color formatting")
 				        format_red = workbook.add_format({'bg_color': '#FFC7CE','border': 1,'border_color': '#800000','bold': True})
 				        format_yellow = workbook.add_format({'bg_color': '#FFFF00','border': 1,'border_color': '#800000','bold': True})
 					# loop through error dict
@@ -141,6 +166,40 @@ def exportToFile(all_dataframes,TIMESTAMP):
 		errorLog(message)
 	return state, excel_link
 
+def createMap(list_of_stations,timestamp):
+	errorLog("map function")
+	errorLog(timestamp)
+	errorLog(list_of_stations)
+	#map1 = folium.Map(location=[45.5, -73.61], width="100%", height="100%")
+	#map1.save('/var/www/smc/logs/map.html')
+	eng = create_engine('postgresql://smcread:1969$Harbor@192.168.1.16:5432/smcphab')
+	sql = "select stationid,latitude,longitude from lu_station where stationid in (%s)" % ''.join(list_of_stations)
+	errorLog(sql)
+	#sql_results = pd.read_sql_query(sql,eng)
+	sql_results = eng.execute(sql)
+	rows = sql_results.cursor.fetchall()
+	eng.dispose()
+	errorLog(sql_results)
+	m = folium.Map(
+	    location=[33.0000, -118.0000],
+	    zoom_start=7,
+	    tiles='Stamen Terrain'
+	)
+	tip = 'test'
+	for r in rows:
+		tooltip = r[0]
+		folium.Marker(
+		    location=[r[1], r[2]],
+		    popup='%s' % r[0]
+		).add_to(m)
+	map_file = '/var/www/smc/logs/%s-map.html' % timestamp
+	errorLog(map_file)
+	map_url = 'http://checker.sccwrp.org/smc/logs/%s-map.html' % timestamp
+	errorLog(map_url)
+
+	m.save(map_file)
+	return map_url
+
 @file_upload.route("/upload", methods=["POST"])
 def upload():
 	errorLog("Function - upload")
@@ -168,6 +227,7 @@ def upload():
 	TIMESTAMP=str(session.get('key'))
 	timestamp_date = datetime.datetime.fromtimestamp(int(TIMESTAMP)).strftime('%Y-%m-%d %H:%M:%S')
 	errorLog(TIMESTAMP)
+	message = ""
 
         # we need to insert a record for login, agency, sessionkey, and timestamp into submission tracking table
         # connect to database
@@ -285,7 +345,12 @@ def upload():
 							assignment_table = "sample"
 							return jsonify(message=message,state=state,table_match=match_tables, business=data_checks,redundant=data_checks_redundant,custom=custom_checks,redundant_custom=custom_redundant_checks,errors=errors_count,excel=excel_link,assignment=assignment_table,original_file=originalfilename,modified_file=newfilename,datatype=match_dataset)
 						elif match_dataset == "taxonomy" and total_count == 0:
-							assignment_table, custom_checks, custom_redundant_checks, summary_checks, summary_results_link, message = taxonomy(all_dataframes,sql_match_tables,errors_dict,project_code,login_info)
+							assignment_table, custom_checks, custom_redundant_checks, summary_checks, summary_results_link, message, unique_stations = taxonomy(all_dataframes,sql_match_tables,errors_dict,project_code,login_info)
+							errorLog("list of unique_stations:")
+							errorLog(unique_stations)
+							map_url = createMap(unique_stations,TIMESTAMP)
+							errorLog("map_url")
+							errorLog(map_url)
         						eng = create_engine('postgresql://sde:dinkum@192.168.1.16:5432/smcphab') # postgresql
 							sql_session = "update submission_tracking_table set extended_checks = 'yes', extended_checks_type = '%s' where sessionkey = '%s'" % (match_dataset,TIMESTAMP)
         						session_results = eng.execute(sql_session)
@@ -303,7 +368,7 @@ def upload():
 	
 							# used for reporting - either field or sample
 							assignment_table = ""
-							return jsonify(message=message,state=state,table_match=match_tables, business=data_checks,redundant=data_checks_redundant,custom=custom_checks,redundant_custom=custom_redundant_checks,summary=summary_checks,summary_file=summary_results_link,errors=errors_count,excel=excel_link,assignment=assignment_table,original_file=originalfilename,modified_file=newfilename,datatype=match_dataset)
+							return jsonify(message=message,state=state,table_match=match_tables, business=data_checks,redundant=data_checks_redundant,custom=custom_checks,redundant_custom=custom_redundant_checks,summary=summary_checks,summary_file=summary_results_link,errors=errors_count,excel=excel_link,assignment=assignment_table,original_file=originalfilename,modified_file=newfilename,datatype=match_dataset,map=map_url)
 						elif match_dataset == "field" and total_count == 0:
 							assignment_table, custom_checks, custom_redundant_checks = field(all_dataframes,sql_match_tables,errors_dict)
 
@@ -331,9 +396,17 @@ def upload():
 
 							# create excel files
 							status, excel_link = exportToFile(all_dataframes,TIMESTAMP)
+
+
 							# disable for testing
 							#status = ""
 							#excel_link = ""
+
+
+							errorLog("finished exportToFile - end of checks - return to browser")
+							
+							# map check
+     							#map_check=json.dumps({"0":[{"point":"0"},{"value": [{"lat": "33.000","lon":"-118.00"}]}]}, sort_keys = False, indent = 2)
 
 							return jsonify(message=message,state=state,table_match=match_tables, business=data_checks,redundant=data_checks_redundant,errors=errors_count,excel=excel_link,original_file=originalfilename,modified_file=newfilename)
 					else:

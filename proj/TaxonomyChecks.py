@@ -192,6 +192,7 @@ def taxonomy(all_dataframes,sql_match_tables,errors_dict,project_code,login_info
 		checkData(nan_rows,'taxonomicqualifier','custom error','error','At least one taxonomicqualifier code required please check the list: <a href=http://checker.sccwrp.org/smc/scraper?action=help&layer=lu_taxonomicqualifier target=_blank>qa list</a>.',result)
 		errorLog("Check submitted data for invalid code (or code combination):")
 		checkData(invalid_codes,'taxonomicqualifier','custom error','error','At least one Taxonomic Qualifier code is invalid please check the list: <a href=http://checker.sccwrp.org/smc/scraper?action=help&layer=lu_taxonomicqualifier target=_blank>qa list</a>',result)
+
 		
 		## Jordan -  Sample/Result SampleDate field - make sure user did not accidentally drag down date
 		errorLog('Sample/Result SampleDate field - make sure user did not accidentally drag down date')
@@ -200,7 +201,23 @@ def taxonomy(all_dataframes,sql_match_tables,errors_dict,project_code,login_info
 		if result.sampledate.diff()[1:].sum() == pd.Timedelta('%s day' %(len(result)-1)):
 			checkData(result.loc[result.sampledate.diff() == pd.Timedelta('1 day')].tmp_row.tolist(),'SampleDate','custom error','error','Consecutive Dates. Make sure you did not accidentally drag down the date',result)
 
+
+
+		## Jordan -  Sample/Result SampleDate field - make sure user did not accidentally drag down date
+                errorLog('Sample/Result SampleDate field - make sure user did not accidentally drag down date')
+		# If every date submitted is consecutive from the first, it will error out every row. Otherwise, no error is thrown.
+		if sampleinfo.sampledate.diff()[1:].sum() == pd.Timedelta('%s day' %(len(sampleinfo)-1)):
+			checkData(sampleinfo.loc[sampleinfo.sampledate.diff() == pd.Timedelta('1 day')].tmp_row.tolist(),'SampleDate','Custom Error','Error','Consecutive Dates. Make sure you did not accidentally drag down the date',sampleinfo)
+
+		if result.sampledate.diff()[1:].sum() == pd.Timedelta('%s day' %(len(result)-1)):
+			checkData(result.loc[result.sampledate.diff() == pd.Timedelta('1 day')].tmp_row.tolist(),'SampleDate','Custom Error','Error','Consecutive Dates. Make sure you did not accidentally drag down the date',result)
+
 		## END CUSTOM CHECKS ##
+		## START MAP CHECK ##
+		# get a unique list of stations from results file
+		rlist_of_stations = pd.unique(result['stationcode'])
+		result_unique_stations = ','.join("'" + s + "'" for s in rlist_of_stations)
+		## END MAP CHECKS
 		## END CHECKS ##
 
 		## NEW FIELDS ##
@@ -385,7 +402,7 @@ def taxonomy(all_dataframes,sql_match_tables,errors_dict,project_code,login_info
 		#assignment_table = result.groupby(['stationid','lab','analyteclass']).size().to_frame(name = 'count').reset_index()
 		# lets reassign the analyteclass field name to species so the assignment query will run properly - check StagingUpload.py for details
 		#assignment_table = assignment_table.rename(columns={'analyteclass': 'species'})
-		return assignment_table, custom_checks, custom_redundant_checks, summary_checks, summary_results_link, message
+		return assignment_table, custom_checks, custom_redundant_checks, summary_checks, summary_results_link, message, result_unique_stations
 	except ValueError:
 		message = "Critical Error: Failed to run taxonomy checks"	
 		errorLog(message)

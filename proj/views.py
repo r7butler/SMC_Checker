@@ -70,6 +70,7 @@ def mail():
 
 @app.route('/map')
 def map():
+	print "start map"
 	# basic working
 	#map1 = folium.Map(location=[45.5, -73.61], width="100%", height="100%")
 	#map1.save('/var/www/smc/logs/map.html')
@@ -180,7 +181,7 @@ def sandboxui():
 @app.route('/track')
 def track():
 	print("start track")
-	eng = create_engine('postgresql://b18read:1969$Harbor@192.168.1.16:5432/smcphab')
+	eng = create_engine('postgresql://smcread:1969$Harbor@192.168.1.16:5432/smcphab')
 	sql_session = "select login, agency, sessionkey, upload, match, mia, lookup, duplicates, extended_checks, extended_checks_type, submit, created_user, created_date from submission_tracking_table order by created_date"
         print(sql_session)
         session_results = eng.execute(sql_session)

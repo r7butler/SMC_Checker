@@ -527,6 +527,7 @@ def checkLookupCodes(db,dbtype,eng,table_match,errors_dict,df):
 					errorLog(df_items[lower_item].loc[item_number])
 					if math.isnan(df_items[lower_item].loc[item_number])==False:
 						human_error = ("The data inserted ('%s') does not match the lookup list <a href='http://checker.sccwrp.org/smc/scraper?action=help&layer=%s' target='_blank'>%s</a> for the column" % (df_items[lower_item].loc[item_number].strip('"'),lookup_list[item][0],lookup_list[item][0]))
+					human_error = ("The data inserted ('%s') does not match the lookup list <a href='http://checker.sccwrp.org/smc/scraper?action=help&layer=%s' target='_blank'>%s</a> for the column" % (df_items[lower_item].loc[item_number].strip('"'),lookup_list[item][0],lookup_list[item][0]))
 					unique_error = '{ "column": "%s", "error_type": "Lookup Fail", "error": "%s" }' % (item,human_error)
 					addErrorToList("errors",item_number,unique_error,df)
 					addErrorToList("lookup_error",item_number,unique_error,df)
