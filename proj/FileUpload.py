@@ -68,7 +68,7 @@ def exportToFile(all_dataframes,TIMESTAMP):
                 				dfc = all_dataframes[dataframe].loc[~all_dataframes[dataframe]['custom_errors'].isnull()]['custom_errors']
 						output_column_name = 'custom_errors'
                 			# there can be multiple errors in a row lets make them tuples of dicts
-                			dfc = dfc.apply(lambda x: eval(x))
+					dfc = dfc.apply(lambda x: eval(x))
 					# create color formatting
 				        format_red = workbook.add_format({'bg_color': '#FFC7CE','border': 1,'border_color': '#800000','bold': True})
 				        format_yellow = workbook.add_format({'bg_color': '#FFFF00','border': 1,'border_color': '#800000','bold': True})
@@ -331,6 +331,9 @@ def upload():
 
 							# create excel files
 							status, excel_link = exportToFile(all_dataframes,TIMESTAMP)
+							# disable for testing
+							#status = ""
+							#excel_link = ""
 
 							return jsonify(message=message,state=state,table_match=match_tables, business=data_checks,redundant=data_checks_redundant,errors=errors_count,excel=excel_link,original_file=originalfilename,modified_file=newfilename)
 					else:
