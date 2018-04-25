@@ -94,14 +94,16 @@ def dcValueAgainstMultipleValues(eng,dbtable,dbfield,df,field):
         
         # subcodes: submitted codes for specified field
         subcodes = df[[field,'tmp_row']]
-	
+	subcodes[field].replace(r'^$',np.nan,regex=True,inplace = True)
         # check submitted data for at least one code
-        nan_rows = subcodes.loc[subcodes[field]==''].tmp_row.tolist()
+        #nan_rows = subcodes.loc[subcodes[field]==''].tmp_row.tolist()
+	nan_rows = subcodes.loc[subcodes[field].isnull()].tmp_row.tolist()
 	
         # check submitted data for invalid codes
 	db_list = codes_df[dbfield].apply(lambda row: "".join(row.split()).lower()).tolist()
-        subcodes['check'] = subcodes[field][subcodes[field] != ""].apply(lambda row: set("".join(row.split()).lower().split(',')).issubset(db_list))
-        invalid_codes = df.loc[subcodes.check == False].tmp_row.tolist()
+        #subcodes['check'] = subcodes[field][subcodes[field] != ""].apply(lambda row: set("".join(row.split()).lower().split(',')).issubset(db_list))
+        subcodes['check'] = subcodes[field].dropna().apply(lambda row: set("".join(row.split()).lower().split(',')).issubset(db_list))
+	invalid_codes = df.loc[subcodes.check == False].tmp_row.tolist()
 	return nan_rows, invalid_codes, subcodes
 
 taxonomy_checks = Blueprint('taxonomy_checks', __name__)
@@ -181,6 +183,7 @@ def taxonomy(all_dataframes,sql_match_tables,errors_dict,project_code,login_info
 		## END LOGIC CHECKS ##
 
 		## CUSTOM CHECKS ##
+		
 		## Jordan - Taxonomicqualifier Multi Value Lookup List: check to make sure taxonomicqualifier field data is valid (multiple values may be accepted).
 		errorLog(result['taxonomicqualifier'])
 		errorLog("Taxonomicqualifier Multi Value Lookup List: check to make sure taxonomicqualifier field data is valid (multiple values may be accepted).")
@@ -189,6 +192,14 @@ def taxonomy(all_dataframes,sql_match_tables,errors_dict,project_code,login_info
 		checkData(nan_rows,'taxonomicqualifier','custom error','error','At least one taxonomicqualifier code required please check the list: <a href=http://checker.sccwrp.org/smc/scraper?action=help&layer=lu_taxonomicqualifier target=_blank>qa list</a>.',result)
 		errorLog("Check submitted data for invalid code (or code combination):")
 		checkData(invalid_codes,'taxonomicqualifier','custom error','error','At least one Taxonomic Qualifier code is invalid please check the list: <a href=http://checker.sccwrp.org/smc/scraper?action=help&layer=lu_taxonomicqualifier target=_blank>qa list</a>',result)
+		
+		## Jordan -  Sample/Result SampleDate field - make sure user did not accidentally drag down date
+		errorLog('Sample/Result SampleDate field - make sure user did not accidentally drag down date')
+		if sampleinfo.sampledate.diff()[1:].sum() == pd.Timedelta('%s day' %(len(sampleinfo)-1)):
+			checkData(sampleinfo.loc[sampleinfo.sampledate.diff() == pd.Timedelta('1 day')].tmp_row.tolist(),'SampleDate','custom error','error','Consecutive Dates. Make sure you did not accidentally drag down the date',sampleinfo)
+		if result.sampledate.diff()[1:].sum() == pd.Timedelta('%s day' %(len(result)-1)):
+			checkData(result.loc[result.sampledate.diff() == pd.Timedelta('1 day')].tmp_row.tolist(),'SampleDate','custom error','error','Consecutive Dates. Make sure you did not accidentally drag down the date',result)
+
 		## END CUSTOM CHECKS ##
 		## END CHECKS ##
 
