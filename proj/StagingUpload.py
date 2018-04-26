@@ -279,7 +279,9 @@ def staging():
 	errorLog("END STAGING")
 	# check delineate variable and email sccwrp
 	if delineate == "no":
-		mail_body = "The following user: %s with agency/lab: %s attempted to submit data for owner: %s, project: %s, sampled year: %s, but the csci portion of the checker failed to process un-delineated stations." % (login,agency,owner,project,year)
+		message = "CSCI scores not available"
+		#mail_body = "The following user: %s with agency/lab: %s attempted to submit data for owner: %s, project: %s, sampled year: %s, but the csci portion of the checker failed to process un-delineated stations." % (login,agency,owner,project,year)
+		mail_body = 'You have submitted taxa for stations lacking GIS data required to calculate CSCI scores. SCCWRP has been notified, and these stations have been added to the queue for GIS analysis and CSCI score calculation. You will be automatically notified when CSCI scores are available for this site. For questions, contact <a href="mailto:raphaelm@sccwrp.org">Raphael Mazor (raphaelm@sccwrp.org)</a>.'
 		errorLog(mail_body)
 		status = internal_email("notify","checker@checker.sccwrp.org",["pauls@sccwrp.org"],message,mail_body)
 		if status == 1:

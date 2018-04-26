@@ -521,13 +521,14 @@ def checkLookupCodes(db,dbtype,eng,table_match,errors_dict,df):
 					df.ix[row_number, 'lookup_error'] = ""
 				count = 0
 				for item_number in (df_items[lower_item].index):
-					errorLog(item_number)
+					#errorLog("item_number: %s" % item_number)
 					#xmessage = "LOOKUP[%s]: { type: lookup, column: %s, error: %s }" % (str(count),item,df_items[lower_item].loc[item_number])
 					# added strip to remove double quotes in error field bug - 23apr2018
-					errorLog(df_items[lower_item].loc[item_number])
-					if math.isnan(df_items[lower_item].loc[item_number])==False:
+					#errorLog("df_items[lower_item].loc[item_number]: %s" % df_items[lower_item].loc[item_number])
+					if isinstance(df_items[lower_item].loc[item_number], basestring):
 						human_error = ("The data inserted ('%s') does not match the lookup list <a href='http://checker.sccwrp.org/smc/scraper?action=help&layer=%s' target='_blank'>%s</a> for the column" % (df_items[lower_item].loc[item_number].strip('"'),lookup_list[item][0],lookup_list[item][0]))
-					human_error = ("The data inserted ('%s') does not match the lookup list <a href='http://checker.sccwrp.org/smc/scraper?action=help&layer=%s' target='_blank'>%s</a> for the column" % (df_items[lower_item].loc[item_number].strip('"'),lookup_list[item][0],lookup_list[item][0]))
+					else:
+						human_error = ("The data inserted ('%s') does not match the lookup list <a href='http://checker.sccwrp.org/checker/scraper?action=help&layer=%s' target='_blank'>%s</a> for the column" % (df_items[lower_item].loc[item_number],lookup_list[item][0],lookup_list[item][0]))
 					unique_error = '{ "column": "%s", "error_type": "Lookup Fail", "error": "%s" }' % (item,human_error)
 					addErrorToList("errors",item_number,unique_error,df)
 					addErrorToList("lookup_error",item_number,unique_error,df)

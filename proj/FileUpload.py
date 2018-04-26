@@ -61,6 +61,8 @@ def exportToFile(all_dataframes,TIMESTAMP):
 			       	if table_name == 'tbl_taxonomyresults':
 				       	set_date = datetime.datetime.strptime("01/01/1950","%m/%d/%Y").strftime('%m/%d/%Y')
 					all_dataframes[dataframe]['enterdate'] = all_dataframes[dataframe]['enterdate'].fillna(set_date)
+					all_dataframes[dataframe]['resqualcode'] = all_dataframes[dataframe]['resqualcode'].apply(lambda x: "'=" if x == "=" else x)
+					all_dataframes[dataframe]['resqualcode'] = all_dataframes[dataframe]['resqualcode'].astype('str')
 				errorLog(all_dataframes[dataframe])
 
 				# write dataframe to excel worksheet

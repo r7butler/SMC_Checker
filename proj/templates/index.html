@@ -642,8 +642,8 @@ td {
 							if(data.message){
 								if(data.message == "Failed to run csci"){
 									$.toast({
-										heading: 'Failed CSCI',
-										text: 'You have submitted sites for which we do not delineated data. We are unable to process your CSCI scores. SCCWRP will be notified on final submission.' ,
+										heading: 'CSCI scores not available',
+										text: 'You have submitted taxa for stations lacking GIS data required to calculate CSCI scores. SCCWRP has been notified, and these stations have been added to the queue for GIS analysis. CSCI scores will be available after GIS analysis is complete. For questions, contact <a href="mailto:raphaelm@sccwrp.org">Raphael Mazor (raphaelm@sccwrp.org)</a>.',
 										position: 'mid-center',
 										icon: 'warning',
 										loader: false,
