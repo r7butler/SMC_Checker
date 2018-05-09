@@ -156,6 +156,7 @@ td {
 	var summary_file;
 	var table_match;
 	var status_timer;
+	var usession;
 	var timestamp;
 	var email_login;
 	var delineate;
@@ -167,28 +168,48 @@ td {
 					type: "POST",
 					data: "test",
 					processData: false,
-					contentType: false,
-					success: function(data){
+					contentType: false
+					}).done(function(data){
 						//console.log(data);
 						//$('#status').append(data.status_file);
-						console.log(data.key); // - show timestamp
+						console.log("data.key:"+ data.key); // - show timestamp
 						timestamp = data.timestamp;
 						usession = data.key;
 						get_status(data.timestamp);
-					},
-					error: function(data){
-						console.log("Application Error:"+ data.responseJSON.message); 
-						 message = "problem";
+					}).fail(function(data){
+						console.log("Application Error:"); 
+						message = "problem";
 						if(data.responseJSON.message){
 							message = data.responseJSON.message;
 						} else {
 							message = "Missing data.responseJSON.message";
 						}
-						end_loader('#core_progress','<span>Failed Core Checks <a href="#" data-role="button" data-icon="check" data-inl    ine="true" data-iconpos="notext"></a></span>');
+						end_loader('#core_progress','<span>Failed Core Checks <a href="#" data-role="button" data-icon="check" data-inline="true" data-iconpos="notext"></a></span>');
 						end_application("Application Failed","The application suffered a critical error. SCCWRP has been notified. The application will reload now","error",message,email_login,agency,"unknown");
-					}
-				})
-			}	
+					});
+			}	 // end function application
+	function clear_interface(){
+		console.log("clear interface");
+		// remove tabs from container
+		$( "#tabs" ).find(".ui-tabs-nav li").each(function(){
+			// need to wrap $(this) in a jquery object to make it usable
+			var $this = $(this);
+			console.log($this);
+			console.log($this.text());
+			if ($this.text() == "Submission Information"){
+				console.log("Submission information ignore");
+			} else {
+				$this.remove();
+			}
+		});
+		$("#tabs").tabs("refresh");
+		// clear indicators
+		$("#compare_list").html('');
+		$("#log_file").html('');
+		$("#excel_file").html('');
+		$("#submission_type").html('');
+		$("#assignment_type").html('');
+	}
 	function print_core_errors(server_object,error_title){
 		  console.log(server_object);
 		  $.each(server_object, function(array_key,array_val){
@@ -429,7 +450,7 @@ td {
 			console.log(tab_show);	
 			if(tab_show == "True"){
 				// create tab navigation button 
-				$('#tabsnav ul').append('<li><a href="#tab' + tkey + '">'+ tab_name + '</a></li>');
+				$('#tabsnav ul').append('<li><a href="#tab' + tkey + '" class="ui-tabs-anchor ui-link ui-btn">'+ tab_name + '</a></li>');
 				$("#tabs").tabs();
 				$("#tabs").tabs("refresh");
 				$("#tabs").tabs('load', tkey);
@@ -577,6 +598,7 @@ td {
 			})
 	}	
 	function upload(dropped_files){
+				console.log("function upload");
 				var formData = new FormData();
 				formData.append('login', email_login);
 				formData.append('agency', agency);
@@ -584,32 +606,7 @@ td {
 				formData.append('year', year);
 				formData.append('project', project);
 				formData.append('usession', usession);
-				// look to see if original_file is set
-				var original_file_set = $("#original_file").text();
-				console.log(original_file_set);
-				// if its set then this is a re-submission
-				if (original_file_set){
-					console.log("set");
-					// restart application - need to clear dom
-					application();
-					// remove tabs from container
-					var tab_count = $('#tabs').length + 1;
-					console.log("tab count: "+tab_count);
-					for(var t = 1; t < tab_count; ++t){
-						console.log("t: "+t);
-        					var tab = $( "#tabs" ).find(".ui-tabs-nav li:eq("+t+")").remove();
-						console.log(tab);
-					}
-        				$("#tabs").tabs("refresh");
-					// clear indicators
-					$("#compare_list").html('');
-					$("#log_file").html('');
-					$("#excel_file").html('');
-					$("#submission_type").html('');
-					$("#assignment_type").html('');
-				} else {
-					console.log("notset");
-				}
+				console.log("usession: "+usession);
 				// call application first
 				for(var i = 0; i < dropped_files.length; ++i){
 					/* submit as array to as file array - otherwise will fail */
@@ -778,7 +775,7 @@ td {
 			//console.log("test");
 			//report();
 
-			application();
+			//application();
 			function login(){
 				console.log("login routine");
 				$('<div>').simpledialog2({
@@ -813,7 +810,10 @@ td {
                                         })
 				});
 			}
-			login();
+                        // wait for application to get new session key
+                        $.when(application()).then(function(){
+				login();
+			});
 			//get_agency();
 
 			$("#checker_login_owner").change(function(e,u){
@@ -875,7 +875,23 @@ td {
 						alert("Please only submit one file at a time.");
 						return;
 					}
-					upload(dropped_files);
+					// look to see if original_file is set - if its set then this is a re-submission
+					var original_file_set = $("#original_file").text();
+					console.log("original_file_set: " + original_file_set);
+					if (original_file_set){
+						// wait for application to get new session key
+						$.when(application()).then(function(){
+							var answer = confirm("Application has detected new file. Do you want to clear the interface and check the new file?");
+							if (answer == true){
+								clear_interface();
+								upload(dropped_files);
+							} else {
+								// do nothing
+							}
+						});
+					} else {
+						upload(dropped_files);
+					}
 				}); // html drop function
 			}
 				$("#final_submit").click(function(e){
@@ -1042,7 +1058,7 @@ td {
 	  <div id="two" data-role="page">
 	    <div id="main" role="main" class="ui-content">
 		<a href="#" class="ui-btn" id="page_reload" rel="external">Reload Application</a>
-		<div id="tabs" data-role="tabs"><div id="tabsnav" data-role="navbar"><ul><li><a href="#home" class="ui-btn-active">Submission Information</a></li></ul></div>
+		<div id="tabs" class="tabs" data-role="tabs"><div id="tabsnav" data-role="navbar"><ul><li><a href="#home" class="ui-btn-active">Submission Information</a></li></ul></div>
 		<div id="home">
 		<ul data-role="listview" data-inset="true" data-divider-theme="a">
 		  <li>
