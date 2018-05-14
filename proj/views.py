@@ -128,11 +128,14 @@ def scraper():
 					print "primary_key: %s" % primary_key
 					try:
 						# get all fields first
-						sql_results = eng.execute("select * from %s order by %s asc" % (layer,primary_key[0]))
+						sql_statement = "select * from %s order by %s asc" % (layer,primary_key[0])
+						print sql_statement
+						#sql_results = eng.execute("select * from %s order by %s asc" % (layer,primary_key[0]))
+						sql_results = eng.execute(sql_statement)
 						scraper_results = DataFrame(sql_results.fetchall())
 						scraper_results.columns = sql_results.keys()
 						# for smc we only want columns with code or description in the name
-						show_cols = [col for col in scraper_results.columns if 'code' in col or 'description' in col or 'unitname' in col or 'finalid' in col]
+						show_cols = [col for col in scraper_results.columns if 'code' in col or 'description' in col or 'unitname' in col or 'finalid' in col or 'stationid' in col or 'stationname' in col]
 						scraper_results = scraper_results[show_cols]
 						# turn dataframe into dictionary object
 						scraper_json = scraper_results.to_dict('records')

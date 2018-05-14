@@ -543,9 +543,6 @@ core_checks = Blueprint('core_checks', __name__)
 def core(all_dataframes,sql_match_tables,errors_dict):
 	errorLog("Blueprint - Core")
 	statusLog("Starting Core Checks...")
-	#print(all_dataframes)
-	#print(sql_match_tables)
-	#all_dataframes = current_app.all_dataframes
 	db = current_app.db
 	dbtype = current_app.dbtype
 	eng = current_app.eng

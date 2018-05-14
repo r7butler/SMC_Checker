@@ -2,11 +2,10 @@
   <head>
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
 	<link rel="stylesheet" href="http://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.css" />
-	<link href='http://fonts.googleapis.com/css?family=Roboto+Slab:400,700' rel='stylesheet' type='text/css'>
 	<style>
 		* {
-			font-family: 'Open Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
-			box-sizing: border-box;
+			font-family: 'Roboto-Thin', 'Open Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
+			//box-sizing: border-box;
 		}
 		div {
 			display: block;
@@ -136,8 +135,9 @@ td {
     color: white;
 }  
 	</style>
-	<link rel="stylesheet" href="/smc/static/jquery.toast.css" />
+	<link href='http://fonts.googleapis.com/css?family=Roboto+Slab:400,700' rel='stylesheet' type='text/css'>
 	<link rel="stylesheet" type="text/css" href="http://dev.jtsage.com/cdn/simpledialog/latest/jquery.mobile.simpledialog.min.css" /> 
+	<link rel="stylesheet" href="/smc/static/jquery.toast.css" />
 	<script src="http://code.jquery.com/jquery-1.11.1.min.js"></script>
 	<script src="http://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.js"></script>
 	<script type="text/javascript" src="http://dev.jtsage.com/cdn/simpledialog/latest/jquery.mobile.simpledialog2.min.js"></script>
@@ -803,7 +803,7 @@ td {
 				$("#toast_owner").mouseover(function(e,u){
 					$.toast({
 						heading: 'Message',
-						text: 'Please indicate the data owner below. Typically, the agency that funded sample collection or analysis is the data owner [NOT OWNERS!]. Data owners may be contacted to authorize early release of data. If you have questions about data ownership, please contact Raphael Mazor at raphaelm@sccwrp.org',
+						text: 'Please indicate the data owner below. Typically, the agency that funded sample collection or analysis is the data owner [NOT OWNERS!]. Data owners may be contacted to authorize early release of data. If you have questions about data ownership, please contact Raphael Mazor at <a href="mailto:raphaelm@sccwrp.org">raphaelm@sccwrp.org</a>',
 						position: 'mid-center',
 						icon: 'info',
 						loader: false

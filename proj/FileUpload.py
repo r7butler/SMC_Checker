@@ -46,6 +46,7 @@ def exportToFile(all_dataframes,TIMESTAMP):
 					all_dataframes[dataframe].drop(['row'], axis = 1, inplace = True)
 				if 'tmp_row' in all_dataframes[dataframe]:
 					all_dataframes[dataframe].drop(['tmp_row'], axis = 1, inplace = True)
+				'''
 				# code specific to taxonomy sampleinfo and results - fill empties with -88 and 1/1/1980 added 25apr18
 			       	if table_name == 'tbl_taxonomysampleinfo':
 				       	# for future - call database and get integer, decimal, and date fields that are required
@@ -63,6 +64,7 @@ def exportToFile(all_dataframes,TIMESTAMP):
 					all_dataframes[dataframe]['enterdate'] = all_dataframes[dataframe]['enterdate'].fillna(set_date)
 					all_dataframes[dataframe]['resqualcode'] = all_dataframes[dataframe]['resqualcode'].apply(lambda x: "'=" if x == "=" else x)
 					all_dataframes[dataframe]['resqualcode'] = all_dataframes[dataframe]['resqualcode'].astype('str')
+				'''
 				errorLog(all_dataframes[dataframe])
 
 				# write dataframe to excel worksheet
@@ -285,6 +287,45 @@ def upload():
         				eng.dispose()
 
 					if match_tables:
+						errorLog("entering match_tables")
+						errorLog(match_tables)
+                                                # get split key to get matching table
+                				for dataframe in all_dataframes.keys():
+                        				errorLog("dataframe:")
+                        				errorLog(dataframe)
+						for m in match_tables:
+							# name of dataframe
+							errorLog("name of dataframe:")
+							errorLog(m[0])
+                                                	split_match_fields = m[0].split('-')
+                                                	# field three is matched table
+                                                	match_tables_index = split_match_fields[0]
+                                                	match_tables_sheet = split_match_fields[1]
+                                                	match_tables_name = split_match_fields[3]
+							match_tables_key = match_tables_index + ' - ' + match_tables_sheet + ' - ' + match_tables_name
+							errorLog(match_tables_key)
+
+							# code specific to taxonomy sampleinfo and results - fill empties with -88 and 1/1/1980 added 25apr18
+							if match_tables_name == 'tbl_taxonomysampleinfo':
+								# for future - call database and get integer, decimal, and date fields that are required
+								# replace empty integer and decimal and date values with nulls
+								errorLog(all_dataframes[match_tables_key]['replicatename'])
+								all_dataframes[match_tables_key].loc[:, ['replicatename','numberjars','percentsamplecounted','targetorganismcount','actualorganismcount','extraorganismcount','qcorganismcount','discardedorganismcount']] = all_dataframes[match_tables_key].loc[:, ['replicatename','numberjars','percentsamplecounted','targetorganismcount','actualorganismcount','extraorganismcount','qcorganismcount','discardedorganismcount']].fillna(-88)
+								for column_name in ['replicatename','numberjars','targetorganismcount','actualorganismcount','extraorganismcount','qcorganismcount','discardedorganismcount']:
+									all_dataframes[match_tables_key][column_name] = all_dataframes[match_tables_key][column_name].astype('int')
+								set_date = datetime.datetime.strptime("01/01/1950","%m/%d/%Y").strftime('%m/%d/%Y')
+								all_dataframes[match_tables_key]['replicatecollectiondate'] = all_dataframes[match_tables_key]['replicatecollectiondate'].fillna(set_date)
+								# replicatecollectiondate to datetime field
+								all_dataframes[match_tables_key]['replicatecollectiondate'] = pd.to_datetime(all_dataframes[match_tables_key]['replicatecollectiondate'])
+
+							if match_tables_name == 'tbl_taxonomyresults':
+								set_date = datetime.datetime.strptime("01/01/1950","%m/%d/%Y").strftime('%m/%d/%Y')
+								all_dataframes[match_tables_key]['enterdate'] = all_dataframes[match_tables_key]['enterdate'].fillna(set_date)
+								# enterdate field to datetime field
+								all_dataframes[match_tables_key]['enterdate'] = pd.to_datetime(all_dataframes[match_tables_key]['enterdate'])
+								all_dataframes[match_tables_key]['resqualcode'] = all_dataframes[match_tables_key]['resqualcode'].apply(lambda x: "'=" if x == "=" else x)
+								all_dataframes[match_tables_key]['resqualcode'] = all_dataframes[match_tables_key]['resqualcode'].astype('str')
+
 						data_checks, data_checks_redundant, errors_dict = core(all_dataframes,sql_match_tables, errors_dict)
 						errorLog(data_checks)
 						# move above - after match
