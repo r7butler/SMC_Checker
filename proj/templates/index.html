@@ -202,6 +202,13 @@ td {
 				$this.remove();
 			}
 		});
+		$.each(['#tab0','#tab1','#tab2','#tab3'], function(i,v){
+			console.log("looping: "+v);
+			if($(v).length != 0){
+				console.log($(v));
+				$(v).html('');
+			}
+		});
 		$("#tabs").tabs("refresh");
 		// clear indicators
 		$("#compare_list").html('');
