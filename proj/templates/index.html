@@ -160,6 +160,7 @@ td {
 	var timestamp;
 	var email_login;
 	var delineate;
+	var csci_message;
 	var agency;
 			function application(){
 				console.log("app routine");
@@ -216,6 +217,7 @@ td {
 		$("#excel_file").html('');
 		$("#submission_type").html('');
 		$("#assignment_type").html('');
+		$("#map_content").html('');
 	}
 	function print_core_errors(server_object,error_title){
 		  console.log(server_object);
@@ -294,7 +296,7 @@ td {
         				success: function(data) {
 						// probably need to adjust this if mail fails
 						console.log(data);
-						var answer = confirm("Restart the application?");
+						var answer = confirm("Thank you for submitting your data. SCCWRP staff along with committee have been notified of your submission. Restart the application?");
 						if (answer == true){
 							reload_page();
 							//report(); - moved into upload
@@ -463,7 +465,7 @@ td {
 				$("#tabs").tabs('load', tkey);
 				if(summary_file && tkey == 1){
 					$('#tabsnav ul').append('<li><a href="#tab3">CSCI</a></li>');
-					$('#tabs').append('<div id="tab3" style="overflow-y:auto; height: 100%;"><br><a href="http://checker.sccwrp.org/smc/logs/'+ summary_file + '.core.csv" target="_blank">CSCI component scores [Excel]</a> - <a href="http://checker.sccwrp.org/smc/logs/'+ summary_file + '.Suppl1_mmi.csv" target="_blank">Details about pMMI score [Excel]</a> - <a href="http://checker.sccwrp.org/smc/logs/'+ summary_file + '.Suppl1_grps.csv" target="_blank">Details on ref group membership [Excel]</a> - <a href="http://checker.sccwrp.org/smc/logs/'+ summary_file + '.Suppl1_OE.csv" target="_blank">Details about O/E score [Excel]</a> - <a href="http://checker.sccwrp.org/smc/logs/'+ summary_file + '.Suppl2_mmi.csv" target="_blank">Iteration-level details on pMMI score [Excel]</a> - <a href="http://checker.sccwrp.org/smc/logs/'+ summary_file + '.Suppl2_OE.csv" target="_blank">Iteration-level details on O/E score [Excel]</a></div>');
+					$('#tabs').append('<div id="tab3" style="overflow-y:auto; height: 100%;"><br><a href="http://smcchecker.sccwrp.org/smc/logs/'+ summary_file + '.core.csv" target="_blank">CSCI component scores [Excel]</a> - <a href="http://smcchecker.sccwrp.org/smc/logs/'+ summary_file + '.Suppl1_mmi.csv" target="_blank">Details about pMMI score [Excel]</a> - <a href="http://smcchecker.sccwrp.org/smc/logs/'+ summary_file + '.Suppl1_grps.csv" target="_blank">Details on ref group membership [Excel]</a> - <a href="http://smcchecker.sccwrp.org/smc/logs/'+ summary_file + '.Suppl1_OE.csv" target="_blank">Details about O/E score [Excel]</a> - <a href="http://smcchecker.sccwrp.org/smc/logs/'+ summary_file + '.Suppl2_mmi.csv" target="_blank">Iteration-level details on pMMI score [Excel]</a> - <a href="http://smcchecker.sccwrp.org/smc/logs/'+ summary_file + '.Suppl2_OE.csv" target="_blank">Iteration-level details on O/E score [Excel]</a></div>');
 				}
 		 		//$("#tabsnav").navbar();
 			}
@@ -643,18 +645,13 @@ td {
 							redundant_custom = data.redundant_custom;
 							console.log(redundant_custom)
 							summary_file = data.summary_file;
-							if(data.message){
-								if(data.message == "Failed to run csci"){
-									$.toast({
-										heading: 'CSCI scores not available',
-										text: 'You have submitted taxa for stations lacking GIS data required to calculate CSCI scores. SCCWRP has been notified, and these stations have been added to the queue for GIS analysis. CSCI scores will be available after GIS analysis is complete. For questions, contact <a href="mailto:raphaelm@sccwrp.org">Raphael Mazor (raphaelm@sccwrp.org)</a>.',
-										position: 'mid-center',
-										icon: 'warning',
-										loader: false,
-										hideAfter: false
-									})
-									delineate = "no";
-								}
+							// if the first element of the message array has a value then we need to let the user know
+						        //if(data.message[0]){
+						      	if($.inArray('CSCI Error:\n', data.message) > -1) {
+								user_alert = 'You have submitted taxa for stations lacking GIS data required to calculate CSCI scores. You can still submit your data without the CSCI scores. If you do submit, the stations without CSCI scores will be added to the queue for GIS analysis. CSCI scores will be available after GIS analysis is complete. For questions, contact Raphael Mazor (raphaelm@sccwrp.org). - Messages returned by system: '+data.message;
+								confirm(user_alert);
+								delineate = "no";
+								csci_message = data.message;
 							}
                                 			// when there are no errors we can make submission button available to load to staging
                                 			//if(error.total === 0 && allowed_to_submit === 0){ -- original probably dont need allowed_to_submit
@@ -810,7 +807,7 @@ td {
 				$("#toast_owner").mouseover(function(e,u){
 					$.toast({
 						heading: 'Message',
-						text: 'Please indicate the data owner below. Typically, the agency that funded sample collection or analysis is the data owner [NOT OWNERS!]. Data owners may be contacted to authorize early release of data. If you have questions about data ownership, please contact Raphael Mazor at <a href="mailto:raphaelm@sccwrp.org">raphaelm@sccwrp.org</a>',
+						text: 'Please indicate the data owner below. Typically, the agency that funded sample collection or analysis is the data owner. Data owners may be contacted to authorize early release of data. If you have questions about data ownership, please contact Raphael Mazor at <a href="mailto:raphaelm@sccwrp.org">raphaelm@sccwrp.org</a>',
 						position: 'mid-center',
 						icon: 'info',
 						loader: false
@@ -921,6 +918,7 @@ td {
 					formData.append('project', project);
 					formData.append('login', email_login);
 					formData.append('delineate', delineate);
+					formData.append('csci_message', csci_message);
 					get_status(timestamp); // turn on status logging
 					$.ajax({
 						url: $SCRIPT_ROOT + '/staging',

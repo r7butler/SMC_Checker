@@ -1,11 +1,20 @@
+#############
+## IMPORTS ##
+#############
 from flask import Blueprint, request, jsonify, session
+import os, time, datetime
 import pandas as pd
 import numpy as np
 import json
 from sqlalchemy import create_engine, exc, Table, Column, Integer, Unicode, MetaData, String, Text, update, and_, select, func, types
 from pandas import DataFrame
+from datetime import datetime
 from .ApplicationLog import *
 
+
+#####################
+## ERROR FUNCTIONS ##
+#####################
 def addErrorToList(error_column, row, error_to_add,df):
 	df.ix[int(row), 'row'] = str(row)
 	if error_column in df.columns:
@@ -106,8 +115,14 @@ def dcValueAgainstMultipleValues(eng,dbtable,dbfield,df,field):
 	invalid_codes = df.loc[subcodes.check == False].tmp_row.tolist()
 	return nan_rows, invalid_codes, subcodes
 
-taxonomy_checks = Blueprint('taxonomy_checks', __name__)
 
+
+
+
+###########################
+## BEGIN TAXONOMY SCRIPT ##
+###########################
+taxonomy_checks = Blueprint('taxonomy_checks', __name__)
 @taxonomy_checks.route("/taxonomy", methods=["POST"])
 
 def taxonomy(all_dataframes,sql_match_tables,errors_dict,project_code,login_info):
@@ -134,6 +149,11 @@ def taxonomy(all_dataframes,sql_match_tables,errors_dict,project_code,login_info
         custom_redundant_warnings = []
 
 	TIMESTAMP=str(session.get('key'))
+
+        ### get date and time
+        gettime = int(time.time())
+        timestamp_date = datetime.datetime.fromtimestamp(gettime)
+
 	# add submitted table names to list
 	tables = []
 	# match tablenames to tabs
@@ -152,8 +172,11 @@ def taxonomy(all_dataframes,sql_match_tables,errors_dict,project_code,login_info
 			result = all_dataframes[dataframe]
 			result['tmp_row'] = result.index
 
+
 	try:
-		## CHECKS ##
+                #####################
+		## CHECK FUNCTIONS ##
+                #####################
 		def checkData(statement,column,warn_or_error,error_label,human_error,dataframe):
 			errorLog("checkData warn_or_error: %s" % error_label)
 			for item_number in statement:
@@ -170,222 +193,450 @@ def taxonomy(all_dataframes,sql_match_tables,errors_dict,project_code,login_info
 				addErrorToList("custom_errors",item_number,unique_error,dataframe)
 				errorsCount(errors_dict,'custom')
 
-		## LOGIC ##
-		message = "Starting Taxonomy Logic Checks"
-		errorLog(message)
-		statusLog(message)
-		# EACH SAMPLEINFO INFORMATION RECORD MUST HAVE A CORRESPONDING RESULT RECORD. RECORDS ARE MATCHED ON STATIONCODE, SAMPLEDATE, FIELDREPLICATE.
+
+
+
+                
+                ##################
+		## LOGIC CHECKS ##
+                ##################
+		errorLog("Starting Taxonomy Logic Checks")
+		statusLog("Starting Taxonomy Logic Checks")
+		# each sampleinfo information record must have a corresponding result record. records are matched on stationcode, sampledate, fieldreplicate.
 		errorLog("## EACH SAMPLEINFO INFORMATION RECORD MUST HAVE A CORRESPONDING RESULT RECORD. RECORDS ARE MATCHED ON STATIONCODE, SAMPLEDATE, FIELDREPLICATE ##") 
 		errorLog(sampleinfo[~sampleinfo[['stationcode','sampledate','fieldreplicate']].isin(result[['stationcode','sampledate','fieldreplicate']].to_dict(orient='list')).all(axis=1)])
-		checkLogic(sampleinfo[~sampleinfo[['stationcode','sampledate','fieldreplicate']].isin(result[['stationcode','sampledate','fieldreplicate']].to_dict(orient='l    ist')).all(axis=1)].index.tolist(),'StationCode/SampleDate/FieldReplicate','Logic Error','error','Each Taxonomy SampleInfo record must have a corresponding Taxonomy Result record. Records are matched on StationCode,SampleDate, and FieldReplicate.',sampleinfo)
+		checkLogic(sampleinfo[~sampleinfo[['stationcode','sampledate','fieldreplicate']].isin(result[['stationcode','sampledate','fieldreplicate']].to_dict(orient='list')).all(axis=1)].index.tolist(),'StationCode/SampleDate/FieldReplicate','Logic Error','error','Each Taxonomy SampleInfo record must have a corresponding Taxonomy Result record. Records are matched on StationCode,SampleDate, and FieldReplicate.',sampleinfo)
 		errorLog(result[~result[['stationcode','sampledate','fieldreplicate']].isin(sampleinfo[['stationcode','sampledate','fieldreplicate']].to_dict(orient='list')).all(axis=1)])
-		checkLogic(result[~result[['stationcode','sampledate','fieldreplicate']].isin(sampleinfo[['stationcode','sampledate','fieldreplicate']].to_dict(orient='l    ist')).all(axis=1)].index.tolist(),'StationCode/SampleDate/FieldReplicate','Logic Error','error','Each Taxonomy Result record must have a corresponding Taxonomy SampleInfo record. Records are matched on StationCode,SampleDate, and FieldReplicate.',result)
-		## END LOGIC CHECKS ##
+		checkLogic(result[~result[['stationcode','sampledate','fieldreplicate']].isin(sampleinfo[['stationcode','sampledate','fieldreplicate']].to_dict(orient='list')).all(axis=1)].index.tolist(),'StationCode/SampleDate/FieldReplicate','Logic Error','error','Each Taxonomy Result record must have a corresponding Taxonomy SampleInfo record. Records are matched on StationCode,SampleDate, and FieldReplicate.',result)
 
+
+
+
+
+
+                ###################
 		## CUSTOM CHECKS ##
-		
+                ###################
+		message = "Starting Custom Taxonomy Checks"
+		errorLog(message)
+		statusLog(message)
 		## Jordan - Taxonomicqualifier Multi Value Lookup List: check to make sure taxonomicqualifier field data is valid (multiple values may be accepted).
 		errorLog(result['taxonomicqualifier'])
 		errorLog("Taxonomicqualifier Multi Value Lookup List: check to make sure taxonomicqualifier field data is valid (multiple values may be accepted).")
 		nan_rows, invalid_codes, subcodes  = dcValueAgainstMultipleValues(current_app.eng,'lu_taxonomicqualifier','taxonomicqualifiercode',result,'taxonomicqualifier')
 		errorLog("Check submitted data for at least one code:")
-		checkData(nan_rows,'taxonomicqualifier','custom error','error','At least one taxonomicqualifier code required please check the list: <a href=http://checker.sccwrp.org/smc/scraper?action=help&layer=lu_taxonomicqualifier target=_blank>qa list</a>.',result)
+		checkData(nan_rows,'taxonomicqualifier','custom error','error','At least one taxonomicqualifier code required please check the list: <a href=http://smcchecker.sccwrp.org/smc/scraper?action=help&layer=lu_taxonomicqualifier target=_blank>lu_taxonomicqualifier</a>.',result)
 		errorLog("Check submitted data for invalid code (or code combination):")
-		checkData(invalid_codes,'taxonomicqualifier','custom error','error','At least one Taxonomic Qualifier code is invalid please check the list: <a href=http://checker.sccwrp.org/smc/scraper?action=help&layer=lu_taxonomicqualifier target=_blank>qa list</a>',result)
-
-		
-		## Jordan -  Sample/Result SampleDate field - make sure user did not accidentally drag down date
-		errorLog('Sample/Result SampleDate field - make sure user did not accidentally drag down date')
-		if sampleinfo.sampledate.diff()[1:].sum() == pd.Timedelta('%s day' %(len(sampleinfo)-1)):
-			checkData(sampleinfo.loc[sampleinfo.sampledate.diff() == pd.Timedelta('1 day')].tmp_row.tolist(),'SampleDate','custom error','error','Consecutive Dates. Make sure you did not accidentally drag down the date',sampleinfo)
-		if result.sampledate.diff()[1:].sum() == pd.Timedelta('%s day' %(len(result)-1)):
-			checkData(result.loc[result.sampledate.diff() == pd.Timedelta('1 day')].tmp_row.tolist(),'SampleDate','custom error','error','Consecutive Dates. Make sure you did not accidentally drag down the date',result)
-
-
+		checkData(invalid_codes,'taxonomicqualifier','custom error','error','At least one Taxonomic Qualifier code is invalid please check the list: <a href=http://smcchecker.sccwrp.org/smc/scraper?action=help&layer=lu_taxonomicqualifier target=_blank>lu_taxonomicqualifier</a>',result)
 
 		## Jordan -  Sample/Result SampleDate field - make sure user did not accidentally drag down date
                 errorLog('Sample/Result SampleDate field - make sure user did not accidentally drag down date')
 		# If every date submitted is consecutive from the first, it will error out every row. Otherwise, no error is thrown.
 		if sampleinfo.sampledate.diff()[1:].sum() == pd.Timedelta('%s day' %(len(sampleinfo)-1)):
 			checkData(sampleinfo.loc[sampleinfo.sampledate.diff() == pd.Timedelta('1 day')].tmp_row.tolist(),'SampleDate','Custom Error','Error','Consecutive Dates. Make sure you did not accidentally drag down the date',sampleinfo)
-
 		if result.sampledate.diff()[1:].sum() == pd.Timedelta('%s day' %(len(result)-1)):
 			checkData(result.loc[result.sampledate.diff() == pd.Timedelta('1 day')].tmp_row.tolist(),'SampleDate','Custom Error','Error','Consecutive Dates. Make sure you did not accidentally drag down the date',result)
 
-		## END CUSTOM CHECKS ##
-		## START MAP CHECK ##
+
+                #####################
+                ## START MAP CHECK ##
+                #####################
 		# get a unique list of stations from results file
 		rlist_of_stations = pd.unique(result['stationcode'])
 		result_unique_stations = ','.join("'" + s + "'" for s in rlist_of_stations)
-		## END MAP CHECKS
-		## END CHECKS ##
 
+
+                ################
 		## NEW FIELDS ##
+                ################
 		sampleinfo['project_code'] = project_code
 		result['project_code'] = project_code
-		## END NEW FIELDS ##
+		
 
-		## ONCE DATA PASSES CHECKS - BUILD CSCI ##
-		## failure to run csci should not result in a failure to submit data - csci status should always = 0
-		try:
-			# dont run csci code if there are custom errors - data must be clean
-			total_count = errors_dict['total']
-			errorLog("total error count: %s" % total_count)
-			errorLog("project code: %s" % project_code)
-			if total_count == 0:
-				### START CSCI Code - SHOULD NOT RUN UNTIL AFTER ALL CHECKS####
-				errorLog("# START CSCI Code #")
-				# combine results and sampleinfo on stationcode we want to get collectionmethod field from sampleinfo
-				bugs = pd.merge(result,sampleinfo[['stationcode','fieldsampleid','fieldreplicate','collectionmethodcode']], on=['stationcode','fieldsampleid','fieldreplicate'], how='left')
-				list_of_unique_stations = pd.unique(bugs['stationcode'])
-				errorLog("list_of_unique_stations:")
-				errorLog(list_of_unique_stations)
-				unique_stations = ','.join("'" + s + "'" for s in list_of_unique_stations)
-				errorLog("unique_stations:")
-				errorLog(unique_stations)
+                ############################  Note: failure to run csci should not result in a failure
+		## BUILD and Process CSCI ##        to submit data - csci status should always = 0
+                ############################
+                
+                # Dont run csci code if there are custom errors - data must be clean
+                total_count = errors_dict['total']
+                errorLog("total error count: %s" % total_count)
+                errorLog("project code: %s" % project_code)
+                if total_count == 0:
 
-				# concatenate stationcode, sampledate, collectionmethod, fieldreplicate into one field called sampleid
-				#errorLog("create sampleid:")
-				#bugs["sampleid"] = bugs["stationcode"] + "_" + bugs["sampledate"].dt.strftime('%m%d%Y').map(str) + "_" + bugs["collectionmethodcode"] + "_" + bugs["fieldreplicate"]
-				# first get adjusted date
-				bugs["samplerealdate"] = bugs["sampledate"].dt.strftime('%m%d%Y').map(str)
-				# merge two
-				bugs["codeanddate"] = bugs.stationcode.astype(str).str.cat(bugs['samplerealdate'], sep='_')
-				# merge two
-				bugs["collectionandreplicate"] = bugs.collectionmethodcode.astype(str).str.cat(bugs['fieldreplicate'].astype(str), sep='_')
-				# merge both
-				bugs["sampleid"] = bugs.codeanddate.str.cat(bugs.collectionandreplicate, sep='_')
-				# drop temp columns
-				bugs.drop(['samplerealdate','codeanddate','collectionandreplicate'],axis=1,inplace=True)
+		        message = "Starting CSCI Processing..."
+		        errorLog(message)
+		        statusLog(message)
+                        msgs = []
+                        # combine results and sampleinfo on stationcode we want to get collectionmethod field from sampleinfo
+                        bugs = pd.merge(result,sampleinfo[['stationcode','fieldsampleid','fieldreplicate','collectionmethodcode']], on=['stationcode','fieldsampleid','fieldreplicate'], how='left')
 
-				#### BUGS IS BUILT OFF THE MERGENCE OF BUG FILE AND GISSTATIONCODEXWALK
-				# BUT STATIONCODE SHOULD ACTUALLY BE GISCODE NOT STATIONCODE
-				# ResultsTable:StationCode links to Crosswalk:StationCode, which links to GISMetrics:GISCode
-				# call gisxwalk table using unique stationcodes and get databasecode and giscode
-				eng = create_engine('postgresql://sde:dinkum@192.168.1.16:5432/smcphab')
-				sqlwalk = 'select stationcode,databasecode,giscode from tmp_lu_gisstationcodexwalk where stationcode in (%s)' % unique_stations
-				gisxwalk = pd.read_sql_query(sqlwalk,eng)
+                        # original submitted stations
+                        list_of_original_unique_stations = pd.unique(bugs['stationcode'])
+                        errorLog("list_of_original_unique_stations:")
+                        errorLog(list_of_original_unique_stations)
+                        unique_original_stations = ','.join("'" + s + "'" for s in list_of_original_unique_stations)
 
-				##### can the stations that the user submitted be found in the delineated table
-				errorLog("can the stations that the user submitted be found in the delineated table:")
-				delineated_stations_count = len(gisxwalk.index)
-				errorLog(delineated_stations_count)	
+                        # concatenate stationcode, sampledate, collectionmethod, fieldreplicate into one field called sampleid
+                        errorLog("create sampleid:")
+                        # first get adjusted date
+                        bugs["samplerealdate"] = bugs["sampledate"].dt.strftime('%m%d%Y').map(str)
+                        bugs["samplemonth"] = bugs["sampledate"].dt.strftime('%m').map(str)
+                        bugs["sampleday"] = bugs["sampledate"].dt.strftime('%d').map(str)
+                        bugs["sampleyear"] = bugs["sampledate"].dt.strftime('%Y').map(str)
+                        # merge two
+                        bugs["codeanddate"] = bugs.stationcode.astype(str).str.cat(bugs['samplerealdate'], sep='_')
+                        # merge two
+                        bugs["collectionandreplicate"] = bugs.collectionmethodcode.astype(str).str.cat(bugs['fieldreplicate'].astype(str), sep='_')
+                        # merge both
+                        bugs["sampleid"] = bugs.codeanddate.str.cat(bugs.collectionandreplicate, sep='_')
+                        # drop temp columns
+                        bugs.drop(['samplerealdate','codeanddate','collectionandreplicate'],axis=1,inplace=True)
 
-				## dont run rest of code if we cant delineate station
-				if delineated_stations_count:
-					bugs = pd.merge(bugs,gisxwalk[['stationcode','giscode','databasecode']], on = ['stationcode'], how='inner')
+                        # BUGS IS BUILT OFF THE MERGENCE OF BUG FILE AND GISSTATIONCODEXWALK
+                        # BUT STATIONCODE SHOULD ACTUALLY BE GISCODE NOT STATIONCODE
+                        # ResultsTable:StationCode links to Crosswalk:StationCode, which links to GISMetrics:GISCode
+                        # call gisxwalk table using unique stationcodes and get databasecode and giscode
+                        errorLog("building xwalk...")
+                        eng = create_engine('postgresql://sde:dinkum@192.168.1.17:5432/smc')
+                        sqlwalk = 'select stationcode,databasecode,giscode from lu_newgisstationcodexwalk where stationcode in (%s)' % unique_original_stations
+                        gisxwalk = pd.read_sql_query(sqlwalk,eng)
 
-					#### STATIONS IS BUILT OFF THE MERGENCE OF BUG FILE AND GISMETRICS
-					errorLog("building gismetrics...")
-					sqlmetrics = 'select * from tbl_gismetrics'
-					gismetrics = pd.read_sql_query(sqlmetrics,eng)
-					# merge gismetrics and gisxwalk to get giscode into dataframe
-					# merge bugs/stationcode and gismetrics/giscode
-					stations = pd.merge(gismetrics,bugs[['giscode']], left_on = ['stationcode'], right_on = ['giscode'], how='inner')
-					eng.dispose()
+                        #bugs = pd.merge(bugs,gisxwalk[['stationcode','giscode','databasecode']], on = ['stationcode'], how='inner')
+                        bugs = pd.merge(bugs,gisxwalk[['stationcode','giscode','databasecode']], on = ['stationcode'], how='inner')
 
-					# drop unnecessary columns
-					#summary.drop('result', axis=1, inplace=True)
-					bugs.drop(bugs[['fieldsampleid','unit','excludedtaxa','personnelcode_labeffort','personnelcode_results','enterdate','taxonomicqualifier','qacode','resqualcode','labsampleid','benthicresultscomments','agencycode_labeffort','tmp_row','result']], axis=1, inplace=True)
-					# if row exists drop row, errors, and lookup_error
-					if 'row' in bugs.columns:
-						bugs.drop(bugs[['row','errors']], axis=1, inplace=True)
-					if 'lookup_error' in bugs.columns:
-						bugs.drop(bugs[['lookup_error']], axis=1, inplace=True)
-					stations.drop(stations[['objectid','gdb_geomattr_data','shape']], axis=1, inplace=True)
-					# rename field
-					bugs = bugs.rename(columns={'stationcode': 'StationCode', 'sampledate': 'SampleDate', 'fieldreplicate': 'FieldReplicate', 'collectionmethodcode': 'CollectionMethodCode', 'finalid': 'FinalID', 'lifestagecode': 'LifeStageCode', 'baresult': 'BAResult', 'databasecode': 'DatabaseCode', 'sampleid': 'SampleID','distinctcode': 'Distinct'})
-					errorLog(bugs)
-					# drop all duplicates
-					stations.drop_duplicates(inplace=True)
-					errorLog(stations)
-					bugs_count = len(bugs.index)
-					stations_count = len(stations.index)
-					errorLog("bugs_count:")	
-					errorLog(bugs_count)	
-					errorLog("stations_count:")	
-					errorLog(stations_count)	
+                        # only process stations that have associated gismetric data
+                        missing_bugs_xwalk = set(list_of_original_unique_stations)-set(bugs.stationcode.tolist())
 
-					# if bugs and stations arent empty then run otherwise must be a problem with gismetrics
-					#if bugs_count and stations_count:
+                        # send email if stations missing GIS Metric data.
+                        if missing_bugs_xwalk:
+                            bad_stations = '\n'.join(str(x) for x in missing_bugs_xwalk)
+                            msgs.append('CSCI Error:\n')
+                            msgs.append('The following stations are missing GISXWalk data:\n')
+                            msgs.append(bad_stations)
+                            print msgs
 
-					# dump new bugs and stations dataframe to timestamp csv file location 
-					# timestamp.bugs.csv
-					errorLog("create bugs and stations file...")
-					bugs_filename = '/var/www/smc/files/' + TIMESTAMP + '.bugs.csv'
-					stations_filename = '/var/www/smc/files/' + TIMESTAMP + '.stations.csv'
-					errorLog(bugs_filename)
-					errorLog(stations_filename)
-					bugs.to_csv(bugs_filename, sep=',', encoding='utf-8', index=False)
-					stations.to_csv(stations_filename, sep=',', encoding='utf-8', index=False)
+                        # original stations translated to smc stations using giscode
+                        list_of_unique_stations = pd.unique(bugs['giscode'])
+                        errorLog("list_of_unique_stations:")
+                        errorLog(list_of_unique_stations)
+                        unique_stations = ','.join("'" + s + "'" for s in list_of_unique_stations)
 
-					# create bugs file by combining two excel tabs and making database call to get related crosswalk fields - single bugs dataframe
-					# dump bugs dataframe to timestamped csv
-					# create station file by getting subsetted fields from database - single stations dataframe
-					# dump stations dataframe to timestamped csv
-					# run csci script with new bugs/stations csv files
-					# outpute csci reports so user can download
-					errorLog("running csci tool...")
-					import subprocess
-					command = 'Rscript'
-					path2script = '/var/www/smc/proj/rscripts/csci.R'
-					args = [TIMESTAMP,bugs_filename,stations_filename]
-					cmd = [command, path2script] + args
-					#cmd = [command, path2script]
-					errorLog(cmd)
-					try:
-						x = subprocess.check_output(cmd, universal_newlines=True)
-						# NEED TO ADD CODE TO CHECK IF x = true
-						# IF x = true then all output files process properly
-						errorLog("x:")
-						errorLog(x)
-						file_to_get = "/var/www/smc/logs/%s.core.csv" % TIMESTAMP
-						errorLog("file to get:")
-						errorLog(file_to_get)
-						all_dataframes["2 - core_csv - tmp_cscicore"] = pd.read_csv('/var/www/smc/logs/%s.core.csv' % TIMESTAMP)
-						all_dataframes["2 - core_csv - tmp_cscicore"].columns = [x.lower() for x in all_dataframes["2 - core_csv - tmp_cscicore"].columns]
+                        #### STATIONS IS BUILT OFF THE MERGENCE OF BUG FILE AND GISMETRICS
+                        errorLog("building gismetrics...")
+                        sqlmetrics = 'select * from tbl_newgismetrics'
+                        gismetrics = pd.read_sql_query(sqlmetrics,eng)
+                        # merge gismetrics and gisxwalk to get giscode into dataframe
+                        # merge bugs/stationcode and gismetrics/giscode
+                        # check stations
+                        test_stations = pd.unique(bugs['stationcode'])
+                        # problem - gismetrics stationcode is replacing bugs-originalsubmission stationcode thats a problem
+                        errorLog(test_stations)
+                        # copy bugs.stationcode to retain in stations below
+                        bugs['original_stationcode'] = bugs['stationcode']
+                        stations = pd.merge(gismetrics,bugs[['giscode','original_stationcode']], left_on = ['stationcode'], right_on = ['giscode'], how='inner')
+                        # drop gismetrics stationcode
+                        stations.drop(['stationcode'],axis=1,inplace=True)
+                        stations.rename(columns={'original_stationcode': 'stationcode'}, inplace=True)
+                        eng.dispose()
+                        # check stations
+                        test2_stations = pd.unique(stations['stationcode'])
+                        errorLog(test2_stations)
 
-						## WHAT HAPPENS IF CSCI SCORE IS ALREADY IN DATABASE - MAY WANT TO CHECK ABOVE
-						errorLog("print core_csv columns:")
-						errorLog(list(all_dataframes["2 - core_csv - tmp_cscicore"]))
-						errorLog("remove index:")
-						all_dataframes["2 - core_csv - tmp_cscicore"].drop(['unnamed: 0'],axis=1, inplace=True)
-						errorLog(list(all_dataframes["2 - core_csv - tmp_cscicore"]))
-						errorLog(all_dataframes["2 - core_csv - tmp_cscicore"])
-						
-						summary_results_link = 'http://checker.sccwrp.org/smc/logs/%s.core.csv' % TIMESTAMP
-						summary_results_link = TIMESTAMP
+                        # only process stations that have associated gismetric data
+                        missing_bugs_stations = set(list_of_unique_stations)-set(bugs.giscode.tolist())
+                        missing_stations_stations = set(list_of_unique_stations)-set(stations.giscode.tolist())
 
-						### IMPORTANT LOAD ONE CSCI FIELD FROM CSV FILE AND MAP IT TO EXISTING BUGS/STATIONS DATAFRAME THEN OUTPUT TO CSV LOAD FILE FOR IMPORT
-						### AT STAGING INTO DATABASES
-						message = "Success CSCI"
-						errorLog(message)
-						state = 0
-					except subprocess.CalledProcessError as e:
-						# here is where we email sccwrp to let them know we couldnt get csci score for sampleid - we still need load the data and try to load other sampleids 
-						# if there are different return codes we can adjust below
-						if e.returncode == 1:
-						    errorLog("mail %s" % e.returncode)
-						errorLog("failed...%s" % e)
-						message = "Failed to run csci"
-						errorLog(message)
-						state = 0
-				else:
-					message = "Failed CSCI delineate"
-					#mail_body = "The following user: %s with agency/lab: %s attempted to submit data for owner: %s, project: %s, sampled year: %s, but the csci portion of the checker failed to process the following un-delineated stations: %s" % (login,agency,owner,project,year,unique_stations)
-					# let sccwrp know that a user is submitting data for a station that is not deliniated we will not be able process csci score
-					#errorLog(mail_body)
-					#status = internal_email("notify","checker@checker.sccwrp.org",["pauls@sccwrp.org"],message,mail_body)
-					#if status == 1:
-					#	errorLog("failed to email sccwrp")
-					#else:
-					#	errorLog("emailed sccwrp")
-					state = 0
-		except ValueError:
-			message = "Failed CSCI routine"	
-			errorLog(message)
-			state = 0
-		for dataframe in all_dataframes.keys():
+                        # send email if stations missing GIS Metric data.
+                        if missing_bugs_stations|missing_stations_stations:
+                            bad_stations = '\n'.join(str(x) for x in missing_bugs_stations.union(missing_stations_stations))
+                            msgs.append('CSCI Error:\n')
+                            msgs.append('The following stations are missing GISMetric data:\n')
+                            msgs.append(bad_stations)
+                            print msgs
+
+                        # drop unnecessary columns
+                        bugs.drop(bugs[['fieldsampleid','unit','excludedtaxa','personnelcode_labeffort','personnelcode_results','enterdate','taxonomicqualifier','qacode','resqualcode','labsampleid','benthicresultscomments','agencycode_labeffort','tmp_row','result']], axis=1, inplace=True)
+                        
+                        # if row exists drop row, errors, and lookup_error
+                        if 'row' in bugs.columns:
+                                bugs.drop(bugs[['row','errors']], axis=1, inplace=True)
+                        if 'lookup_error' in bugs.columns:
+                                bugs.drop(bugs[['lookup_error']], axis=1, inplace=True)
+                        stations.drop(stations[['objectid','gdb_geomattr_data','shape']], axis=1, inplace=True)
+                        
+                        # rename field
+                        bugs = bugs.rename(columns={'stationcode': 'StationCode', 'sampledate': 'SampleDate', 'fieldreplicate': 'FieldReplicate', 'collectionmethodcode': 'CollectionMethodCode', 'finalid': 'FinalID', 'lifestagecode': 'LifeStageCode', 'baresult': 'BAResult', 'databasecode': 'DatabaseCode', 'sampleid': 'SampleID','distinctcode': 'Distinct'})
+                        errorLog(bugs)
+                        
+                        # drop all duplicates
+                        stations.drop_duplicates(inplace=True)
+                        errorLog(stations)
+                        bugs_count = len(bugs.index)
+                        stations_count = len(stations.index)
+                        errorLog("bugs_count:")	
+                        errorLog(bugs_count)	
+                        errorLog("stations_count:")	
+                        errorLog(stations_count)	
+
+                        # Import and Execute cleanData and CSCI functions 
+                        import rpy2
+                        import rpy2.robjects as robjects
+                        from rpy2.robjects import pandas2ri
+                        import rpy2.robjects.packages as rpackages
+                        from rpy2.robjects.packages import importr
+                        import rpy2.rinterface as rinterface
+
+                        # shortens notation for accessing robjects
+                        r = robjects.r
+
+                        # imports R package: CSCI
+                        CSCI = importr('CSCI')
+
+                        # convert cleanData() and CSCI() functions from CSCI package to python
+                        cd = CSCI.cleanData
+                        csci = CSCI.CSCI
+
+                        # collect errors and error counts for each group
+                        error_count = {'clean data':0, 'CSCI': 0}
+                        cd_group_errors = []
+                        csci_group_errors = []
+
+                        # process cleanData and CSCI for each Sample
+                        bugs_grouped = bugs.groupby(['SampleID'])
+
+                        # open log file for printing status
+                        TIMESTAMP = str(int(round(time.time()*1000)))
+                        logfile = '/var/www/smc/testfiles/' + TIMESTAMP + '.log'
+
+                        # Activate R to Python DataFrame conversions
+                        pandas2ri.activate()
+
+                        start_time = int(time.time())
+                        count = 0
+                        for name, group in bugs_grouped:
+                            # print current group
+                            print "group name: %s" %(name)
+                            bug_sample_id = name
+                            
+                            # group stationcode to get just one
+                            single_station = group.StationCode.unique()
+                            
+                            # check to makesure there is only one
+                            print "stations_grouped: %s" % single_station[0]
+
+                            # find stationcode that matches between the bugs record and what is in stations
+                            station = stations.loc[stations['stationcode'] == single_station[0]]
+                            
+                            # convert group, station to R dataframe
+                            errorLog("convert group, station to R dataframe")
+                            group = pandas2ri.py2ri(group)
+                            station = pandas2ri.py2ri(station)
+
+                            # copy of group
+                            errorLog("make a copy of group and adjust sampledate fields")
+                            group_copy = group
+                            #errorLog("group_copy:")
+                            #errorLog(group_copy)
+                            group_copy = pandas2ri.ri2py(group_copy)
+                            #errorLog("list group copy:")
+                            #errorLog(list(group_copy))
+                            group_copy.columns = [x.lower() for x in group_copy.columns]
+                            # get samplemonth, sampleday, sampleyear for later use
+                            #group_copy["sampledate"] = pd.datetime.strptime(group_copy['sampledate'], '%Y-%m-%d')
+                            #group_copy["samplemonth"] = group_copy.sampledate.dt.month
+                            #group_copy["sampleday"] = group_copy.sampledate.dt.day
+                            #group_copy["sampleyear"] = group_copy.sampledate.dt.year
+
+                            # clean group with cleanData()
+                            cd_list = cd(group,msgs=True)
+                            group = cd_list[0]
+                            warn_msg = cd_list[1]
+
+                            # if data cannot be cleaned, prepare email message
+                            if warn_msg[0] != 'Data already clean':
+                                errorLog('cleanData Failed:\n')
+                                bad_station = 'cleanData failed on station %s:\n' %single_station[0]
+                                bad_group = 'Sample %s could not be cleaned because %s.' %(bug_sample_id,warn_msg[0])
+                                errorLog(bad_station)
+                                errorLog(bad_group)
+                                msgs.append('CSCI Error:\n')
+                                msgs.append(bad_station)
+                                msgs.append(bad_group)
+                                
+                            else:
+                                try:
+                                        errorLog("data is clean process csci")
+                                        errorLog(station)
+                                        errorLog(group)
+                                        report = csci(group,station)
+
+                                        # assign csci elements to proper tables
+                                        errorLog("assign elements to specific tables")
+                                        core = pandas2ri.ri2py(report[0])
+                                        s1mmi = pandas2ri.ri2py(report[1])
+                                        s1grps = pandas2ri.ri2py(report[2])
+                                        s1oe = pandas2ri.ri2py(report[3])
+                                        s2oe = pandas2ri.ri2py(report[4])
+                                        s2mmi = pandas2ri.ri2py(report[5])
+
+                                        # fields that need to be filled
+                                        errorLog("first - csci")
+                                        errorLog(core)
+                                        core.columns = [x.lower() for x in core.columns]
+                                        core['processed_by'] = "checker"
+                                        core['cleaned'] = "Yes"
+                                        core['scorenotes'] = "Distinct set to NA"
+                                        core['rand'] = 2
+                                        core['scoredate'] = timestamp_date
+                                        core['record_origin'] = project # should probably be SMC
+                                        core['origin_lastupdatedate'] = timestamp_date
+                                        core['record_publish'] = "False"
+                                        core = pd.merge(core,group_copy[['sampleid','sampledate','sampleday','samplemonth','sampleyear','collectionmethodcode','fieldreplicate']], on = ['sampleid'], how='left')
+                                        core = core.drop_duplicates()
+                                        core_file = "/var/www/smc/logs/%s.core.csv" % TIMESTAMP
+                                        # only show header once
+                                        if count == 0:
+                                            core.to_csv(core_file, sep=',', mode='a', encoding='utf-8', index=False)
+                                        else:
+                                            # skip next loop
+                                            core.to_csv(core_file, sep=',', mode='a', encoding='utf-8', index=False, header=False)
+
+                                        errorLog("second - s1mmi")
+                                        s1mmi.columns = [x.lower() for x in s1mmi.columns]
+                                        s1mmi['processed_by'] = "checker"
+                                        s1mmi.rename(columns={'coleoptera_percenttaxa_predicted': 'coleoptera_percenttaxa_predict'}, inplace=True)
+                                        s1mmi['record_origin'] = project # should probably be SMC
+                                        s1mmi['origin_lastupdatedate'] = timestamp_date
+                                        s1mmi['record_publish'] = "False"
+                                        s1mmi = s1mmi.drop_duplicates()
+                                        s1mmi_file = "/var/www/smc/logs/%s.Suppl1_mmi.csv" % TIMESTAMP
+                                        # only show header once
+                                        if count == 0:
+                                            s1mmi.to_csv(s1mmi_file, sep=',', mode='a', encoding='utf-8', index=False)
+                                        else:
+                                            # skip next loop
+                                            s1mmi.to_csv(s1mmi_file, sep=',', mode='a', encoding='utf-8', index=False, header=False)
+
+                                        errorLog("third - s2mmi")
+                                        s2mmi.columns = [x.lower() for x in s2mmi.columns]
+                                        s2mmi['processed_by'] = "checker"
+                                        s2mmi['record_origin'] = project # should probably be SMC
+                                        s2mmi['origin_lastupdatedate'] = timestamp_date
+                                        s2mmi['record_publish'] = "False"
+                                        s2mmi = s2mmi.drop_duplicates()
+                                        s2mmi_file = "/var/www/smc/logs/%s.Suppl2_mmi.csv" % TIMESTAMP
+                                        # only show header once
+                                        if count == 0:
+                                            s2mmi.to_csv(s2mmi_file, sep=',', mode='a', encoding='utf-8', index=False)
+                                        else:
+                                            # skip next loop
+                                            s2mmi.to_csv(s2mmi_file, sep=',', mode='a', encoding='utf-8', index=False, header=False)
+
+                                        errorLog("fourth - s1grps")
+                                        s1grps.columns = [x.lower() for x in s1grps.columns]
+                                        s1grps['processed_by'] = "checker"
+                                        s1grps['record_origin'] = project # should probably be SMC
+                                        s1grps['origin_lastupdatedate'] = timestamp_date
+                                        s1grps['record_publish'] = "False"
+                                        s1grps = s1grps.drop_duplicates()
+                                        s1grps_file = "/var/www/smc/logs/%s.Suppl1_grps.csv" % TIMESTAMP
+                                        # only show header once
+                                        if count == 0:
+                                            s1grps.to_csv(s1grps_file, sep=',', mode='a', encoding='utf-8', index=False)
+                                        else:
+                                            # skip next loop
+                                            s1grps.to_csv(s1grps_file, sep=',', mode='a', encoding='utf-8', index=False, header=False)
+
+                                        errorLog("fifth - s1oe")
+                                        s1oe.columns = [x.lower() for x in s1oe.columns]
+                                        #print s1oe
+                                        #s1oe['objectid'] = s1oe.apply(lambda x: int(x.objectid) + x.index, axis=1)
+                                        s1oe['processed_by'] = "checker"
+                                        s1oe['record_origin'] = project # should probably be SMC
+                                        s1oe['origin_lastupdatedate'] = timestamp_date
+                                        s1oe['record_publish'] = "False"
+                                        s1oe = s1oe.drop_duplicates()
+                                        s1oe_file = "/var/www/smc/logs/%s.Suppl1_OE.csv" % TIMESTAMP
+                                        # only show header once
+                                        if count == 0:
+                                            s1oe.to_csv(s1oe_file, sep=',', mode='a', encoding='utf-8', index=False)
+                                        else:
+                                            # skip next loop
+                                            s1oe.to_csv(s1oe_file, sep=',', mode='a', encoding='utf-8', index=False, header=False)
+                
+                                        errorLog("sixth - s2oe")
+                                        s2oe.columns = [x.lower() for x in s2oe.columns]
+                                        # fill na with -88
+                                        #s2oe.fillna(-88, inplace=True)
+                                        s2oe['captureprob'].replace(['NA'], -88, inplace=True)
+                                        s2oe['processed_by'] = "checker"
+                                        s2oe['record_origin'] = project # should probably be SMC
+                                        s2oe['origin_lastupdatedate'] = timestamp_date
+                                        s2oe['record_publish'] = "False"
+                                        s2oe = s2oe.drop_duplicates()
+                                        s2oe_file = "/var/www/smc/logs/%s.Suppl2_OE.csv" % TIMESTAMP
+                                        # only show header once
+                                        if count == 0:
+                                            s2oe.to_csv(s2oe_file, sep=',', mode='a', encoding='utf-8', index=False)
+                                        else:
+                                            # skip next loop
+                                            s2oe.to_csv(s2oe_file, sep=',', mode='a', encoding='utf-8', index=False, header=False)
+
+                                        summary_results_link = TIMESTAMP
+
+                                        count = count + 1
+                                        #file_to_get = "/var/www/smc/logs/%s.core.csv" % TIMESTAMP
+                                        #errorLog("file to get:")
+                                        #errorLog(file_to_get)
+                                        #all_dataframes["2 - core_csv - tmp_cscicore"] = pd.read_csv('/var/www/smc/logs/%s.core.csv' % TIMESTAMP)
+                                        #all_dataframes["2 - core_csv - tmp_cscicore"].columns = [x.lower() for x in all_dataframes["2 - core_csv - tmp_cscicore"].columns]
+
+                                        ## WHAT HAPPENS IF CSCI SCORE IS ALREADY IN DATABASE - MAY WANT TO CHECK ABOVE
+                                        #errorLog("print core_csv columns:")
+                                        #errorLog(list(all_dataframes["2 - core_csv - tmp_cscicore"]))
+                                        #errorLog("remove index:")
+                                        #all_dataframes["2 - core_csv - tmp_cscicore"].drop(['unnamed: 0'],axis=1, inplace=True)
+                                        #errorLog(list(all_dataframes["2 - core_csv - tmp_cscicore"]))
+                                        #errorLog(all_dataframes["2 - core_csv - tmp_cscicore"])
+                                        #
+                                        #summary_results_link = 'http://smcchecker.sccwrp.org/smc/logs/%s.core.csv' % TIMESTAMP
+                                        #summary_results_link = TIMESTAMP
+
+                                        ### IMPORTANT LOAD ONE CSCI FIELD FROM CSV FILE AND MAP IT TO EXISTING BUGS/STATIONS DATAFRAME THEN OUTPUT TO CSV LOAD FILE FOR IMPORT
+                                        ### AT STAGING INTO DATABASES
+                                        #message = "Success CSCI"
+                                        #errorLog(message)
+                                        # code below wont work do to sampledate getting changed to number instead of date - fails on submission
+                                        #all_dataframes["2 - CSCI_Core - csci_core"] = core
+                                        #all_dataframes["3 - CSCI_Suppl1_MMI - csci_suppl1_mmi"] = s1mmi
+                                        #all_dataframes["4 - CSCI_Suppl2_MMI - csci_suppl2_mmi"] = s2mmi
+                                        #all_dataframes["5 - CSCI_Suppl1_GRPS - csci_suppl1_grps"] = s1grps
+                                        #all_dataframes["6 - CSCI_Suppl1_OE - csci_suppl1_oe"] = s1oe
+                                        #all_dataframes["7 - CSCI_Suppl2_OE - csci_suppl2_oe"] = s2oe
+                                        
+                                        
+                                        message = str(msgs)
+                                        state = 0
+                                except Exception as e:
+                                        # here is where we email sccwrp to let them know we couldnt get csci score for sampleid - we still need load the data and try to load other sampleids 
+                                        bad_station = '\n CSCI Processing Failed on station %s:\n' %single_station[0]
+                                        bad_group = 'Sample %s could not be processed because %s.\n' % (bug_sample_id,e[0])
+                                        
+                                        msgs.append('CSCI Error:\n')
+                                        msgs.append(bad_station)
+                                        msgs.append(bad_group)
+                                        
+                                        errorLog("CSCI ran into the following error: %s" % e[0])
+                                        msgs.append('Failed to run csci\n')
+                                        
+                                        
+                                        
+                        message = msgs
+                        errorLog(message)
+                        state = 0
+		
+                
+                for dataframe in all_dataframes.keys():
 			if 'custom_errors' in all_dataframes[dataframe]:
 				custom_errors.append(getCustomErrors(all_dataframes[dataframe],dataframe,'custom_errors'))
 				custom_redundant_errors.append(getCustomRedundantErrors(all_dataframes[dataframe],dataframe,"custom_errors"))
@@ -408,3 +659,4 @@ def taxonomy(all_dataframes,sql_match_tables,errors_dict,project_code,login_info
 		errorLog(message)
 		state = 1
 		return jsonify(message=message,state=state)
+

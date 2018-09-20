@@ -23,34 +23,53 @@ def exportToFile(all_dataframes,TIMESTAMP):
 	try:
 		# export existing dataframe to file with tab names as destintation table name (if it has one) - load to database
 		export_file = '/var/www/smc/files/%s-export.xlsx' % TIMESTAMP
-                export_writer = pd.ExcelWriter(export_file, engine='xlsxwriter',options={'strings_to_formulas': False})
+		export_writer = pd.ExcelWriter(export_file, engine='xlsxwriter')
 
 		# export existing dataframe to file with tab names as destintation table name (if it has one) - return to user
 		excel_file = '/var/www/smc/logs/%s-format.xlsx' % TIMESTAMP
-		excel_link = 'http://smcchecker.sccwrp.org/smc/logs/%s-format.xlsx' % TIMESTAMP
-                excel_writer = pd.ExcelWriter(excel_file, engine='xlsxwriter',options={'strings_to_formulas': False})
+		#excel_link = 'http://smcchecker.sccwrp.org/smc/logs/%s-format.xlsx' % TIMESTAMP
+		# TESTING EXPORT TO EXCEL IN NEW SERVER - JORDAN 8/15/2018
+                excel_link = '192.168.1.17/smc/logs/%s-format.xlsx' % TIMESTAMP
+                excel_writer = pd.ExcelWriter(excel_file, engine='xlsxwriter')
 		# creates workbook that includes specified formats
 		workbook = excel_writer.book
 
 		for dataframe in all_dataframes.keys():
+			errorLog("dataframe:")
+			errorLog(dataframe)	
 			df_sheet_and_table_name = dataframe.strip().split(" - ")
 			errorLog("df_sheet_and_table_name: %s" % df_sheet_and_table_name)
 			table_name = str(df_sheet_and_table_name[2])
 			errorLog("table_name: %s" % table_name)
 			# only export tab name as destination table name if there was a match - otherwise leave as is
 			if table_name:
-				# drop necessary fields for export to excel 
-				errorLog("drop tmp_row, row, index, and calculated fields for export to excel:")
-				
-				if 'analyteclass' in all_dataframes[dataframe]:
-					all_dataframes[dataframe].drop(['analyteclass'], axis = 1, inplace = True)
-				if 'percentrecovery' in all_dataframes[dataframe]:
-					all_dataframes[dataframe].drop(['percentrecovery'], axis = 1, inplace = True)
+				# drop tmp_row, row, and index for export to excel 
+				errorLog("drop tmp_row, row, and index for export to excel:")
 				if 'row' in all_dataframes[dataframe]:
 					all_dataframes[dataframe].drop(['row'], axis = 1, inplace = True)
 				if 'tmp_row' in all_dataframes[dataframe]:
 					all_dataframes[dataframe].drop(['tmp_row'], axis = 1, inplace = True)
-				
+				'''
+				# code specific to taxonomy sampleinfo and results - fill empties with -88 and 1/1/1980 added 25apr18
+			       	if table_name == 'tbl_taxonomysampleinfo':
+				       	# for future - call database and get integer, decimal, and date fields that are required
+				       	# replace empty integer and decimal and date values with nulls
+					errorLog(all_dataframes[dataframe]['replicatename'])
+					all_dataframes[dataframe].loc[:, ['replicatename','numberjars','percentsamplecounted','targetorganismcount','actualorganismcount','extraorganismcount','qcorganismcount','discardedorganismcount']] = all_dataframes[dataframe].loc[:, ['replicatename','numberjars','percentsamplecounted','targetorganismcount','actualorganismcount','extraorganismcount','qcorganismcount','discardedorganismcount']].fillna(-88)
+					#all_dataframes[dataframe]['replicatename','numberjars','targetorganismcount','actualorganismcount','extraorganismcount','qcorganismcount','discardedorganismcount'] = all_dataframes[dataframe]['replicatename','numberjars','targetorganismcount','actualorganismcount','extraorganismcount','qcorganismcount','discardedorganismcount'].astype('int')
+					for column_name in ['replicatename','numberjars','targetorganismcount','actualorganismcount','extraorganismcount','qcorganismcount','discardedorganismcount']:
+						all_dataframes[dataframe][column_name] = all_dataframes[dataframe][column_name].astype('int')
+				       	set_date = datetime.datetime.strptime("01/01/1950","%m/%d/%Y").strftime('%m/%d/%Y')
+				       	#all_dataframes[dataframe]['replicatecollectiondate'].replace(r'^\s*$', set_date, regex=True, inplace = True)
+					all_dataframes[dataframe]['replicatecollectiondate'] = all_dataframes[dataframe]['replicatecollectiondate'].fillna(set_date)
+			       	if table_name == 'tbl_taxonomyresults':
+				       	set_date = datetime.datetime.strptime("01/01/1950","%m/%d/%Y").strftime('%m/%d/%Y')
+					all_dataframes[dataframe]['enterdate'] = all_dataframes[dataframe]['enterdate'].fillna(set_date)
+					all_dataframes[dataframe]['resqualcode'] = all_dataframes[dataframe]['resqualcode'].apply(lambda x: "'=" if x == "=" else x)
+					all_dataframes[dataframe]['resqualcode'] = all_dataframes[dataframe]['resqualcode'].astype('str')
+				'''
+				errorLog(all_dataframes[dataframe])
+
 				# write dataframe to excel worksheet
 				errorLog("write dataframe to export writer:")
 				all_dataframes[dataframe].to_excel(export_writer, sheet_name=table_name)
@@ -66,15 +85,23 @@ def exportToFile(all_dataframes,TIMESTAMP):
 					# create worksheet object
 					worksheet = excel_writer.sheets[table_name]
 					# if there are errors or custom_errors process them - there will only be one type (errors or custom_errors)
-					if 'errors' in all_dataframes[dataframe]:										
-						dfc = all_dataframes[dataframe].loc[~all_dataframes[dataframe]['errors'].isnull()]['errors']
+					errorLog("if there are errors or custom_errors process them - there will only be one type (errors or custom_errors)")
+					if 'errors' in all_dataframes[dataframe]:
+                				dfc = all_dataframes[dataframe].loc[~all_dataframes[dataframe]['errors'].isnull()]['errors']
 						output_column_name = 'errors'
 					if 'custom_errors' in all_dataframes[dataframe]:
                 				dfc = all_dataframes[dataframe].loc[~all_dataframes[dataframe]['custom_errors'].isnull()]['custom_errors']
 						output_column_name = 'custom_errors'
                 			# there can be multiple errors in a row lets make them tuples of dicts
-                			dfc = dfc.apply(lambda x: eval(x))
+
+					dfc = dfc.apply(lambda x: eval(x))
+
+					errorLog("there can be multiple errors in a row lets make them tuples of dicts")
+                			#dfc = dfc.apply(lambda x: eval(x))
+					errorLog(dfc)
+
 					# create color formatting
+					errorLog("create color formatting")
 				        format_red = workbook.add_format({'bg_color': '#FFC7CE','border': 1,'border_color': '#800000','bold': True})
 				        format_yellow = workbook.add_format({'bg_color': '#FFFF00','border': 1,'border_color': '#800000','bold': True})
 					# loop through error dict
@@ -184,7 +211,7 @@ def createMap(list_of_stations,timestamp):
 def upload():
 	errorLog("Function - upload")
 	statusLog("Function - upload")
-	errors_dict = {'total': 0, 'mia': 0, 'lookup': 0, 'duplicate': 0, 'custom': 0, 'match': 0, 'warnings': 0}
+	errors_dict = {'total': 0, 'mia': 0, 'lookup': 0, 'duplicate': 0, 'custom': 0, 'match': 0}
 	# probably need to do something dramatic here if login and agency arent submitted - javascript requires them though
 	errorLog("get login:")
 	login = request.form['login']
@@ -220,7 +247,7 @@ def upload():
 	# all values in errors_dict need to be set to 0 at start of application
 	for k,v in errors_dict.iteritems():
 		errors_dict[k] = 0
-		
+	
 	try:
 		errorLog(request.path)
 		#uploaded_file = request.files['file[]']
@@ -256,8 +283,8 @@ def upload():
 					state = 0
 
 					all_dataframes, sql_match_tables, match_tables = match(infile,errors_dict)
-					
-					eng = create_engine('postgresql://sde:dinkum@192.168.1.17:5432/smc') # postgresql
+
+        				eng = create_engine('postgresql://sde:dinkum@192.168.1.17:5432/smc') # postgresql
 					sql_session = "update submission_tracking_table set match = 'yes' where sessionkey = '%s'" % TIMESTAMP
         				session_results = eng.execute(sql_session)
         				eng.dispose()
@@ -274,54 +301,45 @@ def upload():
 							errorLog("name of dataframe:")
 							errorLog(m[0])
                                                 	split_match_fields = m[0].split('-')
-                                                        # you wont be able to split unless the table is matched
-                                                        # length should be 7 fields
-                                                        errorLog("length")
-                                                        errorLog(len(split_match_fields))
-                                                        if len(split_match_fields) >= 4:
-                                                            # field three is matched table
-                                                            match_tables_index = split_match_fields[0]
-                                                            match_tables_sheet = split_match_fields[1]
-                                                            match_tables_name = split_match_fields[3]
-                                                            match_tables_key = match_tables_index + ' - ' + match_tables_sheet + ' - ' + match_tables_name
-                                                            errorLog(match_tables_key)
+                                                	# field three is matched table
+                                                	match_tables_index = split_match_fields[0]
+                                                	match_tables_sheet = split_match_fields[1]
+                                                	match_tables_name = split_match_fields[3]
+							match_tables_key = match_tables_index + ' - ' + match_tables_sheet + ' - ' + match_tables_name
+							errorLog(match_tables_key)
 
-                                                            # code specific to taxonomy sampleinfo and results - fill empties with -88 and 1/1/1980 added 25apr18
-                                                            if match_tables_name == 'tbl_taxonomysampleinfo':
-                                                                    # for future - call database and get integer, decimal, and date fields that are required
-                                                                    # replace empty integer and decimal and date values with nulls
-                                                                    errorLog(all_dataframes[match_tables_key]['replicatename'])
-                                                                    all_dataframes[match_tables_key].loc[:, ['replicatename','numberjars','percentsamplecounted','targetorganismcount','actualorganismcount','extraorganismcount','qcorganismcount','discardedorganismcount']] = all_dataframes[match_tables_key].loc[:, ['replicatename','numberjars','percentsamplecounted','targetorganismcount','actualorganismcount','extraorganismcount','qcorganismcount','discardedorganismcount']].fillna(-88)
-                                                                    for column_name in ['replicatename','numberjars','targetorganismcount','actualorganismcount','extraorganismcount','qcorganismcount','discardedorganismcount']:
-                                                                            all_dataframes[match_tables_key][column_name] = all_dataframes[match_tables_key][column_name].astype('int')
-                                                                    set_date = datetime.datetime.strptime("01/01/1950","%m/%d/%Y").strftime('%m/%d/%Y')
-                                                                    all_dataframes[match_tables_key]['replicatecollectiondate'] = all_dataframes[match_tables_key]['replicatecollectiondate'].fillna(set_date)
-                                                                    # replicatecollectiondate to datetime field
-                                                                    all_dataframes[match_tables_key]['replicatecollectiondate'] = pd.to_datetime(all_dataframes[match_tables_key]['replicatecollectiondate'])
+							# code specific to taxonomy sampleinfo and results - fill empties with -88 and 1/1/1980 added 25apr18
+							if match_tables_name == 'tbl_taxonomysampleinfo':
+								# for future - call database and get integer, decimal, and date fields that are required
+								# replace empty integer and decimal and date values with nulls
+								errorLog(all_dataframes[match_tables_key]['replicatename'])
+								all_dataframes[match_tables_key].loc[:, ['replicatename','numberjars','percentsamplecounted','targetorganismcount','actualorganismcount','extraorganismcount','qcorganismcount','discardedorganismcount']] = all_dataframes[match_tables_key].loc[:, ['replicatename','numberjars','percentsamplecounted','targetorganismcount','actualorganismcount','extraorganismcount','qcorganismcount','discardedorganismcount']].fillna(-88)
+								for column_name in ['replicatename','numberjars','targetorganismcount','actualorganismcount','extraorganismcount','qcorganismcount','discardedorganismcount']:
+									all_dataframes[match_tables_key][column_name] = all_dataframes[match_tables_key][column_name].astype('int')
+								set_date = datetime.datetime.strptime("01/01/1950","%m/%d/%Y").strftime('%m/%d/%Y')
+								all_dataframes[match_tables_key]['replicatecollectiondate'] = all_dataframes[match_tables_key]['replicatecollectiondate'].fillna(set_date)
+								# replicatecollectiondate to datetime field
+								all_dataframes[match_tables_key]['replicatecollectiondate'] = pd.to_datetime(all_dataframes[match_tables_key]['replicatecollectiondate'])
 
-                                                            if match_tables_name == 'tbl_taxonomyresults':
-                                                                    set_date = datetime.datetime.strptime("01/01/1950","%m/%d/%Y").strftime('%m/%d/%Y')
-                                                                    all_dataframes[match_tables_key]['enterdate'] = all_dataframes[match_tables_key]['enterdate'].fillna(set_date)
-                                                                    # enterdate field to datetime field
-                                                                    all_dataframes[match_tables_key]['enterdate'] = pd.to_datetime(all_dataframes[match_tables_key]['enterdate'])
-                                                                    all_dataframes[match_tables_key]['resqualcode'] = all_dataframes[match_tables_key]['resqualcode'].apply(lambda x: "'=" if x == "=" else x)
-                                                                    all_dataframes[match_tables_key]['resqualcode'] = all_dataframes[match_tables_key]['resqualcode'].astype('str')
+							if match_tables_name == 'tbl_taxonomyresults':
+								set_date = datetime.datetime.strptime("01/01/1950","%m/%d/%Y").strftime('%m/%d/%Y')
+								all_dataframes[match_tables_key]['enterdate'] = all_dataframes[match_tables_key]['enterdate'].fillna(set_date)
+								# enterdate field to datetime field
+								all_dataframes[match_tables_key]['enterdate'] = pd.to_datetime(all_dataframes[match_tables_key]['enterdate'])
+								all_dataframes[match_tables_key]['resqualcode'] = all_dataframes[match_tables_key]['resqualcode'].apply(lambda x: "'=" if x == "=" else x)
+								all_dataframes[match_tables_key]['resqualcode'] = all_dataframes[match_tables_key]['resqualcode'].astype('str')
 
 						data_checks, data_checks_redundant, errors_dict = core(all_dataframes,sql_match_tables, errors_dict)
 						errorLog(data_checks)
-
 						# move above - after match
 						errorLog("sql_match_tables:")
 						errorLog(sql_match_tables)
-						# dictionary list of required tables by data type - made into lists instead of strings 15mar18 - supports variations
-						required_tables_dict = {'chemistry': [['tbl_chembatch','tbl_chemresults'],['tbl_chemresults','tbl_chembatch']],'toxicity': [['tbl_toxbatch','tbl_toxresults','tbl_toxwq'],['tbl_toxresults','tbl_toxbatch','tbl_toxwq'],['tbl_toxwq','tbl_toxresults','tbl_toxbatch'],['tbl_toxwq','tbl_toxbatch','tbl_toxresults'],['tbl_toxbatch','tbl_toxwq','tbl_toxresults']], 'field': [['tbl_stationoccupation','tbl_trawlevent'],['tbl_trawlevent','tbl_stationoccupation'],['tbl_stationoccupation','tbl_grabevent'],['tbl_grabevent','tbl_stationoccupation'],['tbl_stationoccupation','tbl_trawlevent','tbl_grabevent'],['tbl_trawlevent','tbl_grabevent','tbl_stationoccupation']], 'taxonomy': [['tbl_taxonomysampleinfo','tbl_taxonomyresults'],['tbl_taxonomyresults','tbl_taxonomysampleinfo']],'invert': [['tbl_trawlinvertebrateabundance','tbl_trawlinvertebratebiomass'],['tbl_trawlinvertebratebiomass','tbl_trawlinvertebrateabundance']],'ocpw': [['tbl_ocpwlab']],'debris': [['tbl_trawldebris']],'ptsensor': [['tbl_ptsensorresults']],'infauna': [['tbl_infaunalabundance_initial'],['tbl_infaunalabundance_qareanalysis']]}
+						# dictionary list of required tables by data type
+						required_tables_dict = {'chemistry': ['tbl_chembatch','tbl_chemresults'],'toxicity': ['tbl_toxicitybatch'],'field': ['tbl_stationoccupation','tbl_trawlevent'],'field': ['tbl_stationoccupation','tbl_grabevent'],'field': ['tbl_stationoccupation','tbl_trawlevent','tbl_grabevent'], 'fish': ['tbltrawlfishabundance','tblfishbiomass'],'ocpw': ['tbl_ocpwlab'],'taxonomy': ['tbl_taxonomysampleinfo','tbl_taxonomyresults']}
 						match_dataset = "" 	# start empty
-						errorLog("required_tables_dict:")
-						errorLog(required_tables_dict)
 						for k,v in required_tables_dict.items():
-							if sql_match_tables in v:
-								message = "Custom: Found exact match: %s, %s" % (k,v[v.index(sql_match_tables)])
-								print message
+							if set(sql_match_tables) == set(v):
+								message = "Custom: Found exact match: %s, %s" % (k,v)
 								match_dataset = k
 						errorLog("match_dataset: ")
 						errorLog(match_dataset)
@@ -330,7 +348,41 @@ def upload():
 						total_count = errors_dict['total']
 						errorLog("total error count: %s" % total_count)
 
-						if match_dataset == "taxonomy" and total_count == 0:
+						if match_dataset == "toxicity" and total_count == 0:
+							custom_checks, custom_redundant_checks, message = toxicity(all_dataframes,sql_match_tables,errors_dict,project_code,login_info)
+        						eng = create_engine('postgresql://sde:dinkum@192.168.1.17:5432/smc') # postgresql
+							sql_session = "update submission_tracking_table set extended_checks = 'yes', extended_checks_type = '%s' where sessionkey = '%s'" % (match_dataset,TIMESTAMP)
+        						session_results = eng.execute(sql_session)
+        						eng.dispose()
+
+							errors_count = json.dumps(errors_dict)	# dump error count dict
+
+							# create excel files
+							status, excel_link = exportToFile(all_dataframes,TIMESTAMP)
+
+							return jsonify(message=message,state=state,table_match=match_tables, business=data_checks,redundant=data_checks_redundant,custom=custom_checks,redundant_custom=custom_redundant_checks,errors=errors_count,excel=excel_link,original_file=originalfilename,modified_file=newfilename,datatype=match_dataset)
+
+						elif match_dataset == "chemistry" and total_count == 0:
+							assignment_table, custom_checks, custom_redundant_checks = chemistry(all_dataframes,sql_match_tables,errors_dict)
+
+        						eng = create_engine('postgresql://sde:dinkum@192.168.1.17:5432/smc') # postgresql
+							sql_session = "update submission_tracking_table set extended_checks = 'yes', extended_checks_type = '%s' where sessionkey = '%s'" % (match_dataset,TIMESTAMP)
+        						session_results = eng.execute(sql_session)
+        						eng.dispose()
+
+							errors_count = json.dumps(errors_dict)	# dump error count dict
+							# export field or sample assignment dataframe - need to import in StagingUpload.py
+							errorLog(assignment_table)
+							assignment_file = '/var/www/smc/files/%s-assignment.csv' % TIMESTAMP
+							assignment_table.to_csv(assignment_file, sep=',', encoding='utf-8', index=False)
+
+							# create excel files
+							status, excel_link = exportToFile(all_dataframes,TIMESTAMP)
+	
+							# used for reporting - either field or sample
+							assignment_table = "sample"
+							return jsonify(message=message,state=state,table_match=match_tables, business=data_checks,redundant=data_checks_redundant,custom=custom_checks,redundant_custom=custom_redundant_checks,errors=errors_count,excel=excel_link,assignment=assignment_table,original_file=originalfilename,modified_file=newfilename,datatype=match_dataset)
+						elif match_dataset == "taxonomy" and total_count == 0:
 							assignment_table, custom_checks, custom_redundant_checks, summary_checks, summary_results_link, message, unique_stations = taxonomy(all_dataframes,sql_match_tables,errors_dict,project_code,login_info)
 							errorLog("list of unique_stations:")
 							errorLog(unique_stations)
@@ -343,6 +395,11 @@ def upload():
         						eng.dispose()
 
 							errors_count = json.dumps(errors_dict)	# dump error count dict
+							# export field or sample assignment dataframe - need to import in StagingUpload.py
+							#errorLog(assignment_table)
+							#assignment_file = '/var/www/smc/files/%s-assignment.csv' % TIMESTAMP
+							#assignment_table.to_csv(assignment_file, sep=',', encoding='utf-8', index=False)
+							#assignment_table = ""
 
 							# create excel files
 							status, excel_link = exportToFile(all_dataframes,TIMESTAMP)
@@ -350,39 +407,24 @@ def upload():
 							# used for reporting - either field or sample
 							assignment_table = ""
 							return jsonify(message=message,state=state,table_match=match_tables, business=data_checks,redundant=data_checks_redundant,custom=custom_checks,redundant_custom=custom_redundant_checks,summary=summary_checks,summary_file=summary_results_link,errors=errors_count,excel=excel_link,assignment=assignment_table,original_file=originalfilename,modified_file=newfilename,datatype=match_dataset,map=map_url)
-						elif match_dataset == "fish" and total_count == 0:
-							custom_checks, custom_redundant_checks = fish(all_dataframes,sql_match_tables,errors_dict)
-
-        						eng = create_engine('postgresql://sde:dinkum@192.168.1.17:5432/smc') # postgresql
-							sql_session = "update submission_tracking_table set extended_checks = 'yes', extended_checks_type = '%s' where sessionkey = '%s'" % (match_dataset,TIMESTAMP)
-        						session_results = eng.execute(sql_session)
-        						eng.dispose()
-
-							errors_count = json.dumps(errors_dict)	# dump error count dict
-
-							# create excel files
-							status, excel_link = exportToFile(all_dataframes,TIMESTAMP)
-	
-							return jsonify(message=message,state=state,table_match=match_tables, business=data_checks,redundant=data_checks_redundant,custom=custom_checks,redundant_custom=custom_redundant_checks,errors=errors_count,excel=excel_link,original_file=originalfilename,modified_file=newfilename,datatype=match_dataset)
 						else:
 							# we may want to create a submission option here find a way to export dataframe to file - with matching table names as tab names
 							errorLog("submitted data didnt match a set of data (like toxicity, chemistry, etc...)")
-                                                        message = ""
-							# check to see if one of the sheets submitted match one of the values in required_tables_dict
-							# if that is the case then the user needs to submit the required number of sheets
-							for key, value in required_tables_dict.items():
-								for v in value:
-									overlap = set(sql_match_tables) & set(v)
-									if overlap:
-                                                                                # user submitted correct data but there are errors
-                                                                                errorLog(overlap)
-										#message = "missing required tables"
-                                                                        else:
-                                                                                errorLog(v)
 							errors_count = json.dumps(errors_dict)	# dump error count dict
 
 							# create excel files
 							status, excel_link = exportToFile(all_dataframes,TIMESTAMP)
+
+
+							# disable for testing
+							#status = ""
+							#excel_link = ""
+
+
+							errorLog("finished exportToFile - end of checks - return to browser")
+							
+							# map check
+     							#map_check=json.dumps({"0":[{"point":"0"},{"value": [{"lat": "33.000","lon":"-118.00"}]}]}, sort_keys = False, indent = 2)
 
 							return jsonify(message=message,state=state,table_match=match_tables, business=data_checks,redundant=data_checks_redundant,errors=errors_count,excel=excel_link,original_file=originalfilename,modified_file=newfilename)
 					else:

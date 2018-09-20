@@ -39,6 +39,8 @@ def staging():
 	errorLog("assignment: %s" % assignment)
 	delineate = request.form['delineate']
 	errorLog("delineate: %s" % delineate)
+	csci_message = request.form['csci_message']
+	errorLog("csci_message: %s" % csci_message)
 	state = 0
 	TIMESTAMP=str(session.get('key'))
 	errorLog("Processing submission: %s" % TIMESTAMP)
@@ -79,12 +81,12 @@ def staging():
 		# make copy of table to load and fix columns
 		try:
 			errorLog("Make copy of table: %s" % table_name)
-     			src_engine = create_engine('postgresql://sde:dinkum@192.168.1.16:5432/smcphab')
+     			src_engine = create_engine('postgresql://sde:dinkum@192.168.1.17:5432/smc')
 			src_engine._metadata = MetaData(bind=src_engine)
 			src_engine._metadata.reflect(src_engine)
 			src_table = Table(table_name, src_engine._metadata)
 			errorLog(src_table)
-			dest_engine = create_engine('postgresql://sde:dinkum@192.168.1.16:5432/smcphab')
+			dest_engine = create_engine('postgresql://sde:dinkum@192.168.1.17:5432/smc')
 			dest_engine._metadata = MetaData(bind=dest_engine,schema='sde')
 			dest_tbl = Table(staging_table_name, dest_engine._metadata)
 			errorLog(dest_tbl)
@@ -138,7 +140,7 @@ def staging():
 			errorLog("Loading staging to production for table: %s" % table_name)
 			# dont run production unless staging succeeded
 			if state == 0:
-     				eng = create_engine('postgresql://sde:dinkum@192.168.1.16:5432/smcphab')
+     				eng = create_engine('postgresql://sde:dinkum@192.168.1.17:5432/smc')
 				# works but below is more precise - sql = 'INSERT INTO %s (SELECT * FROM %s)' % (table_name,staging_table_name)
 				sql = 'INSERT INTO "' + table_name + '" (objectid, globalid, created_user, created_date, last_edited_user, last_edited_date, login_email, login_agency, login_owner, login_year, login_project, '+ df_column_names + ') select sde.next_rowid(%s,%s), sde.next_globalid(), created_user, created_date, last_edited_user, last_edited_date, login_email, login_agency, login_owner, login_year, login_project, ' + df_column_names + ' from "' + staging_table_name + '"'
 				errorLog(sql)
@@ -161,12 +163,12 @@ def staging():
 	# end for
 	if state == 0:
         	# set submit in submission tracking table
- 		eng = create_engine('postgresql://sde:dinkum@192.168.1.16:5432/smcphab')
+ 		eng = create_engine('postgresql://sde:dinkum@192.168.1.17:5432/smc')
 		sql_session = "update submission_tracking_table set submit = 'yes' where sessionkey = '%s'" % TIMESTAMP
 		session_results = eng.execute(sql_session)
      		eng.dispose()
 	else:
- 		eng = create_engine('postgresql://sde:dinkum@192.168.1.16:5432/smcphab')
+ 		eng = create_engine('postgresql://sde:dinkum@192.168.1.17:5432/smc')
 		sql_session = "update submission_tracking_table set submit = 'no' where sessionkey = '%s'" % TIMESTAMP
 		session_results = eng.execute(sql_session)
      		eng.dispose()
@@ -204,7 +206,7 @@ def staging():
 			#0       0000  City of San Diego     Eohaustorius estuarius     29
 			#2   B18-8002  City of San Diego     Eohaustorius estuarius      1
 			# may need to update last_edited_user and last_edited_date also
-			eng = create_engine('postgresql://sde:dinkum@192.168.1.16:5432/smcphab') # postgresql
+			eng = create_engine('postgresql://sde:dinkum@192.168.1.17:5432/smc') # postgresql
 			for index, row in assignment_table.iterrows():
 				#errorLog(row['stationid'],row['lab'],row['species'])
 				sql = "update sample_assignment_table set submissionstatus = 'complete', submissiondate = '%s' where stationid = '%s' and lab = '%s' and parameter = '%s'" % (timestamp_date,row['stationid'],row['lab'],row['species'])
@@ -218,7 +220,7 @@ def staging():
 			#assignment_table = occupation.groupby(['stationid','samplingorganization','collectiontype','stationfail','abandoned']).size().to_frame(name = 'count').reset_index()
 			# B18-9202,Los Angeles County Sanitation Districts,Grab,None or No Failure,No,1
 			# B18-9202,Los Angeles County Sanitation Districts,Trawl 10 Minutes,Other - another reason not listed why site was abandoned,Yes,1
-			eng = create_engine('postgresql://sde:dinkum@192.168.1.16:5432/smcphab') # postgresql
+			eng = create_engine('postgresql://sde:dinkum@192.168.1.17:5432/smc') # postgresql
 			for index, row in assignment_table.iterrows():
 				if row['collectiontype'] == 'Grab':
 					sql = "update field_assignment_table set grabsubmit = 'complete', grabstationfail = '%s', grababandoned = '%s', grabsubmissiondate = '%s' where stationid = '%s' and grabagency = '%s'" % (row['stationfail'],row['abandoned'],timestamp_date,row['stationid'],row['samplingorganization'])
@@ -242,7 +244,7 @@ def staging():
 		# dont run the code below unless all above was successfull
 		if assignment and state == 0 and submission_type != 'field':
 			submission_type_uc = submission_type.title()
-			eng = create_engine('postgresql://sde:dinkum@192.168.1.16:5432/smcphab') # postgresql
+			eng = create_engine('postgresql://sde:dinkum@192.168.1.17:5432/smc') # postgresql
 			sql = "select stationid,lab,parameter,submissionstatus from sample_assignment_table where lab = '%s' order by submissionstatus desc" % agency
 			sql_parameters = "select distinct parameter from sample_assignment_table where datatype = '%s'" % submission_type_uc
 			errorLog(sql)
@@ -256,7 +258,7 @@ def staging():
 			parameter_list = json.dumps([r for r, in parameter_results])
 			state = 0
 		if assignment and state == 0 and submission_type == 'field':
-			eng = create_engine('postgresql://sde:dinkum@192.168.1.16:5432/smcphab') # postgresql
+			eng = create_engine('postgresql://sde:dinkum@192.168.1.17:5432/smc') # postgresql
 			sql = "select stationid,grabagency,trawlagency,grabsubmit,trawlsubmit from field_assignment_table where trawlagency = '%s' or grabagency = '%s' order by stationid asc" % (agency,agency)
 			errorLog(sql)
 			report_results = eng.execute(sql)
@@ -281,9 +283,10 @@ def staging():
 	if delineate == "no":
 		message = "CSCI scores not available"
 		#mail_body = "The following user: %s with agency/lab: %s attempted to submit data for owner: %s, project: %s, sampled year: %s, but the csci portion of the checker failed to process un-delineated stations." % (login,agency,owner,project,year)
-		mail_body = 'You have submitted taxa for stations lacking GIS data required to calculate CSCI scores. SCCWRP has been notified, and these stations have been added to the queue for GIS analysis and CSCI score calculation. You will be automatically notified when CSCI scores are available for this site. For questions, contact <a href="mailto:raphaelm@sccwrp.org">Raphael Mazor (raphaelm@sccwrp.org)</a>.'
+		#mail_body = 'You have submitted taxa for stations lacking GIS data required to calculate CSCI scores. SCCWRP has been notified, and these stations have been added to the queue for GIS analysis and CSCI score calculation. You will be automatically notified when CSCI scores are available for this site. For questions, contact <a href="mailto:raphaelm@sccwrp.org">Raphael Mazor (raphaelm@sccwrp.org)</a>.'
+		mail_body = csci_message
 		errorLog(mail_body)
-		status = internal_email("notify","checker@checker.sccwrp.org",["pauls@sccwrp.org"],message,mail_body)
+		status = internal_email("notify","checker@smcchecker.sccwrp.org",["pauls@sccwrp.org"],message,mail_body)
 		if status == 1:
 			errorLog("failed to email sccwrp")
 		else:
@@ -291,7 +294,7 @@ def staging():
 	if project != "SMC":
 		mail_body = "The following user: %s with agency/lab: %s attempted to submit data for owner: %s, project: %s, sampled year: %s. The user selected 'Other' for project." % (login,agency,owner,project,year)
 		errorLog(mail_body)
-		status = internal_email("notify","checker@checker.sccwrp.org",["pauls@sccwrp.org"],message,mail_body)
+		status = internal_email("notify","checker@smcchecker.sccwrp.org",["pauls@sccwrp.org"],message,mail_body)
 		if status == 1:
 			errorLog("failed to email sccwrp")
 		else:

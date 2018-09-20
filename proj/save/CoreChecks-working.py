@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify, session
 import json
+import math
 import pandas as pd
 import numpy as np
 import cerberus
@@ -180,8 +181,6 @@ def checkTableMetadata(db,dbtype,eng,table_match,errors_dict,df):
 					unique_error = '{"column": "%s", "error_type": "Data Type", "error": "%s"}' % (e,human_error)
 				else:
 					# there may be an issue with using row[e] instead of just row - for now will leave as is 5nov17
-					# remove double quotes from user input - new code 22may18
-					row[e] = row[e].replace('"', '')
 					errorLog("column: %s, error: %s, row: %s" % (e,v.errors[e],row[e])); # removed 4nov17 may have issues
 					#errorLog("column: %s, error: %s, row: %s" % (e,v.errors[e],row)); # replacement 4nov17
 					#unique_error = '{"column": "%s", "error_type": "Data Type", "error": "%s"}' % (e,v.errors[e]) # replacement 4nov17 
@@ -456,7 +455,7 @@ def checkLookupCodes(db,dbtype,eng,table_match,errors_dict,df):
 				errorLog("NOT A PROBLEM")
 				sub_list = []
 				for s in sub_rows:
-					#errorLog(s[0])
+					errorLog(s[0])
 					sub_list.append(s[0])
 				return q[1],sub_list
 			# there is a foreign key but no records we need to check against excel submission instead
@@ -522,16 +521,14 @@ def checkLookupCodes(db,dbtype,eng,table_match,errors_dict,df):
 					df.ix[row_number, 'lookup_error'] = ""
 				count = 0
 				for item_number in (df_items[lower_item].index):
-					errorLog(item_number)
+					#errorLog("item_number: %s" % item_number)
 					#xmessage = "LOOKUP[%s]: { type: lookup, column: %s, error: %s }" % (str(count),item,df_items[lower_item].loc[item_number])
 					# added strip to remove double quotes in error field bug - 23apr2018
 					#errorLog("df_items[lower_item].loc[item_number]: %s" % df_items[lower_item].loc[item_number])
 					if isinstance(df_items[lower_item].loc[item_number], basestring):
-						# remove double quotes from user input - new code 22may18
-						df_items[lower_item].loc[item_number] = df_items[lower_item].loc[item_number].replace('"', '')
-						human_error = ("The data inserted ('%s') does not match the lookup list <a href='http://smcchecker.sccwrp.org/smc/scraper?action=help&layer=%s' target='_blank'>%s</a> for the column" % (df_items[lower_item].loc[item_number].strip('"'),lookup_list[item][0],lookup_list[item][0]))
+						human_error = ("The data inserted ('%s') does not match the lookup list <a href='http://checker.sccwrp.org/smc/scraper?action=help&layer=%s' target='_blank'>%s</a> for the column" % (df_items[lower_item].loc[item_number].strip('"'),lookup_list[item][0],lookup_list[item][0]))
 					else:
-						human_error = ("The data inserted ('%s') does not match the lookup list <a href='http://smcchecker.sccwrp.org/smc/scraper?action=help&layer=%s' target='_blank'>%s</a> for the column" % (df_items[lower_item].loc[item_number],lookup_list[item][0],lookup_list[item][0]))
+						human_error = ("The data inserted ('%s') does not match the lookup list <a href='http://checker.sccwrp.org/smc/scraper?action=help&layer=%s' target='_blank'>%s</a> for the column" % (df_items[lower_item].loc[item_number],lookup_list[item][0],lookup_list[item][0]))
 					unique_error = '{ "column": "%s", "error_type": "Lookup Fail", "error": "%s" }' % (item,human_error)
 					addErrorToList("errors",item_number,unique_error,df)
 					addErrorToList("lookup_error",item_number,unique_error,df)
@@ -546,9 +543,6 @@ core_checks = Blueprint('core_checks', __name__)
 def core(all_dataframes,sql_match_tables,errors_dict):
 	errorLog("Blueprint - Core")
 	statusLog("Starting Core Checks...")
-	#print(all_dataframes)
-	#print(sql_match_tables)
-	#all_dataframes = current_app.all_dataframes
 	db = current_app.db
 	dbtype = current_app.dbtype
 	eng = current_app.eng

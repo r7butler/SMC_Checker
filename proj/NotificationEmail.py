@@ -32,7 +32,7 @@ def test_email():
 	if action == "critical":
 		msg = Message("smc - application failure",
                 	sender="admin@checker.sccwrp.org",
-                  	recipients=["pauls@sccwrp.org"])
+                  	recipients=["smc-im@sccwrp.org"])
 		msg.body = "critical body of email - action = " + str(action) + " - " + str(message_return) + " - " + str(login_return)
 	if action == "success":
 		# if type_of_data = toxicity then email
@@ -40,15 +40,15 @@ def test_email():
 		if type_of_data == "toxicity":
 			msg = Message("toxicity smc - successful data load",
                   		sender="admin@checker.sccwrp.org",
-                  		recipients=["b18im-tox@sccwrp.org"])
+                  		recipients=["smc-im@sccwrp.org"])
 		elif type_of_data == "field":
 			msg = Message("field smc - successful data load",
                   		sender="admin@checker.sccwrp.org",
-                  		recipients=["b18im-field@sccwrp.org"])
+                  		recipients=["smc-im@sccwrp.org"])
 		else:
 			msg = Message("smc - successful data load",
                   		sender="admin@checker.sccwrp.org",
-                  		recipients=["pauls@sccwrp.org"])
+                  		recipients=["smc-im@sccwrp.org"])
 		#msg.body = "successful body of email - action = " + str(action) + " - " + str(type_of_data) + " - " + str(message_return) + " - " + str(login_return)
 		msg.body = "SCCWRP has received a successful %s submission from %s for %s. For future - the user submitted [row count] and [row count] were successfully entered into the database." % (str(type_of_data),str(login_return),str(agency_return))
 	mail.send(msg)

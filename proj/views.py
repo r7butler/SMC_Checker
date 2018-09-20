@@ -1,17 +1,34 @@
 from proj import app
-from flask import send_from_directory, render_template, request, redirect, Response, jsonify, json
+from functools import wraps
+from flask import send_from_directory, render_template, request, redirect, Response, jsonify, json, current_app
 from sqlalchemy import create_engine, text
 from sqlalchemy import exc
 import urllib, json
 import pandas as pd
 import numpy as np
+import time, datetime
+from datetime import datetime
 import psycopg2
 from pandas import DataFrame
 import folium
+import xlsxwriter
+
+
+def support_jsonp(f):
+        """Wraps JSONified output for JSONP"""
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            callback = request.args.get('callback', False)
+            if callback:
+                content = str(callback) + '(' + str(f(*args,**kwargs).data) + ')'
+                return current_app.response_class(content, mimetype='application/javascript')
+            else:
+                return f(*args, **kwargs)
+        return decorated_function
 
 @app.route('/')
 def index():
-	eng = create_engine('postgresql://smcread:1969$Harbor@192.168.1.16:5432/smcphab')
+	eng = create_engine('postgresql://smcread:1969$Harbor@192.168.1.17:5432/smc')
 	agency_sql = "select agencycode,agencyname from lu_agency order by agencyname asc"
 	agency_result = eng.execute(agency_sql)
 	owner_sql = "select agencycode,agencyname from lu_dataowner order by agencyname asc"
@@ -23,27 +40,100 @@ def index():
 	#list_of_owners = ["OWNER1","OWNER2"]
 	return render_template('index.html', agencies=dict_of_agencies, owners=dict_of_owners)
 
-@app.route('/agency', methods=['GET'])
-def agency():
-	print("start retrieve agency")
-	agency = ""
-	return "<option>TEST</option>"
-	#if request.args.get("name"):
-	#	agency = request.args.get("name")
-	#	return "<option>TEST</option>"
-	#else:
-	#	return "empty"
-
 @app.route('/clear')
 def clear():
-	eng = create_engine('postgresql://sde:dinkum@192.168.1.16:5432/smcphab') # postgresql
-	statement = text("""DELETE FROM tbl_taxonomysampleinfo""")
-	eng.execute(statement)
-	statement2 = text("""DELETE FROM tbl_taxonomyresults""")
-	eng.execute(statement2)
-	statement3 = text("""DELETE FROM tmp_cscicore WHERE stationcode = 'SMC01097'""")
-	eng.execute(statement3)
-	return "taxonomy clear finished"
+        eng = create_engine('postgresql://sde:dinkum@192.168.1.17:5432/smc') # postgresql
+        statement = text("""DELETE FROM tbl_taxonomysampleinfo""")
+        eng.execute(statement)
+        statement2 = text("""DELETE FROM tbl_taxonomyresults""")
+        eng.execute(statement2)
+        #statement3 = text("""DELETE FROM tmp_cscicore WHERE stationcode = 'SMC01097'""")
+        #eng.execute(statement3)
+        return "taxonomy beta clear finished"
+
+@app.route('/export', methods=['GET'])
+@support_jsonp
+def export():
+	print("function to export organizations data to excel")
+	if request.args.get("callback"):
+		action = request.args.get("callback", False)
+		if action == "Select All":
+			action = "get all"
+		if action == "Ventura":
+			action = "ventura"
+		# variables
+		gettime = int(time.time())
+		TIMESTAMP = str(gettime)
+                print TIMESTAMP
+
+		export_file = '/var/www/smc/logs/%s-export.xlsx' % TIMESTAMP
+		export_link = 'http://smcchecker.sccwrp.org/smc/logs/%s-export.xlsx' % TIMESTAMP
+		export_writer = pd.ExcelWriter(export_file, engine='xlsxwriter')
+		eng = create_engine('postgresql://sde:dinkum@192.168.1.17:5432/smc')
+                '''
+                sql1_statement = "SELECT t2.stationid, t2.county, t2.smcshed, stationcode, sampledate, agencycode, replicate, sampleid, benthiccollectioncomments, grabsize, percentsamplecounted, totalgrids, gridsanalyzed, gridsvolumeanalyzed, targetorganismcount, actualorganismcount, extraorganismcount, qcorganismcount, discardedorganismcount, benthiclabeffortcomments, finalid, lifestagecode, distinctcode, baresult, resqualcode, qacode, taxonomicqualifier, personnelcode_labeffort, personnelcode_results, labsampleid, locationcode, samplecomments, collectionmethodcode, effortqacode, record_origin, origin_lastupdatedate, record_publish FROM taxonomy t1 INNER JOIN lu_stations t2 ON t1.stationcode = t2.stationid WHERE collectionmethodcode like '%%BMI%%' AND record_publish = 'true'"
+                sql1 = eng.execute(sql1_statement)
+		taxonomy = DataFrame(sql1.fetchall())
+		if len(taxonomy) > 0:
+			taxonomy.columns = sql1.keys()
+			taxonomy.columns = [x.lower() for x in taxonomy.columns]
+			taxonomy.to_excel(export_writer, sheet_name='taxonomy', index = False)
+                sql2_statement = "SELECT t2.stationid,t2.county,t2.smcshed,stationcode,sampleid,sampledate,samplemonth,sampleday,sampleyear,collectionmethodcode,fieldreplicate,databasecode,count,number_of_mmi_iterations,number_of_oe_iterations,pcnt_ambiguous_individuals,pcnt_ambiguous_taxa,e,mean_o,oovere,oovere_percentile,mmi,mmi_percentile,csci,csci_percentile,scoredate,scorenotes,cleaned,rand,processed_by,record_origin,origin_lastupdatedate,record_publish FROM csci_core t1 INNER JOIN lu_stations t2 ON t1.stationcode = t2.stationid WHERE collectionmethodcode like '%%BMI%%' AND record_publish = 'true'"
+                sql2 = eng.execute(sql2_statement)
+	        core = DataFrame(sql2.fetchall())
+		if len(core) > 0:
+			core.columns = sql2.keys()
+			core.columns = [x.lower() for x in core.columns]
+			core.to_excel(export_writer, sheet_name='csci_core', index = False)
+                sql3_statement = "SELECT t2.stationid,t2.county,t2.smcshed,stationcode,pgroup1, pgroup2, pgroup3, pgroup4, pgroup5,pgroup6, pgroup7, pgroup8, pgroup9, pgroup10, pgroup11, processed_by,record_origin,origin_lastupdatedate,record_publish FROM csci_suppl1_grps t1 INNER JOIN lu_stations t2 ON t1.stationcode = t2.stationid" 
+                sql3 = eng.execute(sql3_statement)
+		grps = DataFrame(sql3.fetchall())
+		if len(grps) > 0:
+			grps.columns = sql3.keys()
+			grps.columns = [x.lower() for x in grps.columns]
+			grps.to_excel(export_writer, sheet_name='csci_suppl1_grps', index = False)
+                sql4_statement = "SELECT t2.stationid,t2.county,t2.smcshed,stationcode,sampleid, mmi_score, clinger_percenttaxa,clinger_percenttaxa_predicted, clinger_percenttaxa_score, coleoptera_percenttaxa,coleoptera_percenttaxa_predict, coleoptera_percenttaxa_score, taxonomic_richness, taxonomic_richness_predicted, taxonomic_richness_score, ept_percenttaxa, ept_percenttaxa_predicted, ept_percenttaxa_score, shredder_taxa, shredder_taxa_predicted, shredder_taxa_score, intolerant_percent, intolerant_percent_predicted, intolerant_percent_score,processed_by,record_origin,origin_lastupdatedate,record_publish FROM csci_suppl1_mmi t1 INNER JOIN lu_stations t2 ON t1.stationcode = t2.stationid WHERE record_publish = 'true'"
+                sql4 = eng.execute(sql4_statement)
+		s1mmi = DataFrame(sql4.fetchall())
+		if len(s1mmi) > 0:
+			s1mmi.columns = sql4.keys()
+			s1mmi.columns = [x.lower() for x in s1mmi.columns]
+			s1mmi.to_excel(export_writer, sheet_name='csci_suppl1_mmi', index = False)
+                sql5_statement = "SELECT t2.stationid,t2.county,t2.smcshed,stationcode,sampleid, metric, iteration, value, predicted_value, score, processed_by,record_origin,origin_lastupdatedate,record_publish FROM csci_suppl2_mmi t1 INNER JOIN lu_stations t2 ON t1.stationcode = t2.stationid WHERE record_publish = 'true'"
+                sql5 = eng.execute(sql5_statement)
+		s2mmi = DataFrame(sql5.fetchall())
+		if len(s2mmi) > 0:
+			s2mmi.columns = sql5.keys()
+			s2mmi.columns = [x.lower() for x in s2mmi.columns]
+			s2mmi.to_excel(export_writer, sheet_name='csci_suppl2_mmi', index = False)
+                sql6_statement = "SELECT t2.stationid,t2.county,t2.smcshed,stationcode,sampleid, otu, captureprob, meanobserved, processed_by,record_origin,origin_lastupdatedate,record_publish FROM csci_suppl1_oe t1 INNER JOIN lu_stations t2 ON t1.stationcode = t2.stationid WHERE record_publish = 'true'"
+                sql6 = eng.execute(sql6_statement)
+		s1oe = DataFrame(sql6.fetchall())
+		if len(s1oe) > 0:
+			s1oe.columns = sql6.keys()
+			s1oe.columns = [x.lower() for x in s1oe.columns]
+			s1oe.to_excel(export_writer, sheet_name='csci_suppl1_oe', index = False)
+                sql7_statement = "SELECT t2.stationid,t2.county,t2.smcshed,stationcode,sampleid, otu, captureprob, iteration1, iteration2, iteration3, iteration4, iteration5, iteration6, iteration7, iteration8, iteration9, iteration10, iteration11, iteration12, iteration13, iteration14, iteration15, iteration16, iteration17, iteration18, iteration19, iteration20, processed_by,record_origin,origin_lastupdatedate,record_publish FROM csci_suppl2_oe t1 INNER JOIN lu_stations t2 ON t1.stationcode = t2.stationid WHERE record_publish = 'true'"
+                sql7 = eng.execute(sql7_statement)
+		s2oe = DataFrame(sql7.fetchall())
+		if len(s2oe) > 0:
+			s2oe.columns = sql7.keys()
+			s2oe.columns = [x.lower() for x in s2oe.columns]
+			s2oe.to_excel(export_writer, sheet_name='csci_suppl2_oe', index = False)
+                sql8 = eng.execute("SELECT t2.stationid,t2.county,t2.smcshed,stationcode,sampledate,sampletypecode,matrixname,record_origin,origin_lastupdatedate,record_publish FROM swamp_chemistry t1 INNER JOIN lu_stations t2 ON t1.stationcode = t2.stationid WHERE record_publish = 'true'")
+		chemistry = DataFrame(sql8.fetchall())
+		if len(chemistry) > 0:
+			chemistry.columns = sql8.keys()
+			chemistry.columns = [x.lower() for x in chemistry.columns]
+			chemistry.to_excel(export_writer, sheet_name='chemistry', index = False)
+                '''
+		eng.dispose()
+		export_writer.save()
+		print export_link
+	else:
+		export_link = "empty"
+   	response = jsonify({'code': 200,'link': export_link})
+        return response
 
 @app.route('/logs/<path:path>')
 def send_log(path):
@@ -60,7 +150,7 @@ def mail():
 	# if action = critical then email sccwrp im with log file or at least link to log file and timestamp
 	# if action = success then email committee and sccwrp im
 	msg = Message("test flask email",
-                  sender="admin@checker.sccwrp.org",
+                  sender="admin@smcchecker.sccwrp.org",
                   #recipients=["pauls@sccwrp.org"])
                   recipients=["smcim-tox@sccwrp.org"])
 	msg.body = "testing flask email - action = " + str(action)
@@ -114,8 +204,8 @@ def scraper():
 			# layer should start with lu - if not return empty - this tool is only for lookup lists
 			if layer.startswith("lu_"):
 				# unfortunately readonly user doesnt have access to information_schema
-				#eng = create_engine('postgresql://smcread:1969$Harbor@192.168.1.16:5432/smcphab')
-				eng = create_engine('postgresql://sde:dinkum@192.168.1.16:5432/smcphab') # postgresql
+				#eng = create_engine('postgresql://smcread:1969$Harbor@192.168.1.17:5432/smc')
+				eng = create_engine('postgresql://sde:dinkum@192.168.1.17:5432/smc') # postgresql
 				# below should be more sanitized
 				# https://stackoverflow.com/questions/39196462/how-to-use-variable-for-sqlite-table-name?rq=1
 				# check to make sure table exists before proceeding
@@ -162,29 +252,10 @@ def status():
     		response.status_code = 200
 		return response
 
-@app.route('/sandbox')
-def sandbox():
-	# sandbox to test pieces of code independently
-	inFile = '/var/www/smc/files/1503862398.xlsx'
-	df = pd.ExcelFile(inFile, keep_default_na=False, na_values=['NaN'])
-      	df_tab_names = df.sheet_names
-	for sheet in df_tab_names:
-		tab_name = sheet
-		print(tab_name)
-		tab = df.parse(sheet)
-		print("finished")
-	#return "sandbox"
-	return str(df_tab_names)
-
-@app.route('/sandbox-ui')
-def sandboxui():
-	# sandbox to test various parts of user interface
-	return render_template('test.html')
-
 @app.route('/track')
 def track():
 	print("start track")
-	eng = create_engine('postgresql://smcread:1969$Harbor@192.168.1.16:5432/smcphab')
+	eng = create_engine('postgresql://smcread:1969$Harbor@192.168.1.17:5432/smc')
 	sql_session = "select login, agency, sessionkey, upload, match, mia, lookup, duplicates, extended_checks, extended_checks_type, submit, created_user, created_date from submission_tracking_table order by created_date"
         print(sql_session)
         session_results = eng.execute(sql_session)
@@ -194,40 +265,9 @@ def track():
 	session_json = [dict(r) for r in session_results]
 	return render_template('track.html', session=session_json)
 
-@app.route('/report')
-def report():
-	print("start report")
-	eng = create_engine('postgresql://sde:dinkum@192.168.1.16:5432/smcphab') # postgresql
-	# field - sql = "select stationid,grabagency,trawlagency,grabsubmit,trawlsubmit from field_assignment_table where trawlagency = 'Los Angeles County Sanitation Districts' or grabagency = 'Los Angeles County Sanitation Districts' order by stationid asc"
-	sql = "select stationid,lab,parameter,submissionstatus from sample_assignment_table where lab = 'Nautilus Environmental' order by submissionstatus desc"
-        print(sql)
-        results = eng.execute(sql)
-	print(results)
-        eng.dispose()
-	report_results = [dict(r) for r in results]
-	return render_template('report.html', agency='Nautilus Environmental', submission_type='toxicity', report=report_results)
-
 def errorApp():
 	print("error app")
 	return render_template('error.html')
-
-@app.route('/myjson')
-def myjson():
-   	testList = []
-     	testDict = {}
-     	count = 0
-	testString1 = '{"row": "0", {"value": [{"column": "teststartdate","error_type":"Data Type","error":"tj"}]}}'
-	testString2 = '{"row": "1", {"value": [{"column": "teststartdate","error_type":"Data Type","error":"tm"}]}}'
-	testList.append(testString1)
-	testList.append(testString2)
-     	for t in testList:
-		testDict[count] = t
-		count = count + 1
-	return render_template(
-		'json.html',
-		title='JSON Test Page',
-     		result=json.dumps(testDict))
-     		#result=json.dumps({"0":[{"row":"0"},{"value": [{"column": "teststartdate","error_type":"Data Type","error":"['must be of integer type']/16/Jul/2013"}]}],"1":[{"row":"1"},{"value": [{"column": "teststartdate","error_type":"Data Type","error":"['must be of integer type']/16/Jul/2014"}]}]}, sort_keys = False, indent = 2))
 
 @app.errorhandler(Exception)
 def default_error_handler(error):

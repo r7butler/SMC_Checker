@@ -5,7 +5,6 @@ import json
 from sqlalchemy import create_engine, exc
 from werkzeug import secure_filename
 import xlsxwriter
-import folium
 from .ApplicationLog import *
 from MatchFile import match
 from CoreChecks import core
@@ -23,12 +22,12 @@ def exportToFile(all_dataframes,TIMESTAMP):
 	try:
 		# export existing dataframe to file with tab names as destintation table name (if it has one) - load to database
 		export_file = '/var/www/smc/files/%s-export.xlsx' % TIMESTAMP
-                export_writer = pd.ExcelWriter(export_file, engine='xlsxwriter',options={'strings_to_formulas': False})
+		export_writer = pd.ExcelWriter(export_file, engine='xlsxwriter')
 
 		# export existing dataframe to file with tab names as destintation table name (if it has one) - return to user
 		excel_file = '/var/www/smc/logs/%s-format.xlsx' % TIMESTAMP
 		excel_link = 'http://smcchecker.sccwrp.org/smc/logs/%s-format.xlsx' % TIMESTAMP
-                excel_writer = pd.ExcelWriter(excel_file, engine='xlsxwriter',options={'strings_to_formulas': False})
+		excel_writer = pd.ExcelWriter(excel_file, engine='xlsxwriter')
 		# creates workbook that includes specified formats
 		workbook = excel_writer.book
 
@@ -310,11 +309,13 @@ def upload():
 						data_checks, data_checks_redundant, errors_dict = core(all_dataframes,sql_match_tables, errors_dict)
 						errorLog(data_checks)
 
+						data_checks, data_checks_redundant, errors_dict = core(all_dataframes,sql_match_tables, errors_dict)
+						errorLog(data_checks)
 						# move above - after match
 						errorLog("sql_match_tables:")
 						errorLog(sql_match_tables)
 						# dictionary list of required tables by data type - made into lists instead of strings 15mar18 - supports variations
-						required_tables_dict = {'chemistry': [['tbl_chembatch','tbl_chemresults'],['tbl_chemresults','tbl_chembatch']],'toxicity': [['tbl_toxbatch','tbl_toxresults','tbl_toxwq'],['tbl_toxresults','tbl_toxbatch','tbl_toxwq'],['tbl_toxwq','tbl_toxresults','tbl_toxbatch'],['tbl_toxwq','tbl_toxbatch','tbl_toxresults'],['tbl_toxbatch','tbl_toxwq','tbl_toxresults']], 'field': [['tbl_stationoccupation','tbl_trawlevent'],['tbl_trawlevent','tbl_stationoccupation'],['tbl_stationoccupation','tbl_grabevent'],['tbl_grabevent','tbl_stationoccupation'],['tbl_stationoccupation','tbl_trawlevent','tbl_grabevent'],['tbl_trawlevent','tbl_grabevent','tbl_stationoccupation']], 'taxonomy': [['tbl_taxonomysampleinfo','tbl_taxonomyresults'],['tbl_taxonomyresults','tbl_taxonomysampleinfo']],'invert': [['tbl_trawlinvertebrateabundance','tbl_trawlinvertebratebiomass'],['tbl_trawlinvertebratebiomass','tbl_trawlinvertebrateabundance']],'ocpw': [['tbl_ocpwlab']],'debris': [['tbl_trawldebris']],'ptsensor': [['tbl_ptsensorresults']],'infauna': [['tbl_infaunalabundance_initial'],['tbl_infaunalabundance_qareanalysis']]}
+						required_tables_dict = {'chemistry': [['tbl_chembatch','tbl_chemresults'],['tbl_chemresults','tbl_chembatch']],'toxicity': [['tbl_toxbatch','tbl_toxresults','tbl_toxwq'],['tbl_toxresults','tbl_toxbatch','tbl_toxwq'],['tbl_toxwq','tbl_toxresults','tbl_toxbatch'],['tbl_toxwq','tbl_toxbatch','tbl_toxresults'],['tbl_toxbatch','tbl_toxwq','tbl_toxresults']], 'field': [['tbl_stationoccupation','tbl_trawlevent'],['tbl_trawlevent','tbl_stationoccupation'],['tbl_stationoccupation','tbl_grabevent'],['tbl_grabevent','tbl_stationoccupation'],['tbl_stationoccupation','tbl_trawlevent','tbl_grabevent'],['tbl_trawlevent','tbl_grabevent','tbl_stationoccupation']], 'fish': [['tbl_trawlfishabundance','tbl_trawlfishbiomass'],['tbl_trawlfishbiomass','tbl_trawlfishabundance']],'invert': [['tbl_trawlinvertebrateabundance','tbl_trawlinvertebratebiomass'],['tbl_trawlinvertebratebiomass','tbl_trawlinvertebrateabundance']],'ocpw': [['tbl_ocpwlab']],'debris': [['tbl_trawldebris']],'ptsensor': [['tbl_ptsensorresults']],'infauna': [['tbl_infaunalabundance_initial'],['tbl_infaunalabundance_qareanalysis']]}
 						match_dataset = "" 	# start empty
 						errorLog("required_tables_dict:")
 						errorLog(required_tables_dict)
@@ -330,13 +331,9 @@ def upload():
 						total_count = errors_dict['total']
 						errorLog("total error count: %s" % total_count)
 
-						if match_dataset == "taxonomy" and total_count == 0:
-							assignment_table, custom_checks, custom_redundant_checks, summary_checks, summary_results_link, message, unique_stations = taxonomy(all_dataframes,sql_match_tables,errors_dict,project_code,login_info)
-							errorLog("list of unique_stations:")
-							errorLog(unique_stations)
-							map_url = createMap(unique_stations,TIMESTAMP)
-							errorLog("map_url")
-							errorLog(map_url)
+						if match_dataset == "debris" and total_count == 0:
+							custom_checks, custom_redundant_checks = debris(all_dataframes,sql_match_tables,errors_dict)
+
         						eng = create_engine('postgresql://sde:dinkum@192.168.1.17:5432/smc') # postgresql
 							sql_session = "update submission_tracking_table set extended_checks = 'yes', extended_checks_type = '%s' where sessionkey = '%s'" % (match_dataset,TIMESTAMP)
         						session_results = eng.execute(sql_session)
@@ -347,9 +344,7 @@ def upload():
 							# create excel files
 							status, excel_link = exportToFile(all_dataframes,TIMESTAMP)
 	
-							# used for reporting - either field or sample
-							assignment_table = ""
-							return jsonify(message=message,state=state,table_match=match_tables, business=data_checks,redundant=data_checks_redundant,custom=custom_checks,redundant_custom=custom_redundant_checks,summary=summary_checks,summary_file=summary_results_link,errors=errors_count,excel=excel_link,assignment=assignment_table,original_file=originalfilename,modified_file=newfilename,datatype=match_dataset,map=map_url)
+							return jsonify(message=message,state=state,table_match=match_tables, business=data_checks,redundant=data_checks_redundant,custom=custom_checks,redundant_custom=custom_redundant_checks,errors=errors_count,excel=excel_link,original_file=originalfilename,modified_file=newfilename,datatype=match_dataset)
 						elif match_dataset == "fish" and total_count == 0:
 							custom_checks, custom_redundant_checks = fish(all_dataframes,sql_match_tables,errors_dict)
 
@@ -367,18 +362,15 @@ def upload():
 						else:
 							# we may want to create a submission option here find a way to export dataframe to file - with matching table names as tab names
 							errorLog("submitted data didnt match a set of data (like toxicity, chemistry, etc...)")
-                                                        message = ""
 							# check to see if one of the sheets submitted match one of the values in required_tables_dict
 							# if that is the case then the user needs to submit the required number of sheets
 							for key, value in required_tables_dict.items():
 								for v in value:
 									overlap = set(sql_match_tables) & set(v)
 									if overlap:
-                                                                                # user submitted correct data but there are errors
-                                                                                errorLog(overlap)
-										#message = "missing required tables"
-                                                                        else:
-                                                                                errorLog(v)
+										# generate error
+										message = "missing required tables"
+										errorLog(message)
 							errors_count = json.dumps(errors_dict)	# dump error count dict
 
 							# create excel files

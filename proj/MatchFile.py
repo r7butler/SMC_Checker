@@ -98,8 +98,8 @@ def matchColumnsToTable(tab_name,tab,sqlFields,tabCounter,errors_dict):
 		#if tableCount == tabCount: - this is wrong it should be tableCount == columnCount
 		#errorLog("tableCount/tabCount: %s/%s" % (tableCount,tabCount))
 		errorLog("tableCount/columnCount: %s/%s" % (tableCount,columnCount))
-		# new code added 16jan18
-		if tableCount == columnCount:
+		# new code added 16jan18 - add more code on 29may18 - need to make both checks
+		if tableCount == columnCount and tableCount == tabCount:
 			# TURN ON FOR DEBUGGING
 			errorLog("\n\nFOUND tab count/column count: %s/%s" % (tabCount,columnCount))
 			errorLog("-----+Sheet %s is matched to table %s with count %s" % (tab_name,table,str(columnCount)))
@@ -177,7 +177,7 @@ def match(infile,errors_dict):
 	sql_match_tables = []
 	#current_app.all_dataframes = all_dataframes	
 	#current_app.sql_match_tables = sql_match_tables
-
+	system_fields = current_app.system_fields
 	try:
 		errorLog("run basic checks on file before proceeding")
 		if os.stat(inFile).st_size == 0:
@@ -213,7 +213,7 @@ def match(infile,errors_dict):
 					# name only
 					tab_name = tab
 					# drop any tab_name = lookups which is a reserved word added 15jan18
-					if tab_name == 'lookups':
+					if (tab_name == 'lookups')|(tab_name == 'Instructions'):
 						errorLog('The application is skipping sheet "%s" because it is named "lookups" which is reserved' % tab_name)
 						continue
 					# assign actual data in tab to tab
@@ -235,6 +235,12 @@ def match(infile,errors_dict):
                         		# drop all empty rows
                         		#tab.dropna(axis=0, how='all', inplace=True)
 					# drop all columns that should never be in file
+					
+					for col in tab.columns:
+						if col in system_fields:
+							tab.drop(col,axis=1,inplace=True)
+					
+					
 					if 'errors' in tab.columns:
 						tab.drop(tab[['errors']], axis=1, inplace=True)
 					if 'custom_errors' in tab.columns:
@@ -249,6 +255,7 @@ def match(infile,errors_dict):
 						tab.drop(tab[['duplicate_production_submission']], axis=1, inplace=True)
 					if 'duplicate_session_submission' in tab.columns:
 						tab.drop(tab[['duplicate_session_submission']], axis=1, inplace=True)
+					
 					# lower case column names
 					tab.columns = [x.lower() for x in tab.columns]
 					errorLog('Match: tab_name: %s' % tab_name)
