@@ -37,6 +37,8 @@ def addErrorToList(error_column, row, error_to_add,df):
 def checkDuplicatesInProduction(db,dbtype,eng,table_match,errors_dict,df):
 	errorLog("Core: start checkDuplicatesInProduction")
 	statusLog("Check Duplicates in Production for table: %s" % table_match)
+        # create tmp_row for labeling - bight bug fix 59 
+        df['tmp_row'] = df.index
 	if dbtype == "mysql" or dbtype == "mysql-rest":
 		sql_primary_key = "select column_name from information_schema.key_column_usage where table_name =  '%s' and constraint_name = 'PRIMARY'" % (table_match) # mysql
 	if dbtype == "postgresql" or dbtype == "azure":
@@ -92,10 +94,12 @@ def checkDuplicatesInProduction(db,dbtype,eng,table_match,errors_dict,df):
 		#errorLog("index: %s row: %s" % (index,row))
 		human_error = 'You submitted a record that is already in the database'
 		unique_error = '{ "column": "", "error_type": "Duplicate Production Submission", "error": "%s" }' % (human_error)
-		addErrorToList("errors",index,unique_error,df)
-		addErrorToList("duplicate_production_submission",index,unique_error,df)
+		addErrorToList("errors",row['tmp_row'],unique_error,df)     # bug fix 59
+		addErrorToList("duplicate_production_submission",row['tmp_row'],unique_error,df)        # bug fix 59
 		errorsCount(errors_dict,"duplicate")
 	errorLog("Core: end checkDuplicatesInProduction")
+        # drop tmp_row - bug fix 59
+        df.drop(['tmp_row'], axis = 1, inplace = True)
 	return df
 
 def checkDuplicatesInSession(db,dbtype,eng,table_match,errors_dict,df):
@@ -178,6 +182,12 @@ def checkTableMetadata(db,dbtype,eng,table_match,errors_dict,df):
 				elif "empty values not allowed" in v.errors[e][0]:
 					human_error = "You left a required field empty"
 					unique_error = '{"column": "%s", "error_type": "Data Type", "error": "%s"}' % (e,human_error)
+                                elif "null value not allowed" in v.errors[e][0]:
+                                        human_error = "You left a required field empty"
+                                        unique_error = '{"column": "%s", "error_type": "Data Type", "error": "%s"}' % (e,human_error)
+                                elif "must be of integer type" in v.errors[e][0]:
+                                        human_error = "Your empty integer fields are being interpreted as floats. Please fill in empty integer fields with -88"
+                                        unique_error = '{"column": "%s", "error_type": "Data Type", "error": "%s"}' % (e,human_error)
 				else:
 					# there may be an issue with using row[e] instead of just row - for now will leave as is 5nov17
 					# remove double quotes from user input - new code 22may18
@@ -616,7 +626,7 @@ def core(all_dataframes,sql_match_tables,errors_dict):
 					sql_session = "update submission_tracking_table set mia = 'no' where sessionkey = '%s'" % TIMESTAMP
         				session_results = eng.execute(sql_session)
         				eng.dispose()
-					#state = 1
+					state = 1
 			if state != 1:
 				try:
 					errorLog("db: %s, dbtype: %s, eng: %s, table_name: %s" % (db,dbtype,eng,table_name))
