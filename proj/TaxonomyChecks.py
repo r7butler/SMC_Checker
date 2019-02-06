@@ -225,9 +225,9 @@ def taxonomy(all_dataframes,sql_match_tables,errors_dict,project_code,login_info
 		errorLog("Taxonomicqualifier Multi Value Lookup List: check to make sure taxonomicqualifier field data is valid (multiple values may be accepted).")
 		nan_rows, invalid_codes, subcodes  = dcValueAgainstMultipleValues(current_app.eng,'lu_taxonomicqualifier','taxonomicqualifiercode',result,'taxonomicqualifier')
 		errorLog("Check submitted data for at least one code:")
-		checkData(nan_rows,'taxonomicqualifier','custom error','error','At least one taxonomicqualifier code required please check the list: <a href=http://smcchecker.sccwrp.org/smc/scraper?action=help&layer=lu_taxonomicqualifier target=_blank>lu_taxonomicqualifier</a>.',result)
+		checkData(nan_rows,'TaxonomicQualifier','Custom Error','error','At least one TaxonomicQualifier code required please check the list: <a href=http://smcchecker.sccwrp.org/smc/scraper?action=help&layer=lu_taxonomicqualifier target=_blank>lu_taxonomicqualifier</a>.',result)
 		errorLog("Check submitted data for invalid code (or code combination):")
-		checkData(invalid_codes,'taxonomicqualifier','custom error','error','At least one Taxonomic Qualifier code is invalid please check the list: <a href=http://smcchecker.sccwrp.org/smc/scraper?action=help&layer=lu_taxonomicqualifier target=_blank>lu_taxonomicqualifier</a>',result)
+		checkData(invalid_codes,'TaxonomicQualifier','Custom Error','error','At least one TaxonomicQualifier code is invalid please check the list: <a href=http://smcchecker.sccwrp.org/smc/scraper?action=help&layer=lu_taxonomicqualifier target=_blank>lu_taxonomicqualifier</a>',result)
 
 		## Jordan -  Sample/Result SampleDate field - make sure user did not accidentally drag down date
                 errorLog('Sample/Result SampleDate field - make sure user did not accidentally drag down date')
@@ -237,7 +237,23 @@ def taxonomy(all_dataframes,sql_match_tables,errors_dict,project_code,login_info
 		if result.sampledate.diff()[1:].sum() == pd.Timedelta('%s day' %(len(result)-1)):
 			checkData(result.loc[result.sampledate.diff() == pd.Timedelta('1 day')].tmp_row.tolist(),'SampleDate','Custom Error','Error','Consecutive Dates. Make sure you did not accidentally drag down the date',result)
 
+                ## Jordan - FinalID / LifeStageCode combination must match combination found in vw_organism_lifestage_lookup
+                errorLog('FinalID / LifeStageCode combination must match combination found in vw_organism_lifestage_lookup')
+                # build list of FinalID/LifeStageCode combinations from lookup lists
+                eng = create_engine('postgresql://sde:dinkum@192.168.1.17:5432/smc')
+                lu_organisms = "SELECT organismcode, finalid, lifestagecode FROM vw_organism_lifestage_lookup;"
+                #lu_organismdetaillookup = "SELECT organismcode, lifestagecode FROM lu_organismdetaillookup;"
+                organisms = pd.read_sql_query(lu_organisms,eng)
+                #organismdetaillookup = pd.read_sql_query(lu_organismdetaillookup,eng)
+                #valid_pairs = organisms.merge(organismdetaillookup, on = ['organismcode'], how = 'inner')
+                valid_pairs_list = list(organisms['finalid'] + '_' + organisms['lifestagecode'])
 
+                # compare pairs of submitted FinalID / LifeStageCode to valid_pairings from lookup lists
+                errorLog("result where FinalID/LifeStageCode does not match pair from lookup list:")
+                errorLog(result[pd.Series(result.finalid + '_' + result.lifestagecode).isin(valid_pairs_list)])
+
+                # perform check on data
+                checkData(result[~pd.Series(result.finalid + '_' + result.lifestagecode).isin(valid_pairs_list)].tmp_row.tolist(),'FinalID/LifeStageCode','Undefined Error','error','FinalID/LifeStageCode pair is not valid. Refer to <a href=http://smcchecker.sccwrp.org/smc/scraper?action=help&layer=vw_organism_lifestage_lookup target=_blank>vw_organism_lifestage_lookup</a> for valid pairings',result)
                 #####################
                 ## START MAP CHECK ##
                 #####################
