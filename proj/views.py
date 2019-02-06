@@ -1,8 +1,10 @@
 from proj import app
 from functools import wraps
 from flask import send_from_directory, render_template, request, redirect, Response, jsonify, json, current_app
+from werkzeug import secure_filename
 from sqlalchemy import create_engine, text
 from sqlalchemy import exc
+from sentry_sdk import capture_message
 import urllib, json
 import pandas as pd
 import numpy as np
@@ -12,7 +14,6 @@ import psycopg2
 from pandas import DataFrame
 import folium
 import xlsxwriter
-
 
 def support_jsonp(f):
         """Wraps JSONified output for JSONP"""
@@ -47,93 +48,21 @@ def clear():
         eng.execute(statement)
         statement2 = text("""DELETE FROM tbl_taxonomyresults""")
         eng.execute(statement2)
-        #statement3 = text("""DELETE FROM tmp_cscicore WHERE stationcode = 'SMC01097'""")
-        #eng.execute(statement3)
-        return "taxonomy beta clear finished"
-
-@app.route('/export', methods=['GET'])
-@support_jsonp
-def export():
-	print("function to export organizations data to excel")
-	if request.args.get("callback"):
-		action = request.args.get("callback", False)
-		if action == "Select All":
-			action = "get all"
-		if action == "Ventura":
-			action = "ventura"
-		# variables
-		gettime = int(time.time())
-		TIMESTAMP = str(gettime)
-                print TIMESTAMP
-
-		export_file = '/var/www/smc/logs/%s-export.xlsx' % TIMESTAMP
-		export_link = 'http://smcchecker.sccwrp.org/smc/logs/%s-export.xlsx' % TIMESTAMP
-		export_writer = pd.ExcelWriter(export_file, engine='xlsxwriter')
-		eng = create_engine('postgresql://sde:dinkum@192.168.1.17:5432/smc')
-                '''
-                sql1_statement = "SELECT t2.stationid, t2.county, t2.smcshed, stationcode, sampledate, agencycode, replicate, sampleid, benthiccollectioncomments, grabsize, percentsamplecounted, totalgrids, gridsanalyzed, gridsvolumeanalyzed, targetorganismcount, actualorganismcount, extraorganismcount, qcorganismcount, discardedorganismcount, benthiclabeffortcomments, finalid, lifestagecode, distinctcode, baresult, resqualcode, qacode, taxonomicqualifier, personnelcode_labeffort, personnelcode_results, labsampleid, locationcode, samplecomments, collectionmethodcode, effortqacode, record_origin, origin_lastupdatedate, record_publish FROM taxonomy t1 INNER JOIN lu_stations t2 ON t1.stationcode = t2.stationid WHERE collectionmethodcode like '%%BMI%%' AND record_publish = 'true'"
-                sql1 = eng.execute(sql1_statement)
-		taxonomy = DataFrame(sql1.fetchall())
-		if len(taxonomy) > 0:
-			taxonomy.columns = sql1.keys()
-			taxonomy.columns = [x.lower() for x in taxonomy.columns]
-			taxonomy.to_excel(export_writer, sheet_name='taxonomy', index = False)
-                sql2_statement = "SELECT t2.stationid,t2.county,t2.smcshed,stationcode,sampleid,sampledate,samplemonth,sampleday,sampleyear,collectionmethodcode,fieldreplicate,databasecode,count,number_of_mmi_iterations,number_of_oe_iterations,pcnt_ambiguous_individuals,pcnt_ambiguous_taxa,e,mean_o,oovere,oovere_percentile,mmi,mmi_percentile,csci,csci_percentile,scoredate,scorenotes,cleaned,rand,processed_by,record_origin,origin_lastupdatedate,record_publish FROM csci_core t1 INNER JOIN lu_stations t2 ON t1.stationcode = t2.stationid WHERE collectionmethodcode like '%%BMI%%' AND record_publish = 'true'"
-                sql2 = eng.execute(sql2_statement)
-	        core = DataFrame(sql2.fetchall())
-		if len(core) > 0:
-			core.columns = sql2.keys()
-			core.columns = [x.lower() for x in core.columns]
-			core.to_excel(export_writer, sheet_name='csci_core', index = False)
-                sql3_statement = "SELECT t2.stationid,t2.county,t2.smcshed,stationcode,pgroup1, pgroup2, pgroup3, pgroup4, pgroup5,pgroup6, pgroup7, pgroup8, pgroup9, pgroup10, pgroup11, processed_by,record_origin,origin_lastupdatedate,record_publish FROM csci_suppl1_grps t1 INNER JOIN lu_stations t2 ON t1.stationcode = t2.stationid" 
-                sql3 = eng.execute(sql3_statement)
-		grps = DataFrame(sql3.fetchall())
-		if len(grps) > 0:
-			grps.columns = sql3.keys()
-			grps.columns = [x.lower() for x in grps.columns]
-			grps.to_excel(export_writer, sheet_name='csci_suppl1_grps', index = False)
-                sql4_statement = "SELECT t2.stationid,t2.county,t2.smcshed,stationcode,sampleid, mmi_score, clinger_percenttaxa,clinger_percenttaxa_predicted, clinger_percenttaxa_score, coleoptera_percenttaxa,coleoptera_percenttaxa_predict, coleoptera_percenttaxa_score, taxonomic_richness, taxonomic_richness_predicted, taxonomic_richness_score, ept_percenttaxa, ept_percenttaxa_predicted, ept_percenttaxa_score, shredder_taxa, shredder_taxa_predicted, shredder_taxa_score, intolerant_percent, intolerant_percent_predicted, intolerant_percent_score,processed_by,record_origin,origin_lastupdatedate,record_publish FROM csci_suppl1_mmi t1 INNER JOIN lu_stations t2 ON t1.stationcode = t2.stationid WHERE record_publish = 'true'"
-                sql4 = eng.execute(sql4_statement)
-		s1mmi = DataFrame(sql4.fetchall())
-		if len(s1mmi) > 0:
-			s1mmi.columns = sql4.keys()
-			s1mmi.columns = [x.lower() for x in s1mmi.columns]
-			s1mmi.to_excel(export_writer, sheet_name='csci_suppl1_mmi', index = False)
-                sql5_statement = "SELECT t2.stationid,t2.county,t2.smcshed,stationcode,sampleid, metric, iteration, value, predicted_value, score, processed_by,record_origin,origin_lastupdatedate,record_publish FROM csci_suppl2_mmi t1 INNER JOIN lu_stations t2 ON t1.stationcode = t2.stationid WHERE record_publish = 'true'"
-                sql5 = eng.execute(sql5_statement)
-		s2mmi = DataFrame(sql5.fetchall())
-		if len(s2mmi) > 0:
-			s2mmi.columns = sql5.keys()
-			s2mmi.columns = [x.lower() for x in s2mmi.columns]
-			s2mmi.to_excel(export_writer, sheet_name='csci_suppl2_mmi', index = False)
-                sql6_statement = "SELECT t2.stationid,t2.county,t2.smcshed,stationcode,sampleid, otu, captureprob, meanobserved, processed_by,record_origin,origin_lastupdatedate,record_publish FROM csci_suppl1_oe t1 INNER JOIN lu_stations t2 ON t1.stationcode = t2.stationid WHERE record_publish = 'true'"
-                sql6 = eng.execute(sql6_statement)
-		s1oe = DataFrame(sql6.fetchall())
-		if len(s1oe) > 0:
-			s1oe.columns = sql6.keys()
-			s1oe.columns = [x.lower() for x in s1oe.columns]
-			s1oe.to_excel(export_writer, sheet_name='csci_suppl1_oe', index = False)
-                sql7_statement = "SELECT t2.stationid,t2.county,t2.smcshed,stationcode,sampleid, otu, captureprob, iteration1, iteration2, iteration3, iteration4, iteration5, iteration6, iteration7, iteration8, iteration9, iteration10, iteration11, iteration12, iteration13, iteration14, iteration15, iteration16, iteration17, iteration18, iteration19, iteration20, processed_by,record_origin,origin_lastupdatedate,record_publish FROM csci_suppl2_oe t1 INNER JOIN lu_stations t2 ON t1.stationcode = t2.stationid WHERE record_publish = 'true'"
-                sql7 = eng.execute(sql7_statement)
-		s2oe = DataFrame(sql7.fetchall())
-		if len(s2oe) > 0:
-			s2oe.columns = sql7.keys()
-			s2oe.columns = [x.lower() for x in s2oe.columns]
-			s2oe.to_excel(export_writer, sheet_name='csci_suppl2_oe', index = False)
-                sql8 = eng.execute("SELECT t2.stationid,t2.county,t2.smcshed,stationcode,sampledate,sampletypecode,matrixname,record_origin,origin_lastupdatedate,record_publish FROM swamp_chemistry t1 INNER JOIN lu_stations t2 ON t1.stationcode = t2.stationid WHERE record_publish = 'true'")
-		chemistry = DataFrame(sql8.fetchall())
-		if len(chemistry) > 0:
-			chemistry.columns = sql8.keys()
-			chemistry.columns = [x.lower() for x in chemistry.columns]
-			chemistry.to_excel(export_writer, sheet_name='chemistry', index = False)
-                '''
-		eng.dispose()
-		export_writer.save()
-		print export_link
-	else:
-		export_link = "empty"
-   	response = jsonify({'code': 200,'link': export_link})
-        return response
+        statement3 = text("""DELETE FROM tbl_channelengineering""")
+        eng.execute(statement3)
+        statement4 = text("""DELETE FROM tbl_toxicitybatch""")
+        eng.execute(statement4)
+        statement5 = text("""DELETE FROM tbl_toxicityresults""")
+        eng.execute(statement5)
+        statement6 = text("""DELETE FROM tbl_toxicitysummary""")
+        eng.execute(statement6)
+        statement7 = text("""DELETE FROM tbl_algae""")
+        eng.execute(statement7)
+        statement8 = text("""DELETE FROM tbl_siteeval""")
+        eng.execute(statement8)
+        statement9 = text("""DELETE FROM tbl_hydromod""")
+        eng.execute(statement9)
+        return "algae, channelengineering, hydromod, siteevaluation, taxonomy, toxicity beta clear finished"
 
 @app.route('/logs/<path:path>')
 def send_log(path):
@@ -202,7 +131,9 @@ def scraper():
 		if request.args.get("layer"):
 			layer = request.args.get("layer")
 			# layer should start with lu - if not return empty - this tool is only for lookup lists
-			if layer.startswith("lu_"):
+                        print "layer"
+			if layer.startswith(("lu_","vw_")):
+                                print layer
 				# unfortunately readonly user doesnt have access to information_schema
 				#eng = create_engine('postgresql://smcread:1969$Harbor@192.168.1.17:5432/smc')
 				eng = create_engine('postgresql://sde:dinkum@192.168.1.17:5432/smc') # postgresql
@@ -212,26 +143,43 @@ def scraper():
 				# get primary key for lookup list
 				sql_primary = "SELECT DISTINCT(kcu.column_name) FROM information_schema.table_constraints AS tc JOIN information_schema.key_column_usage AS kcu ON tc.constraint_name = kcu.constraint_name JOIN information_schema.constraint_column_usage AS ccu ON ccu.constraint_name = tc.constraint_name WHERE constraint_type = 'PRIMARY KEY' AND tc.table_name='%s'" % layer
 				try:
+                                        print "primary key"
 					primary_key_result = eng.execute(sql_primary)
 					# there should be only one primary key
 					primary_key = primary_key_result.fetchone()
-					print "primary_key: %s" % primary_key
+					#print "primary_key: %s" % primary_key
 					try:
-						# get all fields first
-						sql_statement = "select * from %s order by %s asc" % (layer,primary_key[0])
-						print sql_statement
-						#sql_results = eng.execute("select * from %s order by %s asc" % (layer,primary_key[0]))
-						sql_results = eng.execute(sql_statement)
-						scraper_results = DataFrame(sql_results.fetchall())
-						scraper_results.columns = sql_results.keys()
-						# for smc we only want columns with code or description in the name
-						show_cols = [col for col in scraper_results.columns if 'code' in col or 'description' in col or 'unitname' in col or 'finalid' in col or 'stationid' in col or 'stationname' in col]
-						scraper_results = scraper_results[show_cols]
-						# turn dataframe into dictionary object
-						scraper_json = scraper_results.to_dict('records')
-						# give jinga the listname, primary key (to highlight row), and fields/rows
-						return render_template('scraper.html', list=layer, primary=primary_key[0], scraper=scraper_json)
-					# if sql error just return empty 
+					        # get all fields first
+                                                if primary_key:
+                                                    sql_results = eng.execute("select * from %s order by %s asc" % (layer,primary_key[0]))
+                                                else:
+                                                    primary_key = ["none"]
+                                                    sql_results = eng.execute("select * from %s" % (layer))
+                                                scraper_results = DataFrame(sql_results.fetchall())
+                                                scraper_results.columns = sql_results.keys()
+                                                # for bight we dont want system columns
+                                                if 'created_user' in scraper_results:
+                                                        scraper_results = scraper_results.drop('created_user', 1)
+                                                if 'created_date' in scraper_results:
+                                                        scraper_results = scraper_results.drop('created_date', 1)
+                                                if 'last_edited_user' in scraper_results:
+                                                        scraper_results = scraper_results.drop('last_edited_user', 1)
+                                                if 'last_edited_date' in scraper_results:
+                                                        scraper_results = scraper_results.drop('last_edited_date', 1)
+                                                if 'objectid' in scraper_results:
+                                                        scraper_results = scraper_results.drop('objectid', 1)
+                                                if 'gdb_geomattr_data' in scraper_results:
+                                                        scraper_results = scraper_results.drop('gdb_geomattr_data', 1)
+                                                if 'globalid' in scraper_results:
+                                                        scraper_results = scraper_results.drop('globalid', 1)
+                                                if 'shape' in scraper_results:
+                                                        scraper_results = scraper_results.drop('shape', 1)
+                                                # turn dataframe into dictionary object
+                                                scraper_json = scraper_results.to_dict('records')
+                                                # give jinga the listname, primary key (to highlight row), and fields/rows
+                                                print "render"
+                                                return render_template('scraper.html', list=layer, primary=primary_key[0], scraper=scraper_json)
+                                        # if sql error just return empty 
 					except Exception as err:
 						return "empty"
 				except Exception as err:
@@ -256,7 +204,8 @@ def status():
 def track():
 	print("start track")
 	eng = create_engine('postgresql://smcread:1969$Harbor@192.168.1.17:5432/smc')
-	sql_session = "select login, agency, sessionkey, upload, match, mia, lookup, duplicates, extended_checks, extended_checks_type, submit, created_user, created_date from submission_tracking_table order by created_date"
+	#sql_session = "select login, agency, sessionkey, upload, match, mia, lookup, duplicates, extended_checks, extended_checks_type, submit, created_user, created_date from submission_tracking_table order by created_date"
+	sql_session = "select login, agency, t1.sessionkey, upload, match, mia, lookup, duplicates, extended_checks, extended_checks_type, submit, tablename, checksum, created_user, created_date from submission_tracking_table t1 left join submission_tracking_checksum t2 on t1.sessionkey = t2.sessionkey"
         print(sql_session)
         session_results = eng.execute(sql_session)
 	print(session_results)
@@ -264,6 +213,17 @@ def track():
 	#session_json = json.dumps([dict(r) for r in session_results])
 	session_json = [dict(r) for r in session_results]
 	return render_template('track.html', session=session_json)
+
+@app.route('/uploader', methods = ['GET','POST'])
+def upload_test_uploader():
+    print "upload_test_uploader"
+    if request.method == 'POST':
+        f = request.files['file']
+        filename = secure_filename(f.filename)
+        f.save('/var/upload/%s' % filename)
+        print filename
+        #f.save(secure_filename(f.filename))
+        return 'file uploaded successfully'
 
 def errorApp():
 	print("error app")
@@ -273,6 +233,7 @@ def errorApp():
 def default_error_handler(error):
 	print("Checker application came across an error...")
 	print(str(error))
+        capture_message(str(error))
     	response = jsonify({'code': 500,'message': str(error)})
     	response.status_code = 500
 	# need to add code here to email SCCWRP staff about error
