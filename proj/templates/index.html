@@ -257,15 +257,21 @@ td {
 						body += "<tr><td>"+row_number+"</td><td>"+columns.join('<br>')+"</td><td>"+error_types.join('<br>')+"<td>"+errors.join('<br>')+"</td></tr>";
 					});
 				});
+				body += "</tbody></table><br>";
+				$(tab_id).append(body);
+				$("#tabs").tabs();
+				$("#tabs").tabs("refresh");
 			} else {
 				// NEED TO FIX undefined
 				// body += "<p>test</p>";
+				$("#tabs").tabs();
+				$("#tabs").tabs("refresh");
 				console.log("Empty");
 			}
-			body += "</tbody></table><br>";
-			$(tab_id).append(body);
-			$("#tabs").tabs();
-			$("#tabs").tabs("refresh");
+			//body += "</tbody></table><br>";
+			//$(tab_id).append(body);
+			//$("#tabs").tabs();
+			//$("#tabs").tabs("refresh");
 		  });
 	}
 	function end_application(h,t,i,m,l,a,d){
@@ -659,18 +665,29 @@ td {
 							if (data.errors) {
 								error = JSON.parse(data.errors);
                                 				if(error.total === 0){ 
-                                        				$.toast({
-										heading: 'Ready for Final Submission',
-										text: 'Data is clean and ready for final submission. Please use "Final Submit" button below.',
-										position: 'mid-center',
-										icon: 'success',
-										loader: false
-                                        				})
-									$('#final_submit').show();
-									// show submission type
-									$("#submission_type").html(data.datatype);
-									// show assignment table
-									$("#assignment_table").html(data.assignment);
+									if(data.message === "missing required tables"){
+										$.toast({
+											heading: 'Missing Required Tables',
+											text: 'Please make sure to submit all required tables. See the template file for details.',
+											position: 'mid-center',
+											icon: 'delete',
+											hideAfter: false,
+											loader: false
+										})
+									} else {
+                                        					$.toast({
+											heading: 'Ready for Final Submission',
+											text: 'Data is clean and ready for final submission. Please use "Final Submit" button below.',
+											position: 'mid-center',
+											icon: 'success',
+											loader: false
+                                        					})
+										$('#final_submit').show();
+										// show submission type
+										$("#submission_type").html(data.datatype);
+										// show assignment table
+										$("#assignment_table").html(data.assignment);
+									}
 								}
 								$("#total_errors").html(error.total);
 								$("#match_errors").html(error.match);
