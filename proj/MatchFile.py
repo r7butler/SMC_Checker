@@ -213,7 +213,7 @@ def match(infile,errors_dict):
 					# name only
 					tab_name = tab
 					# drop any tab_name = lookups which is a reserved word added 15jan18
-					if (tab_name == 'lookups')|(tab_name == 'Instructions'):
+					if (tab_name == 'lookups')|(tab_name == 'Instructions')|(tab_name == 'Notes_Information')|(tab_name == 'Batch_Example')|(tab_name == 'Results_Example')|(tab_name == 'RECONExample'):
 						errorLog('The application is skipping sheet "%s" because it is named "lookups" which is reserved' % tab_name)
 						continue
 					# assign actual data in tab to tab
