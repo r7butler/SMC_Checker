@@ -1,6 +1,6 @@
 import os, sys, time, datetime, xlrd, urllib, json, collections
 #import os, sys, time, datetime, xlrd, unicodecsv, urllib, json, collections
-from flask import Flask, url_for, jsonify, request, make_response, session
+from flask import Flask, url_for, jsonify, Request, request, make_response, session
 from flask_session import Session
 from flask_cors import CORS, cross_origin
 from sqlalchemy import create_engine
@@ -16,16 +16,25 @@ from FinishApp import finish_app
 from StagingUpload import staging_upload
 from NotificationEmail import notification_email
 
+import sentry_sdk
+from sentry_sdk.integrations.flask import FlaskIntegration
+
+sentry_sdk.init(
+            dsn="https://b20f2406b2974bafb82591948b87523f@sentry.io/1386837",
+                integrations=[FlaskIntegration()]
+                )
+
 app = Flask(__name__, static_url_path='/static')
 app.debug = True # remove for production
 
 CORS(app)
 # does your application require uploaded filenames to be modified to timestamps or left as is
 app.config['CORS_HEADERS'] = 'Content-Type'
+#app.config['MAX_CONTENT_LENGTH'] = 200 * 1024 * 1024  # 100MB limit
 app.secret_key = 'any random string'
 app.infile = ""
-# list of database fields that should not be queried on - removed status could be a problem 9sep17 - added trawl calculated fields
-app.system_fields = ["id", "objectid", "globalid", "submissionid", "gdb_geomattr_data", "shape", "record_timestamp", "timestamp","errors","lastchangedate","project_code","chemistrybatchrecordid","chemistryresultsrecordid","toxbatchrecordid","toxicityresultsrecordid","trawloverdistance","trawldeckdistance","trawldistance","trawlovertime","trawldecktime","trawltimetobottom","trawltime","trawldistancetonominaltarget","picture_url", "coordinates", "device_type", "qcount","created_user","created_date","last_edited_user","last_edited_date","gdb_from_date","gdb_to_date","gdb_archive_oid","login_email","login_agency","login_owner","login_year","login_project","lastchangedate","projectcode"]
+# list of database fields that should not be queried on - removed status could be a problem 9sep17 - added trawl calculated fields - removed projectcode for smc part of tbl_phab
+app.system_fields = ["id", "objectid", "globalid", "submissionid", "gdb_geomattr_data", "shape", "record_timestamp", "timestamp","errors","lastchangedate","project_code","chemistrybatchrecordid","chemistryresultsrecordid","toxbatchrecordid","toxicityresultsrecordid","trawloverdistance","trawldeckdistance","trawldistance","trawlovertime","trawldecktime","trawltimetobottom","trawltime","trawldistancetonominaltarget","picture_url", "coordinates", "device_type", "qcount","created_user","created_date","last_edited_user","last_edited_date","gdb_from_date","gdb_to_date","gdb_archive_oid","login_email","login_agency","login_owner","login_year","login_project","lastchangedate"]
 # set the database connection string, database, and type of database we are going to point our application at
 app.eng = create_engine('postgresql://sde:dinkum@192.168.1.17:5432/smc')
 app.db = "smc"
