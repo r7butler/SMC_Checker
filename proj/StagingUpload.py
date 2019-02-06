@@ -12,7 +12,8 @@ import re
 import random 
 import datetime
 from random import randint
-from InternalEmail import *
+#from InternalEmail import *
+from NotificationEmail import notify
 from .ApplicationLog import *
 
 staging_upload = Blueprint('staging_upload', __name__)
@@ -23,6 +24,7 @@ def staging():
 	errorLog("Blueprint - Staging")
 	message = "Staging: Start upload."
 	statusLog(message)
+        checksum = {}
 	login = request.form['login']
 	errorLog("login: %s" % login)
 	agency = request.form['agency']
@@ -59,6 +61,7 @@ def staging():
 		#errorLog("destination_fields: %s" % destination_fields)
 		# get number of records - checksum
 		df_number_of_rows = len(df.index)
+                checksum.update({table_name: df_number_of_rows})
 
 		# drop non essential columns - not necessary since coming from originating file instead of global dataframe
 		if 'row' in df:
@@ -152,6 +155,10 @@ def staging():
 					raise Error, eng.error
 					errorLog(eng.error)
 				status.close()
+                                # set checksum in submission tracking checksum table
+                                checksum_session = "insert into submission_tracking_checksum (objectid,sessionkey,tablename,checksum) values (sde.next_rowid('sde','submission_tracking_checksum'), '%s', '%s', %d )" % (TIMESTAMP,table_name,int(checksum[table_name]))
+                                checksum_results = eng.execute(checksum_session)
+				checksum_results.close()
        				eng.dispose()
 		except ValueError:
 			errorLog("Failed to create production table: %s" % table_name)
@@ -304,6 +311,8 @@ def staging():
 		errorLog(status)
 		#return jsonify({'data': render_template('report.html', report=status)})
 		#return render_template('report.html', agency=agency, submission_type=submission_type, report=report_results_json) 
+                notify_return = notify(agency=agency,login=login,checksum=checksum,type=submission_type,TIMESTAMP=TIMESTAMP)
 		return jsonify(message=message,state=state, agency=agency, submission_type=submission_type, parameters=parameter_list, report=report_results_json)
 	else:
+                notify_return = notify(agency=agency,login=login,checksum=checksum,type=submission_type,TIMESTAMP=TIMESTAMP)
 		return jsonify(message=message,state=state,data=TIMESTAMP)
