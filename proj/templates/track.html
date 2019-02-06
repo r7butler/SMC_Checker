@@ -10,19 +10,19 @@
   <script type="text/javascript" language="javascript" src="https://cdn.datatables.net/1.10.16/js/jquery.dataTables.min.js"></script>
   <script type="text/javascript">
   	$(document).ready( function () {
-    		 $('#mytable').DataTable( { "order": [[ 12, "desc" ]], "paging": true, "pageLength": 50 } );
+    		 $('#mytable').DataTable( { "order": [[ 14, "desc" ]], "paging": true, "pageLength": 50 } );
 	} );
   </script>
 </head>
 <body>
 <table id="mytable" class="display">
-<thead><tr><th>Login</th><th>Agency</th><th>SesssionKey</th><th>Upload</th><th>Match</th><th>Mia</th><th>Lookup</th><th>Duplicates</th><th>Extended Checks</th><th>Extended Checks Type</th><th>Submit</th><th>Created User</th><th>Create Date</th><th>Log File</th></tr></thead>
+	<thead><tr><th>Login</th><th>Agency</th><th>SesssionKey</th><th>Upload</th><th>Match</th><th>Mia</th><th>Lookup</th><th>Duplicates</th><th>Extended Checks</th><th>Extended Checks Type</th><th>Submit</th><th>Table Name</th><th>Checksum</th><th>Created User</th><th>Create Date</th><th>Log File</th></tr></thead>
 <tbody>
 {% for s in session %}
-	{% set log_file = 'http://checker.sccwrp.org/smc/logs/' + s.sessionkey + '.log' %}
-	{% set submit_file = 'http://checker.sccwrp.org/smc/logs/' + s.sessionkey + '.xlsx' %}
+	{% set log_file = 'http://smcchecker.sccwrp.org/smc/logs/' + s.sessionkey + '.log' %}
+	{% set submit_file = 'http://smcchecker.sccwrp.org/smc/logs/' + s.sessionkey + '.xlsx' %}
 	<tr>
-	<td>{{ s.login }}</td><td>{{ s.agency }}</td><td>{{ s.sessionkey }}</td><td>{{ s.upload }}</td><td>{{ s.match }}</td><td>{{ s.mia }}</td><td>{{ s.lookup }}</td><td>{{ s.duplicates }}</td><td>{{ s.extended_checks }}</td><td>{{ s.extended_checks_type }}</td><td>{{ s.submit }}</td><td>{{ s.created_user }}</td><td>{{ s.created_date }}</td><td><a href="{{ log_file }}">{{ log_file }} </a><br> <a href="{{ submit_file }}"> {{ submit_file }} </a></td>
+		<td>{{ s.login }}</td><td>{{ s.agency }}</td><td>{{ s.sessionkey }}</td><td>{{ s.upload }}</td><td>{{ s.match }}</td><td>{{ s.mia }}</td><td>{{ s.lookup }}</td><td>{{ s.duplicates }}</td><td>{{ s.extended_checks }}</td><td>{{ s.extended_checks_type }}</td><td>{{ s.submit }}</td><td>{{ s.tablename }}</td><td>{{ s.checksum }}</td><td>{{ s.created_user }}</td><td>{{ s.created_date }}</td><td><a href="{{ log_file }}">{{ log_file }} </a><br> <a href="{{ submit_file }}"> {{ submit_file }} </a></td>
 	</tr>
 {% endfor %}
 </tbody>
