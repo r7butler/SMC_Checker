@@ -140,14 +140,16 @@ def toxicity(all_dataframes,sql_match_tables,errors_dict,project_code,login_info
 	errorLog(all_dataframes.keys())
 	for dataframe in all_dataframes.keys():
 		df_sheet_and_table_name = dataframe.strip().split(" - ")
-		errorLog(df_sheet_and_table_name)
 		table_name = str(df_sheet_and_table_name[2])
-		errorLog(table_name)
 		if table_name == "tbl_toxicitybatch":
-			tables.append("batch")
 			batch = all_dataframes[dataframe]
 			batch['tmp_row'] = batch.index
-
+		if table_name == "tbl_toxicityresults":
+			result = all_dataframes[dataframe]
+			result['tmp_row'] = result.index
+		if table_name == "tbl_toxicitysummary":
+			summary = all_dataframes[dataframe]
+			summary['tmp_row'] = summary.index
 	try:
 		## CHECKS ##
 		def checkData(statement,column,warn_or_error,error_label,human_error,dataframe):
@@ -170,20 +172,36 @@ def toxicity(all_dataframes,sql_match_tables,errors_dict,project_code,login_info
 		message = "Starting Toxicity Logic Checks"
 		errorLog(message)
 		statusLog(message)
+		# 1 - All records for each table must have a corresponding record in the other tables due on submission. Join tables on Agency/LabCode and ToxBatch/QABatch
+		### make sure there are records that match between batch and result - otherwise big problem
+		# EACH TAB MUST HAVE A CORRESPONDING RELATED RECORD IN ALL THE OTHER TABS - JOIN TABLES BASED ON TOXBATCH AND LAB
+		# batch
+		errorLog(batch[~batch[['toxbatch','labagencycode']].isin(result[['toxbatch','labagencycode']].to_dict(orient='list')).all(axis=1)])
+		checkLogic(batch[~batch[['toxbatch','labagencycode']].isin(result[['toxbatch','labagencycode']].to_dict(orient='list')).all(axis=1)].tmp_row.tolist(),'ToxBatch/LabAgencyCode','Logic Error','error','Each Toxicity Batch record must have a corresponding Toxicity Result record. Records are matched on ToxBatch and LabAgencyCode.',batch)
+		errorLog(batch[~batch[['toxbatch','labagencycode']].isin(summary[['toxbatch','labagencycode']].to_dict(orient='list')).all(axis=1)])
+		checkLogic(batch[~batch[['toxbatch','labagencycode']].isin(summary[['toxbatch','labagencycode']].to_dict(orient='list')).all(axis=1)].tmp_row.tolist(),'ToxBatch/LabAgencyCode','Logic Error','error','Each Toxicity Batch record must have a corresponding Toxicity Summary record. Records are matched on ToxBatch and LabAgencyCode.',batch)
+		# result
+		errorLog(result[~result[['toxbatch','labagencycode']].isin(batch[['toxbatch','labagencycode']].to_dict(orient='list')).all(axis=1)])
+		checkLogic(result[~result[['toxbatch','labagencycode']].isin(batch[['toxbatch','labagencycode']].to_dict(orient='list')).all(axis=1)].tmp_row.tolist(),'ToxBatch/LabAgencyCode','Logic Error','error','Each Toxicity Result record must have a corresponding Toxicity Batch record. Records are matched on ToxBatch and LabAgencyCode.',result)
+		errorLog(result[~result[['toxbatch','labagencycode']].isin(summary[['toxbatch','labagencycode']].to_dict(orient='list')).all(axis=1)])
+		checkLogic(result[~result[['toxbatch','labagencycode']].isin(summary[['toxbatch','labagencycode']].to_dict(orient='list')).all(axis=1)].tmp_row.tolist(),'ToxBatch/LabAgencyCode','Logic Error','error','Each Toxicity Result record must have a corresponding Toxicity Summary record. Records are matched on ToxBatch and LabAgencyCode.',result)
+		# summary 
+		errorLog(summary[~summary[['toxbatch','labagencycode']].isin(batch[['toxbatch','labagencycode']].to_dict(orient='list')).all(axis=1)])
+		checkLogic(summary[~summary[['toxbatch','labagencycode']].isin(batch[['toxbatch','labagencycode']].to_dict(orient='list')).all(axis=1)].tmp_row.tolist(),'ToxBatch/LabAgencyCode','Logic Error','error','Each Toxicity Summary record must have a corresponding Toxicity Batch record. Records are matched on ToxBatch and LabAgencyCode.',summary)
+		errorLog(summary[~summary[['toxbatch','labagencycode']].isin(result[['toxbatch','labagencycode']].to_dict(orient='list')).all(axis=1)])
+		checkLogic(summary[~summary[['toxbatch','labagencycode']].isin(result[['toxbatch','labagencycode']].to_dict(orient='list')).all(axis=1)].tmp_row.tolist(),'ToxBatch/LabAgencyCode','Logic Error','error','Each Toxicity Summary record must have a corresponding Toxicity Result record. Records are matched on ToxBatch and LabAgencyCode.',summary)
+
 		## END LOGIC CHECKS ##
 
 		## CUSTOM CHECKS ##
 		## END CUSTOM CHECKS ##
-		## START MAP CHECK ##
-		# get a unique list of stations from results file
-		#rlist_of_stations = pd.unique(result['stationcode'])
-		#result_unique_stations = ','.join("'" + s + "'" for s in rlist_of_stations)
-		## END MAP CHECKS
 		## END CHECKS ##
 
-		## NEW FIELDS ##
-		batch['project_code'] = project_code
-		## END NEW FIELDS ##
+		## START MAP CHECK ##
+		# get a unique list of stations from stationcode
+		list_of_stations = pd.unique(result['stationcode'])
+		unique_stations = ','.join("'" + s + "'" for s in list_of_stations)
+		## END MAP CHECKS
 
 		for dataframe in all_dataframes.keys():
 			if 'custom_errors' in all_dataframes[dataframe]:
@@ -202,7 +220,7 @@ def toxicity(all_dataframes,sql_match_tables,errors_dict,project_code,login_info
 		#assignment_table = result.groupby(['stationid','lab','analyteclass']).size().to_frame(name = 'count').reset_index()
 		# lets reassign the analyteclass field name to species so the assignment query will run properly - check StagingUpload.py for details
 		#assignment_table = assignment_table.rename(columns={'analyteclass': 'species'})
-		return custom_checks, custom_redundant_checks, message
+		return custom_checks, custom_redundant_checks, message, unique_stations
 	except ValueError:
 		message = "Critical Error: Failed to run toxicity checks"	
 		errorLog(message)
