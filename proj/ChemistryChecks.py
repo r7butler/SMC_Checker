@@ -193,21 +193,158 @@ def chemistry(all_dataframes,sql_match_tables,errors_dict,project_code,login_inf
 		## CUSTOM CHECKS ##
 		###################
                 
-                '''
-                ## Chemistry Nutrient Reporting
-                # 1st - connect to unified chemistry table and query subset of unified chemistry table
-                chem_nitrogen_table = eng.execute("SELECT stationcode, sampledate, fieldreplicate, labreplicate, sampletypecode, matrixname, analytename, unit, result, resqualcode, mdl, rl, qacode FROM chemistry WHERE SampleTypeCode IN ('Integrated', 'Grab') AND matrixname = 'samplewater' AND analytename IN ('Ammonia as N', 'Nitrate + Nitrite as N', 'Nitrate as N', 'Nitrate as N03', 'Nitrite as N', 'Nitrogen, Total Kjeldahl', 'Nitrogen, Total', 'Nitrogen-Organic', 'Total Nitrogen');")
-                ndf = DataFrame(chem_nitrogen_table.fetchall()); ndf.columns = chem_nitrogen_table.keys()
-                errorLog('Chemistry Subset based on SampleTypeCode/MatrixName/AnalyteName:')
-                errorLog(ndf)
-                # 2nd - Ensure all units are mg/L. If not, convert Result, MDL, RL fields to mg/L unit. (ASK RAFI ABOUT CASE SENSITIVITY)
-                errorLog('Ensure all units are mg/L. If not, convert Result, MDL, RL fields to m/L unit.')
-                statusLog('Ensure all units are mg/L. If not, convert Result, MDL, RL fields to m/L unit.')
-                errorLog('All data with incorrect units (i.e. unit that is not mg/l).')
-                errorLog(ndf[ndf.unit.str.lower() != 'mg/l'])
-                '''
+                ##########################
+                # CUSTOM CHECK FUNCTIONS #
+                ##########################
                 
+                def nameUpdate(df, field, conditions, oldname, newname):
+                    """
+                    DESCRIPTION:
+                    This function returns an error if the field in df under conditions contains an oldname.
+                    
+                    PARAMETERS:
+                    
+                    df - pandas dataframe of interest
+                    field - string of the field of interest
+                    conditions - a dictionary of conditions placed on the dataframe (i.e. {'field':['condition1',...]})
+                    oldname - string of the name returned to user if found in field
+                    newname - string of the suggested fix for oldname.
+                    """
+                    mask = pd.DataFrame([df[k].isin(v) for k,v in conditions.items()]).T.all(axis = 1)
+                    sub = df[mask]
+                    errs = sub[sub[field].str.contains(oldname)]
+                    errorLog(errs)
+                    checkData(errs.tmp_row.tolist(),field,'Undefined Error','error','%s must now be written as %s.' %(oldname, newname),df)
+
+                def exactMatch(df, field, conditions, value):
+                   """
+                   DESCRIPTION:
+                   This function returns an error if field value in df under conditions does not exactly match specified value
+
+                   PARAMETERS:
+                   df - pandas dataframe of interest
+                   field - string of the field of interest
+                   conditions - a dictionary of conditions placed on the dataframe (i.e. {'field':['condition1',...]})
+                   value - string or numeric of exact value needed
+                   """
+                   mask = pd.DataFrame([df[k].isin(v) for k,v in conditions.items()]).T.all(axis = 1)
+                   sub = df[mask]
+                   errs = sub[sub[field] != value]
+                   errorLog(errs)
+                   checkData(errs.tmp_row.tolist(), field,'Undefined Error','error','%s mismatch. %s should be %s' %(field,field,value), result)
                 
+
+                ############################
+                # SMC RAPHAEL MAZOR AUDITS #
+                ############################
+
+                # If MatrixName is samplewater, blankwater, or labwater then the following AnalyteNames must be updated:
+                #   Nitrate as NO3 -> Nitrate as N
+                #   Phosphorus as PO4 -> Phosphorus as P
+                errorLog("If MatrixName is samplewater, blankwater, or labwater then some AnalyteNames must be updated:")
+                nameUpdate(result, 'analytename',{'matrixname':['samplewater','blankwater','labwater']}, 'Nitrate as NO3','Nitrate as N')
+                nameUpdate(result, 'analytename',{'matrixname':['samplewater','blankwater','labwater']}, 'Phosphorus as PO4', 'Phosphorus as P')
+
+                # If MatrixName is samplewater, blankwater, or labwater then the following must hold true:                
+                #   AnalyteName = Ash Free Dry Mass -> Unit = mg/cm2
+                #   AnalyteName = Chlorophyll a -> Unit = ug/cm2
+                errorLog("If MatrixName is samplewater, blankwater, or labwater then some units must be matched:")
+                exactMatch(result, 'unit', {'matrixname':['samplewater','blankwater','labwater'], 'analytename': ['Ash Free Dry Mass']}, 'mg/cm2')
+                exactMatch(result, 'unit', {'matrixname':['samplewater','blankwater','labwater'], 'analytename': ['Chlorophyll a']}, 'ug/cm2')
+
+
+                ############################                
+                #       SWAMP AUDITS       #
+                ############################
+
+                # If result < 0, then resqualcode must be either ND or NR
+                errorLog(" If result < 0, then resqualcode must be either ND or NR")
+                checkData(result[ (result.result < 0) & ((result.resqualcode != 'NR') | (result.resqualcode != 'ND'))].tmp_row.tolist(), "Result", "Undefined Warning", "warning", "Result value is negative. ResQualCode must equal ND or NR", result)
+
+                # if resqualcode is NR then result must be equal to -88 AND labresultcomment must not be empty                
+                errorLog("if resqualcode is NR then result must be equal to -88 AND labresultcomment must not be empty")
+                checkData(result[(result.resqualcode == 'NR') & (result.result != -88)].tmp_row.tolist(), "Result", "Undefined Warning", "warning", "ResQualCode is NR. Result value must be -88", result)
+                checkData(result[(result.resqualcode == 'NR') & (result.labresultcomments == '')].tmp_row.tolist(), "LabResultComment", "Undefined Warning", "warning", "ResQualCode is NR. A LabResultComment is Required", result)
+
+                # If resqualcode is DNQ then mdl < result < rl                
+                errorLog("If resqualcode is DNQ then mdl < result < rl")
+                checkData(result[ (result.resqualcode == 'DNQ') & ((result.result < result.mdl) | (result.result > result.rl))].tmp_row.tolist(), "Result", "Undefined Warning", "warning", "Result was not within the MDL and RL for ResQualCode = DNQ", result)
+
+                # RL and MDL cannot both be -88
+                errorLog("RL and MDL cannot both be -88")
+                checkData(result[(result.rl == -88) & (result.mdl == -88)].tmp_row.tolist(), "RL", "Undefined Warning", "warning", "The MDL and RL cannot both be -88", result)
+
+                # RL cannot be less than MDL                
+                errorLog("RL cannot be less than MDL")
+                checkData(result[result.rl < result.mdl].tmp_row.tolist(), "RL", "Undefined Warning", "warning", "The RL cannot be less than MDL", result)
+
+                # If SampleTypeCode is in the set MS1, MS2, LCS, CRM, MSBLDup and the Unit is NOT % THEN......
+                # Expected Value cannot be zero
+                errorLog("line 281, expected Value Check")
+                checkData(result[((result.sampletypecode.isin(['MS1', 'MS2', 'LCS', 'CRM', 'MSBLDup'])) & (result.unit != "%")) & (result.expectedvalue == 0)].tmp_row.tolist(), "ExpectedValue", "Undefined Warning", "warning", "Expected Value required based on SampleTypeCode", result)
+
+                # If multiple records have equal labbatch, analytename, and dilfactor                
+                # Then MDL values for those records must also be equivalent
+                errorLog("For each record in a LabBatch/AnalyteName/DilFactor group, MDL values should all be the same:")
+                groups = result.groupby(['labbatch','analytename','dilfactor'])['mdl'].apply(list).reset_index(name = 'mdl counts')
+                same_mdls = groups['mdl counts'].apply(lambda x: x[1:] == x[:-1])
+                bad_groups = groups.where(~same_mdls).dropna()
+                errorLog(bad_groups)
+                for i in bad_groups.index:
+                    lb = bad_groups.labbatch[i]
+                    an = bad_groups.analytename[i]
+                    df = bad_groups.dilfactor[i]
+                    checkData(result[(result.labbatch == lb)&(result.analytename == an)&(result.dilfactor == df)].tmp_row.tolist(),'MDL','Undefined Warning','warning','For LabBatch/AnalyteName/DilFactor = %s/%s/%s, all MDL values must be equivalent.' %(lb,an,df), result)
+
+                # If multiple records have equal labbatch, analytename, and dilfactor                
+                # Then RL values for those records must also be equivalent
+                errorLog("For each record in a LabBatch/AnalyteName/DilFactor group, RL values should all be the same:")
+                groups = result.groupby(['labbatch','analytename','dilfactor'])['rl'].apply(list).reset_index(name = 'rl counts')
+                same_rls = groups['rl counts'].apply(lambda x: x[1:] == x[:-1])
+                bad_groups = groups.where(~same_rls).dropna()
+                errorLog(bad_groups)
+                for i in bad_groups.index:
+                    lb = bad_groups.labbatch[i]
+                    an = bad_groups.analytename[i]
+                    df = bad_groups.dilfactor[i]
+                    checkData(result[(result.labbatch == lb)&(result.analytename == an)&(result.dilfactor == df)].tmp_row.tolist(),'RL','Undefined Warning','warning','For LabBatch/AnalyteName/DilFactor = %s/%s/%s, all RL values must be equivalent.' %(lb,an,df), result)
+
+                # If multiple records have equal labbatch, analytename                
+                # Then MethodNames should also be equivalent
+                errorLog("For each record in a LabBatch/AnalyteName group, MethodNames should all be the same:")
+                groups = result.groupby(['labbatch','analytename'])['methodname'].apply(list).reset_index(name = 'methods')
+                same_methods = groups['methods'].apply(lambda x: x[1:] == x[:-1])
+                bad_groups = groups.where(~same_methods).dropna()
+                errorLog(bad_groups)
+                for i in bad_groups.index:
+                    lb = bad_groups.labbatch[i]
+                    an = bad_groups.analytename[i]
+                    checkData(result[(result.labbatch == lb)&(result.analytename == an)].tmp_row.tolist(),'MethodName','Undefined Warning','warning','For LabBatch/AnalyteName = %s/%s, same MethodName should be used.' %(lb,an), result)
+
+                # If multiple records have equal labbatch, analytename
+                # Then Unit should also be equivalent
+                errorLog("For each record in a LabBatch/AnalyteName group, Unit should all be the same:")
+                groups = result.groupby(['labbatch','analytename'])['unit'].apply(list).reset_index(name = 'units')
+                same_units = groups['units'].apply(lambda x: x[1:] == x[:-1])
+                bad_groups = groups.where(~same_units).dropna()
+                errorLog(bad_groups)
+                for i in bad_groups.index:
+                    lb = bad_groups.labbatch[i]
+                    an = bad_groups.analytename[i]
+                    checkData(result[(result.labbatch == lb)&(result.analytename == an)].tmp_row.tolist(),'Unit','Undefined Warning','warning','For LabBatch/AnalyteName = %s/%s, same Unit should be used.' %(lb,an), result)
+
+
+                # If LabSubmissionCode is A, MD, or QI
+                # Then LabBatchComments are required
+                errorLog("If LabSubmissionCode is A, MD, or QI, a LabBatchComment is required.")
+                bad_records = batch[(batch.labsubmissioncode.isin(['A','MD','QI']))&(batch.labbatchcomments.isnull())]
+                errorLog(bad_records)
+                checkData(bad_records.tmp_row.tolist(),'LabBatchComments','Undefined Warning','warning','LabSubmissionCode is A, MD, or QI. LabBatchComment is required.', batch)
+
+
+
+
+
                 ###################
 		## MAP CHECKS ##
 		###################
