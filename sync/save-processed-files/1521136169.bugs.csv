@@ -1,0 +1,2 @@
+gdb_geomattr_data,shape,SampleDate,FieldReplicate,SampleID,FinalID,LifeStageCode,Distinct,BAResult,CollectionMethodCode,record_origin,origin_lastupdatedate,StationCode,DatabaseCode
+None,None,2011-08-17 00:00:00,1,304SL9_08172011_BMI_ArtSub_1,Tanypus,L,0,3,BMI_ArtSub,SWAMP,2013-04-04 00:00:00,304SL9,SWAMP

@@ -1,0 +1,184 @@
+gdb_geomattr_data,shape,SampleDate,FieldReplicate,SampleID,FinalID,LifeStageCode,Distinct,BAResult,CollectionMethodCode,record_origin,origin_lastupdatedate,StationCode,DatabaseCode
+67    None
+68    None
+69    None
+70    None
+71    None
+72    None
+73    None
+74    None
+75    None
+76    None
+77    None
+78    None
+79    None
+80    None
+Name: gdb_geomattr_data, dtype: object,(14, 14),67   2011-08-17
+68   2011-08-17
+69   2011-08-17
+70   2011-08-17
+71   2011-08-17
+72   2011-08-17
+73   2011-08-17
+74   2011-08-17
+75   2011-08-17
+76   2011-08-17
+77   2011-08-17
+78   2011-08-17
+79   2011-08-17
+80   2011-08-17
+Name: SampleDate, dtype: datetime64[ns],67    1
+68    1
+69    1
+70    1
+71    1
+72    1
+73    1
+74    1
+75    1
+76    1
+77    1
+78    1
+79    1
+80    1
+Name: FieldReplicate, dtype: int64,67    304APS_08172011_BMI_ArtSub_1
+68    304APS_08172011_BMI_ArtSub_1
+69    304APS_08172011_BMI_ArtSub_1
+70    304APS_08172011_BMI_ArtSub_1
+71    304APS_08172011_BMI_ArtSub_1
+72    304APS_08172011_BMI_ArtSub_1
+73    304APS_08172011_BMI_ArtSub_1
+74    304APS_08172011_BMI_ArtSub_1
+75    304APS_08172011_BMI_ArtSub_1
+76    304APS_08172011_BMI_ArtSub_1
+77    304APS_08172011_BMI_ArtSub_1
+78    304APS_08172011_BMI_ArtSub_1
+79    304APS_08172011_BMI_ArtSub_1
+80    304APS_08172011_BMI_ArtSub_1
+Name: SampleID, dtype: object,67                  Paraleptophlebia
+68                        Odontomesa
+69                        Tanytarsus
+70    Microtendipes rydalensis group
+71               Ecdyonurus criddlei
+72                            Aeshna
+73                          Gerridae
+74                            Sialis
+75                           Malenka
+76             Thienemannimyia group
+77                       Ptychoptera
+78                       Oligochaeta
+79                       Lepidostoma
+80                            Baetis
+Name: FinalID, dtype: object,67    L
+68    L
+69    L
+70    L
+71    L
+72    L
+73    L
+74    L
+75    L
+76    L
+77    L
+78    X
+79    L
+80    L
+Name: LifeStageCode, dtype: object,67    0
+68    0
+69    0
+70    0
+71    0
+72    0
+73    0
+74    0
+75    0
+76    0
+77    0
+78    0
+79    0
+80    0
+Name: Distinct, dtype: int64,67    35
+68     1
+69     3
+70     4
+71     2
+72     2
+73     1
+74     1
+75     1
+76     1
+77     1
+78     7
+79     1
+80     1
+Name: BAResult, dtype: object,67    BMI_ArtSub
+68    BMI_ArtSub
+69    BMI_ArtSub
+70    BMI_ArtSub
+71    BMI_ArtSub
+72    BMI_ArtSub
+73    BMI_ArtSub
+74    BMI_ArtSub
+75    BMI_ArtSub
+76    BMI_ArtSub
+77    BMI_ArtSub
+78    BMI_ArtSub
+79    BMI_ArtSub
+80    BMI_ArtSub
+Name: CollectionMethodCode, dtype: object,67    SWAMP
+68    SWAMP
+69    SWAMP
+70    SWAMP
+71    SWAMP
+72    SWAMP
+73    SWAMP
+74    SWAMP
+75    SWAMP
+76    SWAMP
+77    SWAMP
+78    SWAMP
+79    SWAMP
+80    SWAMP
+Name: record_origin, dtype: object,67   2013-04-04
+68   2013-04-04
+69   2013-04-04
+70   2013-04-04
+71   2013-04-04
+72   2013-04-04
+73   2013-04-04
+74   2013-04-04
+75   2013-04-04
+76   2013-04-04
+77   2013-04-04
+78   2013-04-04
+79   2013-04-04
+80   2013-04-04
+Name: origin_lastupdatedate, dtype: datetime64[ns],67    304APS
+68    304APS
+69    304APS
+70    304APS
+71    304APS
+72    304APS
+73    304APS
+74    304APS
+75    304APS
+76    304APS
+77    304APS
+78    304APS
+79    304APS
+80    304APS
+Name: StationCode, dtype: object,67    SWAMP
+68    SWAMP
+69    SWAMP
+70    SWAMP
+71    SWAMP
+72    SWAMP
+73    SWAMP
+74    SWAMP
+75    SWAMP
+76    SWAMP
+77    SWAMP
+78    SWAMP
+79    SWAMP
+80    SWAMP
+Name: DatabaseCode, dtype: object
