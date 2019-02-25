@@ -44,10 +44,6 @@ def index():
 @app.route('/clear')
 def clear():
         eng = create_engine('postgresql://sde:dinkum@192.168.1.17:5432/smc') # postgresql
-        statement = text("""DELETE FROM tbl_taxonomysampleinfo""")
-        eng.execute(statement)
-        statement2 = text("""DELETE FROM tbl_taxonomyresults""")
-        eng.execute(statement2)
         statement3 = text("""DELETE FROM tbl_channelengineering""")
         eng.execute(statement3)
         statement4 = text("""DELETE FROM tbl_toxicitybatch""")
@@ -62,7 +58,115 @@ def clear():
         eng.execute(statement8)
         statement9 = text("""DELETE FROM tbl_hydromod""")
         eng.execute(statement9)
-        return "algae, channelengineering, hydromod, siteevaluation, taxonomy, toxicity beta clear finished"
+        return "algae, channelengineering, hydromod, siteevaluation, toxicity beta clear finished"
+
+@app.route('/export', methods=['GET'])
+@support_jsonp
+def export():
+        # function to build query from url string and return result as an excel file or zip file if requesting all data
+        print "start export"
+        admin_engine = create_engine('postgresql://sde:dinkum@192.168.1.17:5432/smc') 
+        query_engine = create_engine('postgresql://smcread:1969$Harbor@192.168.1.17:5432/smc')
+        # sql injection check one
+        def cleanstring(instring):
+            # unacceptable characters from input
+            special_characters = '''!-[]{};:'"\,<>./?@#$^&*~'''
+
+            # remove punctuation from the string
+            outstring = ""
+            for char in instring:
+                if char not in special_characters:
+                    outstring = outstring + char
+            return outstring
+
+        # sql injection check two
+        def exists_table(local_engine, local_table_name):
+            # check lookups
+            lsql = "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE='BASE TABLE' AND TABLE_CATALOG=%s"
+            lquery = local_engine.execute(lsql, ("smc"))
+            lresult = lquery.fetchall()
+            lresult = [r for r, in lresult]
+            # check views - not necessary for exports
+            #vsql = "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.VIEWS WHERE TABLE_NAME LIKE %s"
+            #vquery = local_engine.execute(vsql, ("vw_%%"))
+            #vresult = vquery.fetchall()
+            #vresult = [r for r, in vresult]
+            # combine lookups and views
+            result = lresult #+ vresult
+            if local_table_name in result:
+                print "found matching table"
+                return 1
+            else:
+                print "no matching table return empty"
+                return 0
+
+	#if request.args.get("action"):
+        gettime = int(time.time())
+        TIMESTAMP = str(gettime)
+        #export_file = '/var/www/smc/logs/%s-export.xlsx' % TIMESTAMP
+        #export_link = 'http://smcchecker.sccwrp.org/smc/logs/%s-export.xlsx' % TIMESTAMP
+        export_file = '/var/www/smc/logs/%s-export.csv' % TIMESTAMP
+        export_link = 'http://smcchecker.sccwrp.org/smc/logs/%s-export.csv' % TIMESTAMP
+
+        # sql injection check three
+        valid_tables = ['csci_core', 'csci_suppl1_grps', 'csci_suppl1_mmi', 'csci_suppl1_oe', 'csci_suppl2_mmi', 'csci_suppl2_oe', 'chemistry','tmp_channelengineering','tblcramplants', 'tblcrammetricscores','tblcramstressors','tmp_hydromodresults','tmp_phab','tmp_phabmetrics','taxonomy','tmp_siteeval','tmp_timeserieseffortcheck','tmp_timeserieseffortdetails','tmp_timeseriesresults','tmp_toxicitybatch','tmp_toxicityresults','tmp_toxicitysummary']
+        if request.args.get("callback"):
+	    test = request.args.get("callback", False)
+            print test
+        if request.args.get("table"):
+            table = request.args.get("table", False)
+            table = table.lower()
+            cleanstring(table)
+            check = exists_table(admin_engine, table)
+            print table
+        if request.args.get("action"):
+            action = request.args.get("action", False)
+            cleanstring(action)
+            print action 
+        if request.args.get("fields"):
+            fields = request.args.get("fields", False)
+            cleanstring(fields)
+            print fields
+        if request.args.get("county"):
+            county = request.args.get("county", False)
+            cleanstring(county)
+            print county
+        if request.args.get("smcshed"):
+            smcshed = request.args.get("smcshed", False)
+            cleanstring(smcshed)
+            print smcshed
+
+        # run some checks on data coming in
+        if table in valid_tables and check == 1:
+                print "found valid table: %s" % table
+	        #export_writer = pd.ExcelWriter(export_file, engine='xlsxwriter')
+	        #eng = create_engine('postgresql://smcread:1969$Harbor@192.168.1.17:5432/smc')
+                #sql1_statement = "SELECT %s FROM %s INNER JOIN %s t1 ON t0.toxbatch = t1.toxbatch INNER JOIN lu_stations t2 ON t1.stationcode = t2.stationid $terms AND t1.record_publish = 'true'
+	        #sql = eng.execute(sql_primary, (table,fields,county,smcshed))
+                print "sql call"
+                print type(action)
+                action = str(action)
+                print type(action)
+                raw_sql = text(action)
+
+                sql = query_engine.execute(raw_sql)
+                print sql
+	        df = DataFrame(sql.fetchall())
+                print df
+	        if len(df) > 0:
+                    df.columns = sql.keys()
+		    df.columns = [x.lower() for x in df.columns]
+		    #df.to_excel(export_writer, sheet_name=table, index = False)
+                    df.to_csv(export_file)
+		    print export_link
+                else:
+                    export_link = "empty"
+        else:
+                export_link = "empty"
+        admin_engine.dispose()
+        query_engine.dispose()
+        response = jsonify({'code': 200,'link': export_link})
+        return response
 
 @app.route('/logs/<path:path>')
 def send_log(path):
@@ -125,37 +229,77 @@ def map():
 @app.route('/scraper', methods=['GET'])
 def scraper():
 	print("start scraper")
+        # code has been rewritten to prevent sql injection by first checking that the input the user has submitted doesnt have any special characters (except underscores)
+        # second we check to make sure that the input matches a table in the database
+	# unfortunately readonly user doesnt have access to information_schema
+        # admin engine is used to query the information schema
+        # query engine should be used for all other queries - read only
+	admin_engine = create_engine('postgresql://sde:dinkum@192.168.1.17:5432/smc') 
+	query_engine = create_engine('postgresql://smcread:1969$Harbor@192.168.1.17:5432/smc')
+        def cleanstring(instring):
+            # unacceptable characters from input
+            special_characters = '''!-[]{};:'"\,<>./?@#$^&*~'''
+
+            # remove punctuation from the string
+            outstring = ""
+            for char in instring:
+                if char not in special_characters:
+                    outstring = outstring + char
+            return outstring
+
+        def exists_table(local_engine, local_table_name):
+            # check lookups
+            lsql = "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE='BASE TABLE' AND TABLE_CATALOG=%s AND TABLE_NAME LIKE %s"
+            lquery = local_engine.execute(lsql, ("smc","lu_%%"))
+            lresult = lquery.fetchall()
+            lresult = [r for r, in lresult]
+            # check views
+            vsql = "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.VIEWS WHERE TABLE_NAME LIKE %s"
+            vquery = local_engine.execute(vsql, ("vw_%%"))
+            vresult = vquery.fetchall()
+            vresult = [r for r, in vresult]
+            # combine lookups and views
+            result = lresult + vresult
+            if local_table_name in result:
+                print "found matching table"
+                return 1
+            else:
+                print "no matching table return empty"
+                return 0
+
 	if request.args.get("action"):
 		action = request.args.get("action")
 		message = str(action)
 		if request.args.get("layer"):
 			layer = request.args.get("layer")
-			# layer should start with lu - if not return empty - this tool is only for lookup lists
-                        print "layer"
-			if layer.startswith(("lu_","vw_")):
-                                print layer
-				# unfortunately readonly user doesnt have access to information_schema
-				#eng = create_engine('postgresql://smcread:1969$Harbor@192.168.1.17:5432/smc')
-				eng = create_engine('postgresql://sde:dinkum@192.168.1.17:5432/smc') # postgresql
-				# below should be more sanitized
+                        # clean name of input to avoid sql injection
+                        layer = cleanstring(layer)
+                        # check that the table name exists in the system catalog - to avoid sql injection
+                        check = exists_table(admin_engine, layer)
+			if (layer.startswith(("lu_","vw_")) and check == 1):
+				# completed sanitizing above
 				# https://stackoverflow.com/questions/39196462/how-to-use-variable-for-sqlite-table-name?rq=1
-				# check to make sure table exists before proceeding
 				# get primary key for lookup list
-				sql_primary = "SELECT DISTINCT(kcu.column_name) FROM information_schema.table_constraints AS tc JOIN information_schema.key_column_usage AS kcu ON tc.constraint_name = kcu.constraint_name JOIN information_schema.constraint_column_usage AS ccu ON ccu.constraint_name = tc.constraint_name WHERE constraint_type = 'PRIMARY KEY' AND tc.table_name='%s'" % layer
+				sql_primary = "SELECT DISTINCT(kcu.column_name) FROM information_schema.table_constraints AS tc JOIN information_schema.key_column_usage AS kcu ON tc.constraint_name = kcu.constraint_name JOIN information_schema.constraint_column_usage AS ccu ON ccu.constraint_name = tc.constraint_name WHERE constraint_type = 'PRIMARY KEY' AND tc.table_name=%s"
 				try:
                                         print "primary key"
-					primary_key_result = eng.execute(sql_primary)
+                                        # need to use admin connection to query information_schema
+					primary_key_result = admin_engine.execute(sql_primary, (layer,))
 					# there should be only one primary key
 					primary_key = primary_key_result.fetchone()
-					#print "primary_key: %s" % primary_key
+					print "primary_key: %s" % primary_key
 					try:
 					        # get all fields first
                                                 if primary_key:
-                                                    sql_results = eng.execute("select * from %s order by %s asc" % (layer,primary_key[0]))
+                                                    # layer/table has been checked for sql injection so this should be ok - otherwise cant call dynamic table
+                                                    sql_secondary = "select * from %s order by %s" % (layer,primary_key[0])
+                                                    sql_results = query_engine.execute(sql_secondary)
                                                 else:
                                                     primary_key = ["none"]
-                                                    sql_results = eng.execute("select * from %s" % (layer))
+                                                    sql_secondary = "select * from %s" % (layer)
+                                                    sql_results = query_engine.execute(sql_secondary)
                                                 scraper_results = DataFrame(sql_results.fetchall())
+                                                print scraper_results
                                                 scraper_results.columns = sql_results.keys()
                                                 # for bight we dont want system columns
                                                 if 'created_user' in scraper_results:
@@ -184,7 +328,8 @@ def scraper():
 						return "empty"
 				except Exception as err:
 					return "empty"
-				eng.dispose()
+				admin_engine.dispose()
+				query_engine.dispose()
 			else:
 				return "empty"
 

@@ -12,7 +12,7 @@ import re
 import random 
 import datetime
 from random import randint
-#from InternalEmail import *
+from InternalEmail import *
 from NotificationEmail import notify
 from .ApplicationLog import *
 
@@ -96,12 +96,29 @@ def staging():
 			errorLog("End make copy of table...")
 
 			# the fields below are required for all geodatabase feature access tables
-			def getRandomTimeStamp(row):
+                        '''
+                        NOTE: Outdated code for object id. replaced with new code below. keeping this code temporarily. -Jordan 2/21/2019
+                        def getRandomTimeStamp(row):
 				row['objectid'] = int(TIMESTAMP) + int(row.name)
 				return row
 			df = df.apply(getRandomTimeStamp, axis=1)
 			errorLog(df['objectid'])
-			# timestamp to date format - bug fix #4
+			'''
+                        
+                        # new field object id
+                        objid_sql = "SELECT MAX(objectid) from %s;" % table_name
+                        last_objid = dest_engine.execute(objid_sql).fetchall()[0][0]
+                        errorLog("Last ObjectID Found In %s" % table_name)
+                        # if there is no objectid then start the objectid at 1
+                        if last_objid:
+                            errorLog(last_objid)
+                            df['objectid'] = df.index + last_objid + 1
+                        else:
+                            df['objectid'] = 1
+                        errorLog("ObjectID's created for %s" % table_name)
+                        errorLog(df['objectid'])
+                        
+                        # timestamp to date format - bug fix #4
 			timestamp_date = datetime.datetime.fromtimestamp(int(TIMESTAMP)).strftime('%Y-%m-%d %H:%M:%S')
 			df['created_user'] = "checker"
 			df['created_date'] = timestamp_date
@@ -115,6 +132,7 @@ def staging():
 			df['login_year'] = year
 			df['login_project'] = project
 
+                        #errorLog(df)
 			# create columns in staging table based upon originating table
      			for column in src_table.columns:
 				errorLog(column)
@@ -146,19 +164,22 @@ def staging():
      				eng = create_engine('postgresql://sde:dinkum@192.168.1.17:5432/smc')
 				# works but below is more precise - sql = 'INSERT INTO %s (SELECT * FROM %s)' % (table_name,staging_table_name)
 				sql = 'INSERT INTO "' + table_name + '" (objectid, globalid, created_user, created_date, last_edited_user, last_edited_date, login_email, login_agency, login_owner, login_year, login_project, '+ df_column_names + ') select sde.next_rowid(%s,%s), sde.next_globalid(), created_user, created_date, last_edited_user, last_edited_date, login_email, login_agency, login_owner, login_year, login_project, ' + df_column_names + ' from "' + staging_table_name + '"'
-				errorLog(sql)
+                                errorLog(sql)
+                                
 				# "sde" and table_name below are used to populate next_rowid in sql statement
-				status = eng.execute(sql,"sde",table_name)
+                                status = eng.execute(sql,"sde",table_name)
 				errorLog(status)
 				if not status:
 					errorLog("inside failed status")
 					raise Error, eng.error
 					errorLog(eng.error)
 				status.close()
+                                
                                 # set checksum in submission tracking checksum table
                                 checksum_session = "insert into submission_tracking_checksum (objectid,sessionkey,tablename,checksum) values (sde.next_rowid('sde','submission_tracking_checksum'), '%s', '%s', %d )" % (TIMESTAMP,table_name,int(checksum[table_name]))
                                 checksum_results = eng.execute(checksum_session)
 				checksum_results.close()
+                                
        				eng.dispose()
 		except ValueError:
 			errorLog("Failed to create production table: %s" % table_name)
@@ -293,7 +314,7 @@ def staging():
 		#mail_body = 'You have submitted taxa for stations lacking GIS data required to calculate CSCI scores. SCCWRP has been notified, and these stations have been added to the queue for GIS analysis and CSCI score calculation. You will be automatically notified when CSCI scores are available for this site. For questions, contact <a href="mailto:raphaelm@sccwrp.org">Raphael Mazor (raphaelm@sccwrp.org)</a>.'
 		mail_body = csci_message
 		errorLog(mail_body)
-		status = internal_email("notify","checker@smcchecker.sccwrp.org",["pauls@sccwrp.org"],message,mail_body)
+		status = internal_email("notify","checker@smcchecker.sccwrp.org",["smc-im@sccwrp.org"],message,mail_body)
 		if status == 1:
 			errorLog("failed to email sccwrp")
 		else:
@@ -301,7 +322,7 @@ def staging():
 	if project != "SMC":
 		mail_body = "The following user: %s with agency/lab: %s attempted to submit data for owner: %s, project: %s, sampled year: %s. The user selected 'Other' for project." % (login,agency,owner,project,year)
 		errorLog(mail_body)
-		status = internal_email("notify","checker@smcchecker.sccwrp.org",["pauls@sccwrp.org"],message,mail_body)
+		status = internal_email("notify","checker@smcchecker.sccwrp.org",["smc-im@sccwrp.org"],message,mail_body)
 		if status == 1:
 			errorLog("failed to email sccwrp")
 		else:

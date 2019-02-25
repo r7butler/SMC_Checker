@@ -256,32 +256,36 @@ def chemistry(all_dataframes,sql_match_tables,errors_dict,project_code,login_inf
                 ############################                
                 #       SWAMP AUDITS       #
                 ############################
-
+                
                 # If result < 0, then resqualcode must be either ND or NR
                 errorLog(" If result < 0, then resqualcode must be either ND or NR")
-                checkData(result[ (result.result < 0) & ((result.resqualcode != 'NR') | (result.resqualcode != 'ND'))].tmp_row.tolist(), "Result", "Undefined Warning", "warning", "Result value is negative. ResQualCode must equal ND or NR", result)
+                checkData(result[ (result.result < 0) & ((result.resqualcode != 'NR') & (result.resqualcode != 'ND'))].tmp_row.tolist(), "Result", "Undefined Warning", "warning", "Result value is negative. ResQualCode must equal ND or NR", result)
 
-                # if resqualcode is NR then result must be equal to -88 AND labresultcomment must not be empty                
+                # if resqualcode is NR or ND then result must be negative.             
                 errorLog("if resqualcode is NR then result must be equal to -88 AND labresultcomment must not be empty")
-                checkData(result[(result.resqualcode == 'NR') & (result.result != -88)].tmp_row.tolist(), "Result", "Undefined Warning", "warning", "ResQualCode is NR. Result value must be -88", result)
-                checkData(result[(result.resqualcode == 'NR') & (result.labresultcomments == '')].tmp_row.tolist(), "LabResultComment", "Undefined Warning", "warning", "ResQualCode is NR. A LabResultComment is Required", result)
+                checkData(result[((result.resqualcode == 'NR')|(result.resqualcode == 'ND')) & (result.result > 0)].tmp_row.tolist(), "Result", "Undefined Warning", "warning", "ResQualCode is NR or ND. Result value must be negative.", result)
+
+                # if resqualcode is NR then labresultcomment is required
+                checkData(result[(result.resqualcode == 'NR') & (result.labresultcomments == '')].tmp_row.tolist(), "LabResultComments", "Undefined Warning", "warning", "ResQualCode is NR. A LabResultComment is Required", result)
 
                 # If resqualcode is DNQ then mdl < result < rl                
                 errorLog("If resqualcode is DNQ then mdl < result < rl")
                 checkData(result[ (result.resqualcode == 'DNQ') & ((result.result < result.mdl) | (result.result > result.rl))].tmp_row.tolist(), "Result", "Undefined Warning", "warning", "Result was not within the MDL and RL for ResQualCode = DNQ", result)
-
+                
+                '''
                 # RL and MDL cannot both be -88
                 errorLog("RL and MDL cannot both be -88")
                 checkData(result[(result.rl == -88) & (result.mdl == -88)].tmp_row.tolist(), "RL", "Undefined Warning", "warning", "The MDL and RL cannot both be -88", result)
-
+                '''
                 # RL cannot be less than MDL                
                 errorLog("RL cannot be less than MDL")
                 checkData(result[result.rl < result.mdl].tmp_row.tolist(), "RL", "Undefined Warning", "warning", "The RL cannot be less than MDL", result)
-
+                '''
                 # If SampleTypeCode is in the set MS1, MS2, LCS, CRM, MSBLDup and the Unit is NOT % THEN......
                 # Expected Value cannot be zero
                 errorLog("line 281, expected Value Check")
                 checkData(result[((result.sampletypecode.isin(['MS1', 'MS2', 'LCS', 'CRM', 'MSBLDup'])) & (result.unit != "%")) & (result.expectedvalue == 0)].tmp_row.tolist(), "ExpectedValue", "Undefined Warning", "warning", "Expected Value required based on SampleTypeCode", result)
+                '''
 
                 # If multiple records have equal labbatch, analytename, and dilfactor                
                 # Then MDL values for those records must also be equivalent
@@ -294,7 +298,7 @@ def chemistry(all_dataframes,sql_match_tables,errors_dict,project_code,login_inf
                     lb = bad_groups.labbatch[i]
                     an = bad_groups.analytename[i]
                     df = bad_groups.dilfactor[i]
-                    checkData(result[(result.labbatch == lb)&(result.analytename == an)&(result.dilfactor == df)].tmp_row.tolist(),'MDL','Undefined Warning','warning','For LabBatch/AnalyteName/DilFactor = %s/%s/%s, all MDL values must be equivalent.' %(lb,an,df), result)
+                    checkData(result[(result.labbatch == lb)&(result.analytename == an)&(result.dilfactor == df)].tmp_row.tolist(),'MDL','Undefined Warning','warning','Multiple MDLs reported for %s in Batch %s. For each LabBatch, Analytes with equivalent Dilution Factors must have equivalent  MDL values.' %(an,lb), result)
 
                 # If multiple records have equal labbatch, analytename, and dilfactor                
                 # Then RL values for those records must also be equivalent
@@ -307,7 +311,7 @@ def chemistry(all_dataframes,sql_match_tables,errors_dict,project_code,login_inf
                     lb = bad_groups.labbatch[i]
                     an = bad_groups.analytename[i]
                     df = bad_groups.dilfactor[i]
-                    checkData(result[(result.labbatch == lb)&(result.analytename == an)&(result.dilfactor == df)].tmp_row.tolist(),'RL','Undefined Warning','warning','For LabBatch/AnalyteName/DilFactor = %s/%s/%s, all RL values must be equivalent.' %(lb,an,df), result)
+                    checkData(result[(result.labbatch == lb)&(result.analytename == an)&(result.dilfactor == df)].tmp_row.tolist(),'RL','Undefined Warning','warning','Multiple RLs reported for %s in Batch %s. For each LabBatch, Analytes with equivalent Dilution Factors must have equivalent RL values.' %(an,lb), result)
 
                 # If multiple records have equal labbatch, analytename                
                 # Then MethodNames should also be equivalent
@@ -319,7 +323,7 @@ def chemistry(all_dataframes,sql_match_tables,errors_dict,project_code,login_inf
                 for i in bad_groups.index:
                     lb = bad_groups.labbatch[i]
                     an = bad_groups.analytename[i]
-                    checkData(result[(result.labbatch == lb)&(result.analytename == an)].tmp_row.tolist(),'MethodName','Undefined Warning','warning','For LabBatch/AnalyteName = %s/%s, same MethodName should be used.' %(lb,an), result)
+                    checkData(result[(result.labbatch == lb)&(result.analytename == an)].tmp_row.tolist(),'MethodName','Undefined Warning','warning','Different methods used for %s in Batch %s. For each LabBatch, the same MethodName should be used for the same analyte.' %(an,lb), result)
 
                 # If multiple records have equal labbatch, analytename
                 # Then Unit should also be equivalent
@@ -353,8 +357,12 @@ def chemistry(all_dataframes,sql_match_tables,errors_dict,project_code,login_inf
 		unique_stations = ','.join("'" + s + "'" for s in list_of_stations)
 		## END MAP CHECKS
                 
-                
-		
+                ## RETRIEVE ERRORS ##
+                custom_checks = ""
+                custom_redundant_checks = ""
+                custom_errors = []
+                custom_warnings = []
+                custom_redundant_warnings = []
 		
 		for dataframe in all_dataframes.keys():
 			if 'custom_errors' in all_dataframes[dataframe]:

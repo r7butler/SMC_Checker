@@ -106,7 +106,7 @@ def exportToFile(all_dataframes,TIMESTAMP):
                        					col_index = all_dataframes[dataframe].columns.get_loc(col_name) 
 							errorLog("col_index:")
 							errorLog(col_index)
-							if dfc[i]['error_type'] == 'Custom Warning':
+							if dfc[i]['error_type'] == 'Undefined Warning':
                        						worksheet.conditional_format(i+1,col_index,i+1,col_index,{'type':'no_errors','format':format_yellow})
 								worksheet.write_comment(i+1,col_index,dfc[i]['error'])
 							else:
@@ -131,7 +131,7 @@ def exportToFile(all_dataframes,TIMESTAMP):
                        						col_index = all_dataframes[dataframe].columns.get_loc(col_name)
 								errorLog("col_index:")
 								errorLog(col_index)
-								if dfc[i][j]['error_type'] == 'Custom Warning':
+								if dfc[i][j]['error_type'] == 'Undefined Warning':
                        							worksheet.conditional_format(i+1,col_index,i+1,col_index,{'type':'no_errors','format':format_yellow})
 									worksheet.write_comment(i+1,col_index,dfc[i][j]['error'])
 								else:
@@ -161,7 +161,7 @@ def createMap(list_of_stations,timestamp):
 	#map1 = folium.Map(location=[45.5, -73.61], width="100%", height="100%")
 	#map1.save('/var/www/smc/logs/map.html')
 	eng = create_engine('postgresql://smcread:1969$Harbor@192.168.1.17:5432/smc')
-	sql = "select stationid,latitude,longitude from lu_station where stationid in (%s)" % ''.join(list_of_stations)
+	sql = "select stationid,latitude,longitude from lu_stations where stationid in (%s)" % ''.join(list_of_stations)
 	errorLog(sql)
 	#sql_results = pd.read_sql_query(sql,eng)
 	sql_results = eng.execute(sql)
@@ -376,7 +376,7 @@ def upload():
                                             field_query['ecoregionlevel'] = 33
                                             # ecoregioncode = stationlookup.ecoregionlevel3code
                                             field_query.rename(columns={'ecoregionlevel3code': 'ecoregioncode'}, inplace=True)
-                                            field_query.rename(columns={'agencycode': 'sampleagencycode','agencyname': 'sampleagencyname'}, inplace=True)
+                                            field_query.rename(columns={'agencycode': 'sampleagencycode','agencyname': 'sampleagencyname', 'fieldcollectionrowid': 'collectionrowid'}, inplace=True)
 
                                             # rwqcb = empty why?
                                             field_query['rwqcb'] = ''
@@ -426,7 +426,7 @@ def upload():
                                             field_query['login_project'] = project
 
                                             # drop temp columns
-                                            field_query.drop(['constituentrowid','fieldresultrowid', 'fieldcollectionrowid','fieldresultcomments','qaname','fieldcollectioncomments'],axis=1,inplace=True)
+                                            field_query.drop(['constituentrowid','fieldresultrowid','fieldresultcomments','qaname','fieldcollectioncomments'],axis=1,inplace=True)
 
                                             ##### END FIELD SPECIFIC CODE
 
@@ -469,7 +469,7 @@ def upload():
                                             habitat_query['ecoregionlevel'] = 3
                                             # ecoregioncode = stationlookup.ecoregionlevel3code
                                             habitat_query.rename(columns={'ecoregionlevel3code': 'ecoregioncode'}, inplace=True)
-                                            habitat_query.rename(columns={'agencycode': 'sampleagencycode','agencyname': 'sampleagencyname'}, inplace=True)
+                                            habitat_query.rename(columns={'agencycode': 'sampleagencycode','agencyname': 'sampleagencyname','habitatcollectionrowid': 'collectionrowid'}, inplace=True)
 
                                             # rwqcb = empty why?
                                             habitat_query['rwqcb'] = ''
@@ -517,7 +517,7 @@ def upload():
                                             habitat_query['login_project'] = project
 
                                             # drop temp columns
-                                            habitat_query.drop(['constituentrowid','habitatresultrowid', 'habitatcollectionrowid','habitatresultcomments','qaname','habitatcollectioncomments'],axis=1,inplace=True)
+                                            habitat_query.drop(['constituentrowid','habitatresultrowid','habitatresultcomments','qaname','habitatcollectioncomments'],axis=1,inplace=True)
                                             ##### END HABITAT SPECIFIC CODE
 
                                             ### THIS MAY NEED TO BECOME A SEPARATE ROUTE
@@ -601,7 +601,9 @@ def upload():
                                                                     all_dataframes[match_tables_key]['enterdate'] = pd.to_datetime(all_dataframes[match_tables_key]['enterdate'])
                                                                     all_dataframes[match_tables_key]['resqualcode'] = all_dataframes[match_tables_key]['resqualcode'].apply(lambda x: "'=" if x == "=" else x)
                                                                     all_dataframes[match_tables_key]['resqualcode'] = all_dataframes[match_tables_key]['resqualcode'].astype('str')
-
+                                                            # Bug fix: Force datatype of Result field to string for algae data. -Jordan 2/19/2019
+                                                            if match_tables_name == 'tbl_algae':
+                                                                    all_dataframes[match_tables_key]['result'] = all_dataframes[match_tables_key]['result'].astype(str)
 						data_checks, data_checks_redundant, errors_dict = core(all_dataframes,sql_match_tables, errors_dict)
 						errorLog(data_checks)
 

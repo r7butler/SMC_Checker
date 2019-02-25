@@ -1,7 +1,7 @@
 import os, time, datetime
 from flask import Blueprint, request, jsonify, current_app 
 from werkzeug import secure_filename
-from flask.ext.mail import Mail, Message
+from flask_mail import Mail, Message
 from .ApplicationLog import *
 
 

@@ -400,7 +400,7 @@ td {
 	function reload_page() {
 	  //console.log("fired reload page");
 	  $.toast().reset('all');
-	  location.href = "/smc";
+	  location.href = "/smc/";
 	}
 	function report(){
 		console.log("javascript report routine");
@@ -608,6 +608,7 @@ td {
 					$("#lookup_errors").html(error.lookup);
 					$("#duplicate_errors").html(error.duplicate);
 					$("#custom_errors").html(error.custom);
+					$("#custom_warnings").html(error.warnings);
 					$.mobile.changePage( "#two", { transition: "pop"} );
 				}
 			})
@@ -695,6 +696,7 @@ td {
 								$("#lookup_errors").html(error.lookup);
 								$("#duplicate_errors").html(error.duplicate);
 								$("#custom_errors").html(error.custom);
+								$("#custom_warnings").html(error.warnings);
 							}
 							if (data.excel){
 								$('#excel_file').append('<a href="'+data.excel+'" target="_blank">'+data.excel+'</a>');
@@ -817,7 +819,7 @@ td {
 						'<option value="{{ o['agencycode'] }}">{{ o['agencyname'] }}</option>'+
 					{% endfor %}
 					'<option value="Other">Other</option></select>'+
-					'<h3>What is the Sampling Year:</h3><select name="checker_login_year" id="checker_login_year"><option value="2018">2018</option><option value="2017">2017</option><option value="2016">2016</option><option value="2015">2015</option></select>'+
+						'<h3>What is the Sampling Year:</h3><select name="checker_login_year" id="checker_login_year"><option value="2018">2018</option><option value="2017">2017</option><option value="2016">2016</option><option value="2015">2015</option><option value="2014">2014</option></select>'+
 					'<h3>What is the Project:</h3><select name="checker_login_project" id="checker_login_project"><option value="SMC">SMC</option><option value="Other">Other</option></select></div>'+
 				"<button rel='close' id='login_close' class='ui-btn ui-corner-all ui-shadow ui-btn-b ui-btn-icon-left ui-icon-check'>Sign in</button>"
 				})
@@ -1098,6 +1100,7 @@ td {
     	  <li><p><strong>Lookup Failure</strong></p> <span id="lookup_errors" class="ui-li-count"></span></li>
     	  <li><p><strong>Duplicates</strong></p> <span id="duplicate_errors" class="ui-li-count"></span></li>
     	  <li><p><strong>Custom</strong></p> <span id="custom_errors" class="ui-li-count"></span></li>
+	  <li><p><strong>Warnings</strong></p> <span id="custom_warnings" class="ui-li-count"></span></li>
     	  <li>
 		<h2>Log File</h2>
 		<p id="log_file"></p>
