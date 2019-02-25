@@ -1,0 +1,6 @@
+
+CSCI could not be processed for sample 517PLC130_08082016_BMI_RWB_2 for the following reason:
+
+Error in (function (bugs, stations, rand = sample.int(10000, 1), distinct = TRUE)  : 
+  All StationCode IDs must be represented in both bug and predictor data
+

@@ -1,0 +1,69 @@
+TAXONOMY SUMMARY:
+The following stations are missing GISXWalk data:
+
+801SAR011
+313SAI
+304RIV
+801SARBFC
+515JKSWRL
+902SMRCPx
+309PS0370
+801SARH60
+315ATA
+314SYN
+315ABU
+520WWCH20
+404VCBSCL
+304LOR
+902SMRDSx
+310SRO
+304SLB
+305SJN
+312SMA
+305PJP
+412RHWNRD
+801RB8450
+The following stations are missing GIS Metric data:
+
+SMC01128
+
+801SAR361
+
+SMC00808
+
+
+CSCI could not be processed for sample 404BA0808_06032014_BMI_RWB_MCM_1 for the following reason:
+
+Error in (function (bugs, stations, rand = sample.int(10000, 1), distinct = TRUE)  : 
+  All StationCode IDs must be represented in both bug and predictor data
+
+
+
+CSCI could not be processed for sample 404BA1128_06032014_BMI_RWB_MCM_1 for the following reason:
+
+Error in (function (bugs, stations, rand = sample.int(10000, 1), distinct = TRUE)  : 
+  All StationCode IDs must be represented in both bug and predictor data
+
+
+
+CSCI could not be processed for sample 801RB8361_06102007_BMI_RWB_MCM_1 for the following reason:
+
+Error in (function (bugs, stations, rand = sample.int(10000, 1), distinct = TRUE)  : 
+  All StationCode IDs must be represented in both bug and predictor data
+
+
+
+CSCI could not be processed for sample 801RB8361_06122014_BMI_RWB_MCM_1 for the following reason:
+
+Error in (function (bugs, stations, rand = sample.int(10000, 1), distinct = TRUE)  : 
+  All StationCode IDs must be represented in both bug and predictor data
+
+
+
+CSCI could not be processed for sample 801RB8361_06182012_BMI_RWB_MCM_1 for the following reason:
+
+Error in (function (bugs, stations, rand = sample.int(10000, 1), distinct = TRUE)  : 
+  All StationCode IDs must be represented in both bug and predictor data
+
+
+LifeStageCodes incorrect and replaced with defaults, rows 3916, 3929, replaced values for Belostomatidae SA, Sperchon A, see column fixedLifeStageCode

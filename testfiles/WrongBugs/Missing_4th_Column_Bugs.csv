@@ -1,0 +1,205 @@
+"","StationCode","SampleID","FinalID","LifeStageCode","Distinct"
+"1","Site1","Sample1","Alotanypus","L",1
+"2","Site1","Sample1","Apedilum","L",1
+"3","Site1","Sample1","Argia","L",1
+"4","Site1","Sample1","Atractides","X",1
+"5","Site1","Sample1","Baetis","L",1
+"6","Site1","Sample1","Callibaetis","L",1
+"7","Site1","Sample1","Cheumatopsyche","L",1
+"8","Site1","Sample1","Chironomus","L",1
+"9","Site1","Sample1","Cricotopus","L",1
+"10","Site1","Sample1","Dicrotendipes","L",1
+"11","Site1","Sample1","Eukiefferiella","L",1
+"12","Site1","Sample1","Fallceon","L",1
+"13","Site1","Sample1","Hydropsyche","L",1
+"14","Site1","Sample1","Hydroptila","L",1
+"15","Site1","Sample1","Hydroptilidae","P",0
+"16","Site1","Sample1","Micrasema","L",1
+"17","Site1","Sample1","Microcylloepus","A",1
+"18","Site1","Sample1","Microcylloepus","L",0
+"19","Site1","Sample1","Neoplasta","L",1
+"20","Site1","Sample1","Oligochaeta","X",1
+"21","Site1","Sample1","Ostracoda","X",1
+"22","Site1","Sample1","Parametriocnemus","L",1
+"23","Site1","Sample1","Peltodytes","L",1
+"24","Site1","Sample1","Pentaneura","L",1
+"25","Site1","Sample1","Physa","X",1
+"26","Site1","Sample1","Polypedilum","L",1
+"27","Site1","Sample1","Rheocricotopus","L",1
+"28","Site1","Sample1","Rheotanytarsus","L",1
+"29","Site1","Sample1","Simulium","L",1
+"30","Site1","Sample1","Sperchon","X",1
+"31","Site1","Sample1","Stictotarsus","L",0
+"32","Site1","Sample1","Stictotarsus striatellus","A",1
+"33","Site1","Sample1","Tanytarsus","L",1
+"34","Site1","Sample1","Thienemanniella","L",1
+"35","Site1","Sample1","Tinodes","L",1
+"36","Site1","Sample1","Tricorythodes","L",1
+"37","Site1","Sample1","Turbellaria","X",1
+"38","Site1","Sample1","Zaitzevia","A",1
+"39","Site2","Sample2","Apsectrotanypus","L",0
+"40","Site2","Sample2","Atractides","X",0
+"41","Site2","Sample2","Baetis","L",0
+"42","Site2","Sample2","Bezzia/ Palpomyia","L",0
+"43","Site2","Sample2","Callibaetis","L",0
+"44","Site2","Sample2","Capniidae","L",0
+"45","Site2","Sample2","Ephemerella aurivillii","L",0
+"46","Site2","Sample2","Hexatoma","L",0
+"47","Site2","Sample2","Hydra","X",0
+"48","Site2","Sample2","Lara avara","A",0
+"49","Site2","Sample2","Lebertia","X",0
+"50","Site2","Sample2","Limnophila","L",0
+"51","Site2","Sample2","Micrasema","L",0
+"52","Site2","Sample2","Micropsectra","L",0
+"53","Site2","Sample2","Monodiamesa","L",0
+"54","Site2","Sample2","Nanocladius","L",0
+"55","Site2","Sample2","Odontomesa","L",0
+"56","Site2","Sample2","Oligochaeta","X",0
+"57","Site2","Sample2","Orthocladius complex","L",0
+"58","Site2","Sample2","Parakiefferiella","L",0
+"59","Site2","Sample2","Paraleptophlebia","L",0
+"60","Site2","Sample2","Paratendipes","L",0
+"61","Site2","Sample2","Pericoma","L",0
+"62","Site2","Sample2","Phaenopsectra","L",0
+"63","Site2","Sample2","Pisidium","X",0
+"64","Site2","Sample2","Polypedilum scalaenum","A",0
+"65","Site2","Sample2","Psectrocladius","L",0
+"66","Site2","Sample2","Ptychoptera","L",0
+"67","Site2","Sample2","Sialis","L",0
+"68","Site2","Sample2","Sperchon","X",0
+"69","Site2","Sample2","Stempellinella","L",0
+"70","Site2","Sample2","Sweltsa","L",0
+"71","Site2","Sample2","Tanytarsus","L",0
+"72","Site2","Sample2","Thienemanniella","L",0
+"73","Site2","Sample2","Thienemannimyia","L",0
+"74","Site2","Sample2","Torrenticola","X",0
+"75","Site2","Sample2","Yoraperla","L",0
+"76","Site2","Sample2","Yphria californica","L",0
+"78","Site2","Sample2","Attenella delantala","L",0
+"81","Site2","Sample2","Calliperla luctuosa","L",0
+"83","Site2","Sample2","Centroptilum","L",0
+"84","Site2","Sample2","Cinygmula","L",0
+"85","Site2","Sample2","Despaxia augusta","L",0
+"86","Site2","Sample2","Dicranota","L",0
+"88","Site2","Sample2","Eukiefferiella claripennis","A",0
+"89","Site2","Sample2","Eukiefferiella gracei group","L",0
+"90","Site2","Sample2","Heterlimnius corpulentus","A",0
+"91","Site2","Sample2","Heterotrissocladius marcidus group.","L",0
+"93","Site2","Sample2","Kogotus/Rickera","L",0
+"96","Site2","Sample2","Lepidostoma cascadense","P",0
+"97","Site2","Sample2","Malenka","L",0
+"103","Site2","Sample2","Optioservus quadrimaculatus","A",0
+"105","Site2","Sample2","Pagastia","L",0
+"111","Site2","Sample2","Rhyacophila brunnea group","L",0
+"112","Site2","Sample2","Rhyacophila sibirica group","L",0
+"114","Site2","Sample2","Simulium","L",0
+"115","Site2","Sample2","Skwala","L",0
+"117","Site2","Sample2","Synorthocladius","L",0
+"122","Site2","Sample2","Turbellaria","X",0
+"125","Site2","Sample2","Zapada","L",0
+"126","Site3","Sample3","Amiocentrus aspilus","L",0
+"127","Site3","Sample3","Ampumixis dispar","A",0
+"128","Site3","Sample3","Ampumixis dispar","L",0
+"129","Site3","Sample3","Antocha","L",0
+"130","Site3","Sample3","Apatania","L",0
+"131","Site3","Sample3","Atractides","X",0
+"132","Site3","Sample3","Baetis","L",0
+"133","Site3","Sample3","Baetis tricaudatus","L",0
+"134","Site3","Sample3","Bezzia/ Palpomyia","L",0
+"135","Site3","Sample3","Brillia","L",0
+"136","Site3","Sample3","Calineuria californica","L",0
+"137","Site3","Sample3","Cinygmula","L",0
+"138","Site3","Sample3","Corynoneura","L",0
+"139","Site3","Sample3","Cricotopus","L",0
+"140","Site3","Sample3","Dicranota","L",0
+"141","Site3","Sample3","Diphetor hageni","L",0
+"142","Site3","Sample3","Dixa","L",0
+"143","Site3","Sample3","Drunella coloradensis","L",0
+"144","Site3","Sample3","Elmidae","L",0
+"145","Site3","Sample3","Epeorus","L",0
+"146","Site3","Sample3","Ephemerella maculata","L",0
+"147","Site3","Sample3","Eubrianax edwardsii","L",0
+"148","Site3","Sample3","Eukiefferiella","L",0
+"149","Site3","Sample3","Heptageniidae","L",0
+"150","Site3","Sample3","Hydrobiidae","X",0
+"151","Site3","Sample3","Hydropsyche","L",0
+"152","Site3","Sample3","Hydropsychidae","L",0
+"153","Site3","Sample3","Ironodes","L",0
+"154","Site3","Sample3","Lepidostoma","L",0
+"155","Site3","Sample3","Malenka","L",0
+"156","Site3","Sample3","Micrasema","L",0
+"157","Site3","Sample3","Narpus concolor","A",0
+"158","Site3","Sample3","Nemouridae","L",0
+"159","Site3","Sample3","Neophylax","L",0
+"160","Site3","Sample3","Neoplasta","L",0
+"161","Site3","Sample3","Oligochaeta","X",0
+"162","Site3","Sample3","Optioservus","A",0
+"163","Site3","Sample3","Optioservus","L",0
+"164","Site3","Sample3","Ordobrevia nubifera","L",0
+"165","Site3","Sample3","Orthocladiinae","L",0
+"166","Site3","Sample3","Pacifastacus","X",0
+"167","Site3","Sample3","Parachaetocladius","L",0
+"168","Site3","Sample3","Parametriocnemus","L",0
+"169","Site3","Sample3","Parapsyche","L",0
+"170","Site3","Sample3","Parthina","L",0
+"171","Site3","Sample3","Pericoma/ Telmatoscopus","L",0
+"172","Site3","Sample3","Pisidium","X",0
+"173","Site3","Sample3","Polycentropus","L",0
+"174","Site3","Sample3","Pteronarcys","L",0
+"175","Site3","Sample3","Pteronarcys californica","L",0
+"176","Site3","Sample3","Rhyacophila","L",0
+"177","Site3","Sample3","Rhyacophila betteni group","L",0
+"178","Site3","Sample3","Simulium","L",0
+"179","Site3","Sample3","Soliperla","L",0
+"180","Site3","Sample3","Sperchon","X",0
+"181","Site3","Sample3","Sperchonopsis","X",0
+"182","Site3","Sample3","Stempellinella","L",0
+"183","Site3","Sample3","Sweltsa","L",0
+"184","Site3","Sample3","Tanytarsini","L",0
+"185","Site3","Sample3","Thienemannimyia group","L",0
+"186","Site3","Sample3","Torrenticola","X",0
+"187","Site3","Sample3","Tvetenia","P",0
+"188","Site3","Sample3","Tvetenia","L",0
+"189","Site3","Sample3","Zaitzevia","L",0
+"190","Site3","Sample4","Agapetus","L",NA
+"191","Site3","Sample4","Antocha","L",NA
+"192","Site3","Sample4","Apatania","L",NA
+"193","Site3","Sample4","Baetidae","L",NA
+"194","Site3","Sample4","Baetis","L",NA
+"195","Site3","Sample4","Calineuria","L",NA
+"196","Site3","Sample4","Ceratopogonidae","L",NA
+"197","Site3","Sample4","Chelifera","L",NA
+"198","Site3","Sample4","Chironomidae","L",NA
+"199","Site3","Sample4","Chironominae","L",NA
+"200","Site3","Sample4","Chloroperlidae","L",NA
+"201","Site3","Sample4","Dicranota","L",NA
+"202","Site3","Sample4","Elmidae","L",NA
+"203","Site3","Sample4","Ephemerella","L",NA
+"204","Site3","Sample4","Ephemerellidae","L",NA
+"205","Site3","Sample4","Eubrianax","L",NA
+"206","Site3","Sample4","Glossosoma","L",NA
+"207","Site3","Sample4","Glossosomatidae","L",NA
+"208","Site3","Sample4","Glutops","L",NA
+"209","Site3","Sample4","Heptageniidae","L",NA
+"210","Site3","Sample4","Hydrobiidae","X",NA
+"211","Site3","Sample4","Hydropsyche","L",NA
+"212","Site3","Sample4","Hydropsychidae","L",NA
+"213","Site3","Sample4","Hydroptilidae","L",NA
+"214","Site3","Sample4","Leptophlebiidae","L",NA
+"215","Site3","Sample4","Nematoda","X",NA
+"216","Site3","Sample4","Neophylax","L",NA
+"217","Site3","Sample4","Optioservus","L",NA
+"218","Site3","Sample4","Orthocladiinae","L",NA
+"219","Site3","Sample4","Perlidae","L",NA
+"220","Site3","Sample4","Philopotamidae","L",NA
+"221","Site3","Sample4","Rhyacophila","L",NA
+"222","Site3","Sample4","Simuliidae","L",NA
+"223","Site3","Sample4","Simulium","L",NA
+"224","Site3","Sample4","Tanypodinae","L",NA
+"225","Site3","Sample4","Tipulidae","L",NA
+"226","Site3","Sample4","Trichoptera","L",NA
+"227","Site3","Sample4","Trombidiformes","X",NA
+"228","Site3","Sample4","Zapada","L",NA
+"229","Site3","BadSample1","Chironominae","L",NA
+"230","Site3","BadSample2","Chironominae","L",NA
+"231","Site3","BadSample2","Plecoptera","L",NA

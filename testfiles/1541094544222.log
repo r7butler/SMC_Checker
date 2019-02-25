@@ -1,0 +1,516 @@
+SMC & SWAMP SYNC SUMMARY:
+SMC Pre-processing origin_lastupdatedate: Apr 09 2018
+SMC Post-processing origin_lastupdatedate: Oct 29 2018 11:59:47
+A total of 378 OLDSMC records have been added.
+SWAMP Pre-processing origin_lastupdatedate: Aug 16 2018
+SWAMP Post-processing origin_lastupdate: Oct 03 2018
+A total of 12438 SWAMP records have been added.
+SWAMP Post-processing origin_lastupdate: Oct 03 2018
+A total of 12438 SWAMP records have been added.
+The following stations are missing GISXWalk data:
+504BCCBWS
+526PS0321
+201WLK150
+641CDR002
+540KSR052
+113PS0296
+504BCCOMR
+540DTC352
+111BVCMFE
+603PS0180
+519PS0770
+526PS1724
+519PS0790
+635PCNA89
+507SHA003
+532CMC370
+536PS0159
+309SLCAAS
+504PS0803
+518RCAJNC
+519PS0765
+514PVC341
+536RCCACR
+205PS0330
+635DON002
+201LAG050
+801SARBFC
+507SHA010
+507SHA011
+540SJS336
+522PS0304
+534STN075
+504PS0727
+526PS1816
+630PS0177
+536SFT127
+505PS1884
+105PS0295
+519PS0817
+526PS1716
+635PS0194
+507SHA034
+106PS0307
+906M21770
+507SHA037
+512ZZMAEC
+201LAG280
+111PS0313
+603BSP111
+106YJCENT
+641BID001
+904M21764
+105BNGABS
+526PS0165
+902M18901
+601PKC272
+509SPJDXB
+509SPJDXC
+509SPJDXD
+509SPJDXE
+110PS0306
+514PS0799
+518SCEBAM
+304PS0338
+603PS0173
+628MOJ001
+526CLC371
+514PS0090
+518CMC383
+207PS0342
+603MAM006
+641MIL002
+204PS0358
+634UTRATR
+526PS1900
+521PS0161
+507SHA053
+504BCCFMR
+602PS0187
+526PS1868
+518SPC358
+111CBCANF
+534BRC366
+514PS0162
+526PCSAMF
+911M24949
+507SHA007
+514ALCANC
+180RRC001
+180RRC002
+517PS0775
+517PS0755
+509ACS335
+603LP0360
+312NPPCBR
+TEST
+312SMA
+CSCI could not be processed for sample 103WER029_06132016_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 105FLH087_07192016_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 105PS0540_06142016_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 106WER016_07052016_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 111BGCAER_07062016_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 111BGCAER_07182017_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 111FS0008_06012016_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 111FS0008_06012016_BMI_RWB_2 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 113GAR015_06222016_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 113GAR023_06212016_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 113GAR030_08172016_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 113GAR042_08162016_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 113GAR061_08022017_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 113GAR112_05312017_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 113GAR178_08162016_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 201LAG160_05242017_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 201LAG380_06132017_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 201MRS020_06072016_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 204AHOACR_04262016_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 205CYCBBC_05162016_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 304APT_05162016_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 304SOK_05042016_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 304WDCAH1_05172016_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 307CML_05052016_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 308SBCAH1_05182016_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 308SBCAH1_05182016_BMI_RWB_2 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 312MZCDBC_05172016_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 403STC064_05182016_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 403WE1027_05122016_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 405BRCASG_05112016_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 412S04204_05112016_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 507BTC269_10252013_BMI_TRC_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 507BTC269_10312014_BMI_TRC_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 507BTC269_11092012_BMI_TRC_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 507DCABSF_10042016_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 507DCBLLB_10032016_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 507RCABRS_10032016_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 507RCBLPF_10032016_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 507SHA201_10212014_BMI_TRC_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 507SHA201_10232013_BMI_TRC_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 507SHA201_11122012_BMI_TRC_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 509ACNFPP_09142016_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 509ACNFPP_09142016_BMI_RWB_2 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 509CTC033_06092016_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 509PMC197_08282017_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 509SPIJD4_10042016_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 513STCAIV_05312016_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 514PCAPC2_10052016_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 514PCASMR_10052016_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 514SSC190_09062017_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 517PLC130_08082016_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 517PLC130_08082016_BMI_RWB_2 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 517PSC038_08092016_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 517SLT050_08102016_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 518CDS022_07252017_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 518CDS022_08092016_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 518GZCUPx_06072016_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 518HGY101_07262016_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 518JSC273_09122017_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 518LCC105_09122016_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 518RCNAPC_06292016_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 518RCNAPC_06292016_BMI_RWB_2 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 526ASC237_07252017_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 526ESCAMC_07132016_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 526PS0396_07182016_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 526TRN109_07112016_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 532CRM206_08222017_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 534SED001_07122016_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 536SED006_08082016_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 536SPILJW_10062016_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 536SPIUJW_10062016_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 536TMR003_06222016_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 536TMR003_06222016_BMI_RWB_2 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 540MRC196_08152017_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 540SDC212_08072017_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 552MFCAKR_06232016_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 554FSC207_08022017_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 554KRS031_08022017_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 603PS0073_07192016_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 630PS0005_07182016_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 632BGV003_08022016_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 634MKC278_09132017_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 634MKCBLG_08182016_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 634TRU231_08232017_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 635BER001_09132017_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 637SSN077_08022016_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 719HOTCPF_05112016_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 719NP7AZC_05122016_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 719NP7BNC_05102016_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 719NP7TWP_05102016_BMI_RWB_1 for the following reason:
+Error in eval(expr, envir, enclos) : object 'BAResult' not found
+
+
+CSCI could not be processed for sample 904WE1125_05292018_BMI_RWB_1 for the following reason:
+Error in sum(BAResult) : invalid 'type' (character) of argument
+
+
+CSCI could not be processed for sample 905PS0026_04102018_BMI_RWB_1 for the following reason:
+Error in sum(BAResult) : invalid 'type' (character) of argument
+
+
+CSCI could not be processed for sample 909WE0662_06142018_BMI_RWB_1 for the following reason:
+Error in sum(BAResult) : invalid 'type' (character) of argument
+
+
+CSCI could not be processed for sample 909WE0662_06142018_BMI_RWB_2 for the following reason:
+Error in sum(BAResult) : invalid 'type' (character) of argument
+
+
+CSCI could not be processed for sample SMC01097_05012018_BMI_RWB_1 for the following reason:
+Error in sum(BAResult) : invalid 'type' (character) of argument
+
+
+CSCI could not be processed for sample 904WE1125_05292018_BMI_RWB_1 for the following reason:
+Error in BMIMetrics::BMI(object@bugdata) : 
+  The following FinalID/LifeStageCode combinations did not match with the internal database:Sperchon A
+
+
+CSCI could not be processed for sample 909WE0662_06142018_BMI_RWB_1 for the following reason:
+Error in BMIMetrics::BMI(object@bugdata) : 
+  The following FinalID/LifeStageCode combinations did not match with the internal database:Agapetus X, Lebertia L
+
+
+CSCI could not be processed for sample SMC01097_05012018_BMI_RWB_1 for the following reason:
+Error in BMIMetrics::BMI(object@bugdata) : 
+  The following FinalID/LifeStageCode combinations did not match with the internal database:Atractides A
+
+
+CSCI could not be processed for sample 904WE1125_05292018_BMI_RWB_1 for the following reason:
+Error in BMIMetrics::BMI(object@bugdata) : 
+  The following FinalID/LifeStageCode combinations did not match with the internal database:Sperchon A
+
+
+CSCI could not be processed for sample 909WE0662_06142018_BMI_RWB_1 for the following reason:
+Error in BMIMetrics::BMI(object@bugdata) : 
+  The following FinalID/LifeStageCode combinations did not match with the internal database:Agapetus X, Lebertia L
+
+
+CSCI could not be processed for sample SMC01097_05012018_BMI_RWB_1 for the following reason:
+Error in BMIMetrics::BMI(object@bugdata) : 
+  The following FinalID/LifeStageCode combinations did not match with the internal database:Atractides A
+

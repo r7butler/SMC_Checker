@@ -1,0 +1,26 @@
+TAXONOMY SUMMARY:
+The following stations are missing GISXWalk data:
+
+801SAR011
+313SAI
+304RIV
+801SARBFC
+515JKSWRL
+902SMRCPx
+309PS0370
+801SARH60
+315ATA
+314SYN
+315ABU
+520WWCH20
+404VCBSCL
+304LOR
+902SMRDSx
+310SRO
+304SLB
+305SJN
+312SMA
+305PJP
+412RHWNRD
+801RB8450
+LifeStageCodes incorrect and replaced with defaults, rows 3916, 3929, replaced values for Belostomatidae SA, Sperchon A, see column fixedLifeStageCode

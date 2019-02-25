@@ -86,6 +86,14 @@ smc_chemistry_query = text(
 smc_chemistry_sql = smc_engine.execute(smc_chemistry_query)
 smc_chemistry = DataFrame(smc_chemistry_sql.fetchall())
 
+
+number_of_records_in_old_database = pd.read_sql('SELECT COUNT(*) FROM tblChemistryResults', smc_engine).iloc[0][0]
+number_of_records_in_new_database = pd.read_sql('SELECT COUNT(*) FROM chemistry', sccwrp_engine).iloc[0][0]
+
+msgs.append("\nNumber of records in old database: %s\n" % number_of_records_in_old_database)
+msgs.append("Number of records in new database: %s\n\n" % number_of_records_in_new_database)
+
+
 # if new records present, prepare the data to be inserted in sccwrp chemistry
 if len(smc_chemistry.index) > 0:
     smc_chemistry.columns = smc_chemistry_sql.keys()
@@ -120,124 +128,9 @@ else:
 
 
 
-# 2ND - COLLECT DATA FROM SWAMP
-#
-# ACTION: Get new data from SWAMP:
-#     **** swamp_chemistry is a duplicate copy of the original data pulled from SWAMP the only modified field is record_publish ****
-#     1. Based on difference (new records) between swamp_chemistry.origin_lastupdatedate and BenthicResult.LastUpdateDate.
-#     2. Store a copy of the record in swamp_chemistry and modify record_publish from 1/0 to true/false.
-#     3. Store a second copy of the record in unified chemistry table and modify record_publish based on following criteria:
-#           If BenthicResult.LastUpdateDate is set to true and if the record is in Southern Califoria region set to true
-#
-#
-# DESCRIPTION:
-#     Similarly to the SMC code above, it looks at the date of the most recent SWAMP records in the swamp_taxonomy table. It then compares that date to the date of the most recent records
-#     in the SWAMP database located at the STATE BOARD. If it finds newer records in the SWAMP database, it will merge those records into the swamp_taxonomy table with a new appended
-#     field record_origin and a new record_publish field based on DWC_PublicRelease. Here is the criteria for whether to publish or not: "1 means that the data can be shared with the
-#     public. If the value is 0, then the data should not be shared. The decision to release the data should be at the project level." We need to adjust those values from 1/0 to
-#     true/false before they are stored in swamp_taxonomy table. The same data that gets stored in the swamp_taxonomy needs to get stored in the unified taxonomy table, but each records
-#     record_publish need to be adjusted. Rafi only wants southern california data to# published. So any stationcode not equal to starting with 4, 8, or 9 should be set to false.
-#              in the SWAMP database. If it finds newer records in the SWAMP database, it will merge those records into the smc database with a new appended field record_origin.
 
-# first connect to sccwrp swamp_chemistry and get lastupdatedate for SWAMP Records
-sccwrp_engine = create_engine('postgresql://sde:dinkum@192.168.1.17:5432/smc')
-sccwrp_swamp_sql = sccwrp_engine.execute("select max(origin_lastupdatedate) from swamp_chemistry where record_origin = 'SWAMP'")
-sccwrp_lastupdatedate2 = sccwrp_swamp_sql.fetchall()
-msgs.append("SWAMP Pre-processing origin_lastupdatedate: %s\n" %sccwrp_lastupdatedate2[0][0].strftime("%b %d %Y"))
-
-# connect to swamp database using the following query
-swamp_engine = create_engine('mssql+pymssql://ReadOnlySwamp:ReadOnlySwamp1@165.235.37.226:1433/DW_Full')
-swamp_query = text(
-"SELECT StationLookUp.StationCode, Sample.SampleDate, LabCollection.SampleTypeCode, LabResult.MatrixName, LabCollection.Replicate AS FieldReplicate, LabResult.LabReplicate, LabResult.MethodName, LabResult.AnalyteName, LabResult.FractionName, LabResult.UnitName AS Unit, LabResult.Result, LabResult.ResQualCode, LabResult.MDL, LabResult.RL, LabResult.DilutionFactor, LabResult.QACode, LabResult.LabResultComments, LabBatch.AgencyCode AS LabAgencyCode, LabResult.LastUpdateDate as origin_lastupdatedate, Sample.ProjectCode, LabResult.DWC_PublicRelease AS record_publish "
-
-    "FROM LabBatch "
-
-    "INNER JOIN (((Location "
-
-    "INNER JOIN (Sample "
-
-    "INNER JOIN StationLookUp ON Sample.StationCode = StationLookUp.StationCode) ON Location.SampleRowID = Sample.SampleRowID) "
-
-    "INNER JOIN LabCollection ON Location.LocationRowID = LabCollection.LocationRowID) "
-
-    "INNER JOIN LabResult ON LabCollection.LabCollectionRowID = LabResult.LabCollectionRowID) ON LabBatch.LabBatch = LabResult.LabBatch "
-
-    "WHERE (((Sample.EventCode)='BA')) "
-
-    "AND Sample.SampleDate>'%s' "
-
-    "GROUP BY StationLookUp.StationCode, Sample.SampleDate, LabCollection.SampleTypeCode, LabResult.MatrixName, LabCollection.Replicate, LabResult.LabReplicate, LabResult.MethodName, LabResult.AnalyteName,LabResult.FractionName, LabResult.UnitName, LabResult.Result, LabResult.ResQualCode, LabResult.MDL, LabResult.RL, LabResult.DilutionFactor, LabResult.QACode, LabResult.LabResultComments, LabBatch.AgencyCode, LabResult.LastUpdateDate, Sample.ProjectCode, LabResult.DWC_PublicRelease "
-
-    "HAVING ((LabCollection.SampleTypeCode)='Grab' Or (LabCollection.SampleTypeCode)='Integrated')"  %(str((sccwrp_lastupdatedate2[0][0]- timedelta(days=400)).strftime("%Y-%m-%d"))))   
-
-
-
-# HUGE NOTE: Please look at the above substitution. You will see a subtraction of 400 days. This is for testing. It should be + timedelta(days=1)
-
-# create a data frame from all records newer than origin_lastupdatedate
-swamp_sql = swamp_engine.execute(swamp_query)
-swamp = DataFrame(swamp_sql.fetchall())
-swamp_engine.dispose()
-
-# if new records are found, prepare them to be entered into sccwrp swamp_chemistry
-if len(swamp.index) > 0:
-    swamp.columns = swamp_sql.keys()
-    swamp.columns = [x.lower() for x in swamp.columns]
-    
-    # convert empty result field values to -88
-    swamp['result'].fillna('-88', inplace = True)
-
-    # convert result to integer - set as string to align with ceden - and possible na's
-    swamp.result = swamp.result.astype(float)
-    
-    # get samplemonth, sampleday, sampleyear for later use
-    swamp["samplemonth"] = swamp.sampledate.dt.month
-    swamp["sampleday"] = swamp.sampledate.dt.day
-    swamp["sampleyear"] = swamp.sampledate.dt.year
-    
-    # new field record_origin
-    swamp['record_origin'] = pd.Series("SWAMP",index=np.arange(len(swamp)))
-    
-    # SWAMP_CHEMISTRY DATA MERGE:
-    # create objectid field for swamp_chemistry (must be adjusted later when merging into chemistry table - Jordan)
-    swamp_chem_sql = "SELECT MAX(objectid) from swamp_chemistry;"
-    last_swamp_objid = sccwrp_engine.execute(swamp_chem_sql).fetchall()[0][0]
-    swamp['objectid'] = swamp.index + last_swamp_objid + 1
-
-    # converts the provided record publish records from SWAMP (i.e. 1/0) to strings (i.e. true/false)
-    # if actual SWAMP record is "false" we never publish the record - that take precedence over anything else
-    swamp['record_publish'] = swamp.record_publish.apply(lambda x: 'true' if x else 'false')
-
-    # turn off database submission temporarily -
-    # eng = create_engine('postgresql://sde:dinkum@192.168.1.17:5432/smc')
-    # status = swamp.to_sql('swamp_chemistry', eng, if_exists='append', index=False)
-    
-    # UNIFIED CHEMISTRY DATA MERGE:
-    # create objectid field for merge into chemistry table (adjusting objectid field from above -Jordan)
-    chem_sql = "SELECT MAX(objectid) FROM chemistry;"
-    last_chem_objid = sccwrp_engine.execute(chem_sql).fetchall()[0][0]
-    swamp['objectid'] = swamp.index + last_chem_objid + 1
-    
-    # ONLY FOR TESTING:
-    #swamp['objectid'] = swamp.index + len(smc) + last_chem_objid + 1
-
-    # adjust swamp dataframe and modify record_publish field
-    # if swamp record_publish is set to false never publish the record
-    # if swamp record_publish is set to true then to be published it must be a station in the socal area
-    # stationcode must start with a 4,8,9 all other stations are set to false
-    swamp['record_publish'] = swamp.apply(lambda x: 'true' if (x.record_publish == 'true')&(x.stationcode[0] in [4,8,9]) else 'false', axis = 1)
-
-    # turn off database submission temporarily -
-    # status = swamp.to_sql('chemistry', eng, if_exists='append', index=False)
-    msgs.append("SWAMP Post-processing origin_lastupdate: %s\n" % swamp.origin_lastupdatedate.max().strftime("%b %d %Y"))
-    msgs.append("A total of %s SWAMP records have been added.\n" % len(swamp))
-    # eng.dispose()
-
-else:
-    msgs.append("There are no new records in Swamp Database this week.\n")
-
-
-
+# 2ND - MERGE DATA FROM SWAMP
+# This code has been moved to the code archive, since SWAMP no longer allows us access to their database
 
 
 
@@ -263,14 +156,12 @@ else:
 #           6) total_p_mgl_rl
 #           7) total_p_mgl_mdl
 #           8) total_p_mgl_method
-#           9) unit
 #     
 #     In some cases it will not be possible to calculate the Total Nitrogen or Phosphorus, so there will be certain conditions when we will apply calculation
 #     methods or approximations to get the Total Nitrogen or Phosphorus. The 'method' column of the table will indicate whether the Total column reflects the
 #     actual total amount, a calculated amount, or a partial amount. More details on the calculation methods and the conditions where we will use these methods
 #     outlined in the subsections of this block of code. The subsections will be titled 'NITROGEN' and 'PHOSPHORUS'
 
-# *** ABOVE COLUMN NAMES MAY BE CHANGED. WE NEED TO TALK TO RAFI TO CONFIRM AGAIN *** #
 
 
 
@@ -527,7 +418,9 @@ pdf.drop(['analytename','mdl', 'results', 'rl'], axis = 1, inplace = True)
 # outer join nitrogen and phosphorus tables so that no records get deleted
 finaltable = pd.merge(ndf, pdf, how = 'outer', on = key2)
 
-
+# Here we will load the nutrient report into the new database in the nutrients_analyzed table
+eng = create_engine("postgresql://sde:dinkum@192.168.1.17:5432/smc")
+finaltable.to_sql('nutrients_analyzed', eng, if_exists='append', index=False) 
 
 ##  END CHEMISTRY NUTRIENT REPORT  ##
 
@@ -583,6 +476,136 @@ def send_mail(send_from, send_to, subject, text, files=None, server="localhost")
 
 #send_mail(sender, [me, Paul], "SMC & Swamp Sync Summary", email_body, logfile, "localhost")
 '''
+
+
+
+
+
+
+#########################################################################
+# ---------                     CODE ARCHIVE                 -----------#
+#########################################################################
+
+# Removed this code from up above since SWAMP no longer allows us access to their database.
+'''
+# 2ND - COLLECT DATA FROM SWAMP
+#
+# ACTION: Get new data from SWAMP:
+#     **** swamp_chemistry is a duplicate copy of the original data pulled from SWAMP the only modified field is record_publish ****
+#     1. Based on difference (new records) between swamp_chemistry.origin_lastupdatedate and BenthicResult.LastUpdateDate.
+#     2. Store a copy of the record in swamp_chemistry and modify record_publish from 1/0 to true/false.
+#     3. Store a second copy of the record in unified chemistry table and modify record_publish based on following criteria:
+#           If BenthicResult.LastUpdateDate is set to true and if the record is in Southern Califoria region set to true
+#
+#
+# DESCRIPTION:
+#     Similarly to the SMC code above, it looks at the date of the most recent SWAMP records in the swamp_taxonomy table. It then compares that date to the date of the most recent records
+#     in the SWAMP database located at the STATE BOARD. If it finds newer records in the SWAMP database, it will merge those records into the swamp_taxonomy table with a new appended
+#     field record_origin and a new record_publish field based on DWC_PublicRelease. Here is the criteria for whether to publish or not: "1 means that the data can be shared with the
+#     public. If the value is 0, then the data should not be shared. The decision to release the data should be at the project level." We need to adjust those values from 1/0 to
+#     true/false before they are stored in swamp_taxonomy table. The same data that gets stored in the swamp_taxonomy needs to get stored in the unified taxonomy table, but each records
+#     record_publish need to be adjusted. Rafi only wants southern california data to# published. So any stationcode not equal to starting with 4, 8, or 9 should be set to false.
+#              in the SWAMP database. If it finds newer records in the SWAMP database, it will merge those records into the smc database with a new appended field record_origin.
+
+# first connect to sccwrp swamp_chemistry and get lastupdatedate for SWAMP Records
+sccwrp_engine = create_engine('postgresql://sde:dinkum@192.168.1.17:5432/smc')
+sccwrp_swamp_sql = sccwrp_engine.execute("select max(origin_lastupdatedate) from swamp_chemistry where record_origin = 'SWAMP'")
+sccwrp_lastupdatedate2 = sccwrp_swamp_sql.fetchall()
+msgs.append("SWAMP Pre-processing origin_lastupdatedate: %s\n" %sccwrp_lastupdatedate2[0][0].strftime("%b %d %Y"))
+
+# connect to swamp database using the following query
+swamp_engine = create_engine('mssql+pymssql://ReadOnlySwamp:ReadOnlySwamp1@165.235.37.226:1433/DW_Full')
+swamp_query = text(
+"SELECT StationLookUp.StationCode, Sample.SampleDate, LabCollection.SampleTypeCode, LabResult.MatrixName, LabCollection.Replicate AS FieldReplicate, LabResult.LabReplicate, LabResult.MethodName, LabResult.AnalyteName, LabResult.FractionName, LabResult.UnitName AS Unit, LabResult.Result, LabResult.ResQualCode, LabResult.MDL, LabResult.RL, LabResult.DilutionFactor, LabResult.QACode, LabResult.LabResultComments, LabBatch.AgencyCode AS LabAgencyCode, LabResult.LastUpdateDate as origin_lastupdatedate, Sample.ProjectCode, LabResult.DWC_PublicRelease AS record_publish "
+
+    "FROM LabBatch "
+
+    "INNER JOIN (((Location "
+
+    "INNER JOIN (Sample "
+
+    "INNER JOIN StationLookUp ON Sample.StationCode = StationLookUp.StationCode) ON Location.SampleRowID = Sample.SampleRowID) "
+
+    "INNER JOIN LabCollection ON Location.LocationRowID = LabCollection.LocationRowID) "
+
+    "INNER JOIN LabResult ON LabCollection.LabCollectionRowID = LabResult.LabCollectionRowID) ON LabBatch.LabBatch = LabResult.LabBatch "
+
+    "WHERE (((Sample.EventCode)='BA')) "
+
+    "AND Sample.SampleDate>'%s' "
+
+    "GROUP BY StationLookUp.StationCode, Sample.SampleDate, LabCollection.SampleTypeCode, LabResult.MatrixName, LabCollection.Replicate, LabResult.LabReplicate, LabResult.MethodName, LabResult.AnalyteName,LabResult.FractionName, LabResult.UnitName, LabResult.Result, LabResult.ResQualCode, LabResult.MDL, LabResult.RL, LabResult.DilutionFactor, LabResult.QACode, LabResult.LabResultComments, LabBatch.AgencyCode, LabResult.LastUpdateDate, Sample.ProjectCode, LabResult.DWC_PublicRelease "
+
+    "HAVING ((LabCollection.SampleTypeCode)='Grab' Or (LabCollection.SampleTypeCode)='Integrated')"  %(str((sccwrp_lastupdatedate2[0][0]- timedelta(days=400)).strftime("%Y-%m-%d"))))   
+
+
+
+# HUGE NOTE: Please look at the above substitution. You will see a subtraction of 400 days. This is for testing. It should be + timedelta(days=1)
+
+# create a data frame from all records newer than origin_lastupdatedate
+swamp_sql = swamp_engine.execute(swamp_query)
+swamp = DataFrame(swamp_sql.fetchall())
+swamp_engine.dispose()
+
+# if new records are found, prepare them to be entered into sccwrp swamp_chemistry
+if len(swamp.index) > 0:
+    swamp.columns = swamp_sql.keys()
+    swamp.columns = [x.lower() for x in swamp.columns]
+    
+    # convert empty result field values to -88
+    swamp['result'].fillna('-88', inplace = True)
+
+    # convert result to integer - set as string to align with ceden - and possible na's
+    swamp.result = swamp.result.astype(float)
+    
+    # get samplemonth, sampleday, sampleyear for later use
+    swamp["samplemonth"] = swamp.sampledate.dt.month
+    swamp["sampleday"] = swamp.sampledate.dt.day
+    swamp["sampleyear"] = swamp.sampledate.dt.year
+    
+    # new field record_origin
+    swamp['record_origin'] = pd.Series("SWAMP",index=np.arange(len(swamp)))
+    
+    # SWAMP_CHEMISTRY DATA MERGE:
+    # create objectid field for swamp_chemistry (must be adjusted later when merging into chemistry table - Jordan)
+    swamp_chem_sql = "SELECT MAX(objectid) from swamp_chemistry;"
+    last_swamp_objid = sccwrp_engine.execute(swamp_chem_sql).fetchall()[0][0]
+    swamp['objectid'] = swamp.index + last_swamp_objid + 1
+
+    # converts the provided record publish records from SWAMP (i.e. 1/0) to strings (i.e. true/false)
+    # if actual SWAMP record is "false" we never publish the record - that take precedence over anything else
+    swamp['record_publish'] = swamp.record_publish.apply(lambda x: 'true' if x else 'false')
+
+    # turn off database submission temporarily -
+    # eng = create_engine('postgresql://sde:dinkum@192.168.1.17:5432/smc')
+    # status = swamp.to_sql('swamp_chemistry', eng, if_exists='append', index=False)
+    
+    # UNIFIED CHEMISTRY DATA MERGE:
+    # create objectid field for merge into chemistry table (adjusting objectid field from above -Jordan)
+    chem_sql = "SELECT MAX(objectid) FROM chemistry;"
+    last_chem_objid = sccwrp_engine.execute(chem_sql).fetchall()[0][0]
+    swamp['objectid'] = swamp.index + last_chem_objid + 1
+    
+    # ONLY FOR TESTING:
+    #swamp['objectid'] = swamp.index + len(smc) + last_chem_objid + 1
+
+    # adjust swamp dataframe and modify record_publish field
+    # if swamp record_publish is set to false never publish the record
+    # if swamp record_publish is set to true then to be published it must be a station in the socal area
+    # stationcode must start with a 4,8,9 all other stations are set to false
+    swamp['record_publish'] = swamp.apply(lambda x: 'true' if (x.record_publish == 'true')&(x.stationcode[0] in [4,8,9]) else 'false', axis = 1)
+
+    # turn off database submission temporarily -
+    # status = swamp.to_sql('chemistry', eng, if_exists='append', index=False)
+    msgs.append("SWAMP Post-processing origin_lastupdate: %s\n" % swamp.origin_lastupdatedate.max().strftime("%b %d %Y"))
+    msgs.append("A total of %s SWAMP records have been added.\n" % len(swamp))
+    # eng.dispose()
+
+else:
+    msgs.append("There are no new records in Swamp Database this week.\n")
+'''
+
+
 
 
 
