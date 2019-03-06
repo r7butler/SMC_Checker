@@ -73,25 +73,26 @@ sccwrp_lastupdatedate1 = sccwrp_smc_sql.fetchall()
 msgs.append("SMC Pre-processing origin_lastupdatedate: %s\n" %sccwrp_lastupdatedate1[0][0].strftime("%b %d %Y"))
 
 # connect to smc tblTaxonomySampleInfo and tblTaxonomyResults using the following query
-smc_engine = create_engine('mssql+pymssql://smc_inquire:$HarP*@192.168.1.8:1433/SMCPHab')
-smc_query = text("SELECT tblTaxonomySampleInfo.StationCode, tblTaxonomySampleInfo.SampleDate, tblTaxonomySampleInfo.CollectionMethodCode, tblTaxonomySampleInfo.AgencyCode_LabEffort AS AgencyCode, tblTaxonomySampleInfo.FieldReplicate AS Replicate, tblTaxonomySampleInfo.FieldSampleID AS SampleID, tblTaxonomySampleInfo.BenthicCollectionComments, tblTaxonomySampleInfo.GrabSize, tblTaxonomySampleInfo.PercentSampleCounted, tblTaxonomySampleInfo.TotalGrids, tblTaxonomySampleInfo.GridsAnalyzed, tblTaxonomySampleInfo.GridsVolumeAnalyzed, tblTaxonomySampleInfo.TargetOrganismCount, tblTaxonomySampleInfo.ActualOrganismCount, tblTaxonomySampleInfo.ExtraOrganismCount, tblTaxonomySampleInfo.QCOrganismCount, tblTaxonomySampleInfo.DiscardedOrganismCount, tblTaxonomySampleInfo.BenthicLabEffortComments, tblTaxonomySampleInfo.LastChangeDate AS origin_lastupdatedate, tblTaxonomyResults.FinalID, tblTaxonomyResults.LifeStageCode, tblTaxonomyResults.DistinctCode, tblTaxonomyResults.BAResult, tblTaxonomyResults.ResQualCode, tblTaxonomyResults.QACode, tblTaxonomyResults.TaxonomicQualifier, tblTaxonomyResults.PersonnelCode_LabEffort, tblTaxonomyResults.PersonnelCode_Results, tblTaxonomyResults.LabSampleID "
-                                         "FROM tblTaxonomyResults "
-                                         "INNER JOIN tblTaxonomySampleInfo "
-                                         "ON (tblTaxonomySampleInfo.FieldReplicate = tblTaxonomyResults.FieldReplicate) "
-                                         "AND (tblTaxonomyResults.SampleDate = tblTaxonomySampleInfo.SampleDate) "
-                                         "AND (tblTaxonomyResults.StationCode = tblTaxonomySampleInfo.StationCode) "
-                                         "WHERE tblTaxonomySampleInfo.LastChangeDate > '%s' "
-                                         "GROUP BY tblTaxonomySampleInfo.StationCode, tblTaxonomySampleInfo.SampleDate, tblTaxonomySampleInfo.CollectionMethodCode, tblTaxonomySampleInfo.AgencyCode_LabEffort, tblTaxonomySampleInfo.FieldReplicate, tblTaxonomySampleInfo.FieldSampleID, tblTaxonomySampleInfo.BenthicCollectionComments, tblTaxonomySampleInfo.GrabSize, tblTaxonomySampleInfo.PercentSampleCounted, tblTaxonomySampleInfo.TotalGrids, tblTaxonomySampleInfo.GridsAnalyzed, tblTaxonomySampleInfo.GridsVolumeAnalyzed, tblTaxonomySampleInfo.TargetOrganismCount, tblTaxonomySampleInfo.ActualOrganismCount, tblTaxonomySampleInfo.ExtraOrganismCount, tblTaxonomySampleInfo.QCOrganismCount, tblTaxonomySampleInfo.DiscardedOrganismCount, tblTaxonomySampleInfo.BenthicLabEffortComments, tblTaxonomySampleInfo.LastChangeDate, tblTaxonomyResults.FinalID, tblTaxonomyResults.LifeStageCode, tblTaxonomyResults.DistinctCode, tblTaxonomyResults.BAResult, tblTaxonomyResults.ResQualCode, tblTaxonomyResults.QACode, tblTaxonomyResults.TaxonomicQualifier, tblTaxonomyResults.PersonnelCode_LabEffort, tblTaxonomyResults.PersonnelCode_Results, tblTaxonomyResults.LabSampleID " %((sccwrp_lastupdatedate1[0][0]+timedelta(days=1)).strftime("%Y-%m-%d")))
+#smc_engine = create_engine('mssql+pymssql://smc_inquire:$HarP*@192.168.1.8:1433/SMCPHab')
+#smc_query = text("SELECT tblTaxonomySampleInfo.StationCode, tblTaxonomySampleInfo.SampleDate, tblTaxonomySampleInfo.CollectionMethodCode, tblTaxonomySampleInfo.AgencyCode_LabEffort AS AgencyCode, tblTaxonomySampleInfo.FieldReplicate AS Replicate, tblTaxonomySampleInfo.FieldSampleID AS SampleID, tblTaxonomySampleInfo.BenthicCollectionComments, tblTaxonomySampleInfo.GrabSize, tblTaxonomySampleInfo.PercentSampleCounted, tblTaxonomySampleInfo.TotalGrids, tblTaxonomySampleInfo.GridsAnalyzed, tblTaxonomySampleInfo.GridsVolumeAnalyzed, tblTaxonomySampleInfo.TargetOrganismCount, tblTaxonomySampleInfo.ActualOrganismCount, tblTaxonomySampleInfo.ExtraOrganismCount, tblTaxonomySampleInfo.QCOrganismCount, tblTaxonomySampleInfo.DiscardedOrganismCount, tblTaxonomySampleInfo.BenthicLabEffortComments, tblTaxonomySampleInfo.LastChangeDate AS origin_lastupdatedate, tblTaxonomyResults.FinalID, tblTaxonomyResults.LifeStageCode, tblTaxonomyResults.DistinctCode, tblTaxonomyResults.BAResult, tblTaxonomyResults.ResQualCode, tblTaxonomyResults.QACode, tblTaxonomyResults.TaxonomicQualifier, tblTaxonomyResults.PersonnelCode_LabEffort, tblTaxonomyResults.PersonnelCode_Results, tblTaxonomyResults.LabSampleID "
+ #                                        "FROM tblTaxonomyResults "
+ #                                        "INNER JOIN tblTaxonomySampleInfo "
+ #                                        "ON (tblTaxonomySampleInfo.FieldReplicate = tblTaxonomyResults.FieldReplicate) "
+ #                                        "AND (tblTaxonomyResults.SampleDate = tblTaxonomySampleInfo.SampleDate) "
+ #                                        "AND (tblTaxonomyResults.StationCode = tblTaxonomySampleInfo.StationCode) "
+ #                                        "WHERE tblTaxonomySampleInfo.LastChangeDate > '%s' "
+ #                                        "GROUP BY tblTaxonomySampleInfo.StationCode, tblTaxonomySampleInfo.SampleDate, tblTaxonomySampleInfo.CollectionMethodCode, tblTaxonomySampleInfo.AgencyCode_LabEffort, tblTaxonomySampleInfo.FieldReplicate, tblTaxonomySampleInfo.FieldSampleID, tblTaxonomySampleInfo.BenthicCollectionComments, tblTaxonomySampleInfo.GrabSize, tblTaxonomySampleInfo.PercentSampleCounted, tblTaxonomySampleInfo.TotalGrids, tblTaxonomySampleInfo.GridsAnalyzed, tblTaxonomySampleInfo.GridsVolumeAnalyzed, tblTaxonomySampleInfo.TargetOrganismCount, tblTaxonomySampleInfo.ActualOrganismCount, tblTaxonomySampleInfo.ExtraOrganismCount, tblTaxonomySampleInfo.QCOrganismCount, tblTaxonomySampleInfo.DiscardedOrganismCount, tblTaxonomySampleInfo.BenthicLabEffortComments, tblTaxonomySampleInfo.LastChangeDate, tblTaxonomyResults.FinalID, tblTaxonomyResults.LifeStageCode, tblTaxonomyResults.DistinctCode, tblTaxonomyResults.BAResult, tblTaxonomyResults.ResQualCode, tblTaxonomyResults.QACode, tblTaxonomyResults.TaxonomicQualifier, tblTaxonomyResults.PersonnelCode_LabEffort, tblTaxonomyResults.PersonnelCode_Results, tblTaxonomyResults.LabSampleID " %((sccwrp_lastupdatedate1[0][0]+timedelta(days=1)).strftime("%Y-%m-%d")))
+smc_query = text("select tbl_taxonomysampleinfo.stationcode, tbl_taxonomysampleinfo.sampledate, tbl_taxonomysampleinfo.collectionmethodcode, tbl_taxonomysampleinfo.agencycode_labeffort as agencycode, tbl_taxonomysampleinfo.fieldreplicate as replicate, tbl_taxonomysampleinfo.fieldsampleid as sampleid, tbl_taxonomysampleinfo.benthiccollectioncomments, tbl_taxonomysampleinfo.grabsize, tbl_taxonomysampleinfo.percentsamplecounted, tbl_taxonomysampleinfo.totalgrids, tbl_taxonomysampleinfo.gridsanalyzed, tbl_taxonomysampleinfo.gridsvolumeanalyzed, tbl_taxonomysampleinfo.targetorganismcount, tbl_taxonomysampleinfo.actualorganismcount, tbl_taxonomysampleinfo.extraorganismcount, tbl_taxonomysampleinfo.qcorganismcount, tbl_taxonomysampleinfo.discardedorganismcount, tbl_taxonomysampleinfo.benthiclabeffortcomments, tbl_taxonomysampleinfo.last_edited_date as origin_lastupdatedate, tbl_taxonomyresults.finalid, tbl_taxonomyresults.lifestagecode, tbl_taxonomyresults.distinctcode, tbl_taxonomyresults.baresult, tbl_taxonomyresults.resqualcode, tbl_taxonomyresults.qacode, tbl_taxonomyresults.taxonomicqualifier, tbl_taxonomyresults.personnelcode_labeffort, tbl_taxonomyresults.personnelcode_results,tbl_taxonomyresults.labsampleid from tbl_taxonomyresults inner join tbl_taxonomysampleinfo on (tbl_taxonomysampleinfo.fieldreplicate = tbl_taxonomyresults.fieldreplicate) and (tbl_taxonomyresults.sampledate = tbl_taxonomysampleinfo.sampledate) and (tbl_taxonomyresults.stationcode = tbl_taxonomysampleinfo.stationcode) where tbl_taxonomysampleinfo.last_edited_date > '%s' group by tbl_taxonomysampleinfo.stationcode, tbl_taxonomysampleinfo.sampledate, tbl_taxonomysampleinfo.collectionmethodcode, tbl_taxonomysampleinfo.agencycode_labeffort, tbl_taxonomysampleinfo.fieldreplicate, tbl_taxonomysampleinfo.fieldsampleid, tbl_taxonomysampleinfo.benthiccollectioncomments, tbl_taxonomysampleinfo.grabsize, tbl_taxonomysampleinfo.percentsamplecounted, tbl_taxonomysampleinfo.totalgrids, tbl_taxonomysampleinfo.gridsanalyzed, tbl_taxonomysampleinfo.gridsvolumeanalyzed, tbl_taxonomysampleinfo.targetorganismcount, tbl_taxonomysampleinfo.actualorganismcount, tbl_taxonomysampleinfo.extraorganismcount, tbl_taxonomysampleinfo.qcorganismcount, tbl_taxonomysampleinfo.discardedorganismcount, tbl_taxonomysampleinfo.benthiclabeffortcomments, tbl_taxonomysampleinfo.last_edited_date, tbl_taxonomyresults.finalid, tbl_taxonomyresults.lifestagecode, tbl_taxonomyresults.distinctcode, tbl_taxonomyresults.baresult, tbl_taxonomyresults.resqualcode, tbl_taxonomyresults.qacode, tbl_taxonomyresults.taxonomicqualifier, tbl_taxonomyresults.personnelcode_labeffort, tbl_taxonomyresults.personnelcode_results, tbl_taxonomyresults.labsampleid " %((sccwrp_lastupdatedate1[0][0]+timedelta(days=1)).strftime("%Y-%m-%d")))
 
 # create a dataframe from all records newer than the origin_lastupdatedate
-smc_sql = smc_engine.execute(smc_query)
+smc_sql = sccwrp_engine.execute(smc_query)
 smc = DataFrame(smc_sql.fetchall())
 
 # if new records present, prepare the data to be inserted in sccwrp taxonomy
 if len(smc.index) > 0:
     smc.columns = smc_sql.keys()
     smc.columns = [x.lower() for x in smc.columns]
-    smc_engine.dispose()
+    #smc_engine.dispose()
     
     # new field objectid
     smc_tax_sql = "SELECT MAX(objectid) from taxonomy"
@@ -108,7 +109,7 @@ if len(smc.index) > 0:
 
     # turn off database submission temporarily - 
     eng = create_engine('postgresql://sde:dinkum@192.168.1.17:5432/smc')
-    status = smc.to_sql('taxonomy', eng, if_exists='append', index=False)
+    #status = smc.to_sql('taxonomy', eng, if_exists='append', index=False)
     msgs.append("SMC Post-processing origin_lastupdatedate: %s\n" % smc.origin_lastupdatedate.max().strftime("%b %d %Y %X"))
     msgs.append("A total of %s OLDSMC records have been added.\n" % len(smc))
     eng.dispose()
@@ -124,8 +125,10 @@ else:
 
 
 
-
+'''
 # 2ND - COLLECT DATA FROM SWAMP
+#
+# UPDATE: WE ARE NO LONGER COLLECTING DATA FROM SWAMP. THIS COLLECTION IS SUPSPENDED UNTIL FURTHER NOTICE. 
 #
 # ACTION: Get new data from SWAMP:
 #     **** swamp_taxonomy is a duplicate copy of the original data pulled from SWAMP the only modified field is record_publish ****
@@ -136,12 +139,14 @@ else:
 #
 #
 # DESCRIPTION: 
-#     Similarly to the SMC code above, it looks at the date of the most recent SWAMP records in the swamp_taxonomy table. It then compares that date to the date of the most recent records 
-#     in the SWAMP database located at the STATE BOARD. If it finds newer records in the SWAMP database, it will merge those records into the swamp_taxonomy table with a new appended 
-#     field record_origin and a new record_publish field based on DWC_PublicRelease. Here is the criteria for whether to publish or not: "1 means that the data can be shared with the
-#     public. If the value is 0, then the data should not be shared. The decision to release the data should be at the project level." We need to adjust those values from 1/0 to 
-#     true/false before they are stored in swamp_taxonomy table. The same data that gets stored in the swamp_taxonomy needs to get stored in the unified taxonomy table, but each records
-#     record_publish need to be adjusted. Rafi only wants southern california data to# published. So any stationcode not equal to starting with 4, 8, or 9 should be set to false.
+#     Similarly to the SMC code above, it looks at the date of the most recent SWAMP records in the swamp_taxonomy table. It then compares that date to 
+#     the date of the most recent records in the SWAMP database located at the STATE BOARD. If it finds newer records in the SWAMP database, it will 
+#     merge those records into the swamp_taxonomy table with a new appended field record_origin and a new record_publish field based on DWC_PublicRelease. 
+#     Here is the criteria for whether to publish or not: "1 means that the data can be shared with the public. If the value is 0, then the data should 
+#     not be shared. The decision to release the data should be at the project level." We need to adjust those values from 1/0 to true/false before they 
+#     are stored in swamp_taxonomy table. The same data that gets stored in the swamp_taxonomy needs to get stored in the unified taxonomy table, but 
+#     each records record_publish need to be adjusted. Rafi only wants southern california data to# published. So any stationcode not equal to starting 
+#     with 4, 8, or 9 should be set to false.
 
 
 
@@ -227,7 +232,7 @@ else:
 
 print msgs
 ## END SWAMP MERGE ##
-
+'''
 
 
 
@@ -260,18 +265,18 @@ TIMESTAMP = str(int(round(time.time()*1000)))
 logfile = '/var/www/smc/testfiles/' + TIMESTAMP + '.log'
 
 # We can only build these dataframes if new records exist - Jordan 9/10/18
-if len(swamp.index)>0 | len(smc.index)>0:
-    
+#if len(swamp.index)>0 | len(smc.index)>0:
+if len(smc.index) > 0:    
     # get samplemonth, sampleday, sampleyear for later use
-    swamp["samplemonth"] = swamp.sampledate.dt.month
-    swamp["sampleday"] = swamp.sampledate.dt.day
-    swamp["sampleyear"] = swamp.sampledate.dt.year
+    smc["samplemonth"] = smc.sampledate.dt.month
+    smc["sampleday"] = smc.sampledate.dt.day
+    smc["sampleyear"] = smc.sampledate.dt.year
     
     # re-establish connection to smc database
     eng = create_engine('postgresql://sde:dinkum@192.168.1.17:5432/smc')
     
     # in the future we will need to check to make sure these arent duplicates
-    bugs = swamp.append(smc)
+    bugs = smc
 
     # bugs BAResult needs to be integer type
     bugs.baresult = bugs.baresult.astype(int)
@@ -324,7 +329,7 @@ if len(swamp.index)>0 | len(smc.index)>0:
     print "list_of_unique_sampleid: %s" % str(unique_sampleid)
 
     #### STATIONS IS BUILT OFF THE MERGENCE OF BUG FILE AND GISMETRICS
-    sqlmetrics = 'select * from tbl_gismetrics'
+    sqlmetrics = 'select * from tblgismetrics'
     gismetrics = pd.read_sql_query(sqlmetrics,eng)
     test_stations = pd.unique(bugs['stationcode'])
     # merge gismetrics and gisxwalk to get giscode into dataframe
@@ -350,8 +355,10 @@ if len(swamp.index)>0 | len(smc.index)>0:
         print msgs
 
 
-    # drop unnecessary columns
-    bugs.drop(bugs[['actualorganismcount','agencycode','benthiccollectioncomments','benthiclabeffortcomments','discardedorganismcount','effortqacode','extraorganismcount','grabsize','gridsanalyzed','gridsvolumeanalyzed','labsampleid','locationcode','objectid','percentsamplecounted','personnelcode_labeffort','personnelcode_results','qacode','qcorganismcount','resqualcode','samplecomments','targetorganismcount','taxonomicqualifier','totalgrids']], axis=1, inplace=True)
+    # drop unnecessary columns (Note: the values needing to be dropped has seemed to change since not syncing SWAMP. removing effortqacode, locationcode, samplecomments - Jordan 2/27/19
+    bugs.drop(bugs[['actualorganismcount','agencycode','benthiccollectioncomments','benthiclabeffortcomments','discardedorganismcount','extraorganismcount','grabsize','gridsanalyzed','gridsvolumeanalyzed','labsampleid','objectid','percentsamplecounted','personnelcode_labeffort','personnelcode_results','qacode','qcorganismcount','resqualcode','targetorganismcount','taxonomicqualifier','totalgrids']], axis=1, inplace=True)
+    #bugs.drop(bugs[['actualorganismcount','agencycode','benthiccollectioncomments','benthiclabeffortcomments','discardedorganismcount','effortqacode','extraorganismcount','grabsize','gridsanalyzed','gridsvolumeanalyzed','labsampleid','locationcode','objectid','percentsamplecounted','personnelcode_labeffort','personnelcode_results','qacode','qcorganismcount','resqualcode','samplecomments','targetorganismcount','taxonomicqualifier','totalgrids']], axis=1, inplace=True)
+    
     # if row exists drop row, errors, and lookup_error
     if 'row' in bugs.columns:
             bugs.drop(bugs[['row','errors']], axis=1, inplace=True)
@@ -438,7 +445,7 @@ if len(swamp.index)>0 | len(smc.index)>0:
 
         
         last_s2oe_id = 0
-        s2oe_sql = "SELECT objectid FROM new_csci_suppl2_oe WHERE objectid IN (SELECT MAX(objectid) FROM csci_suppl2_oe)";
+        s2oe_sql = "SELECT objectid FROM csci_suppl2_oe WHERE objectid IN (SELECT MAX(objectid) FROM csci_suppl2_oe)";
         s2oe_result = eng.execute(s2oe_sql)
         for c in s2oe_result:
             last_s2oe_id = c[0]
@@ -497,7 +504,7 @@ if len(swamp.index)>0 | len(smc.index)>0:
                 core['scoredate'] = timestamp_date
                 core = pd.merge(core,group_copy[['sampleid','sampledate','samplemonth','sampleday','sampleyear','collectionmethodcode','fieldreplicate','record_origin','origin_lastupdatedate','record_publish']], on = ['sampleid'], how='left')           
                 core = core.drop_duplicates()
-                core_status = core.to_sql('csci_core', eng, if_exists='append', index=False)
+                #core_status = core.to_sql('csci_core', eng, if_exists='append', index=False)
                 
                 print "second - s1mmi"
                 s1mmi.columns = [x.lower() for x in s1mmi.columns] 
@@ -506,7 +513,7 @@ if len(swamp.index)>0 | len(smc.index)>0:
                 s1mmi.rename(columns={'coleoptera_percenttaxa_predicted': 'coleoptera_percenttaxa_predict'}, inplace=True)
                 s1mmi = pd.merge(s1mmi,group_copy[['sampleid','record_origin','origin_lastupdatedate','record_publish']], on = ['sampleid'], how='left')
                 s1mmi = s1mmi.drop_duplicates()
-                s1mmi_status = s1mmi.to_sql('csci_suppl1_mmi', eng, if_exists='append', index=False)
+                #s1mmi_status = s1mmi.to_sql('csci_suppl1_mmi', eng, if_exists='append', index=False)
 
                  
                 print "third- s2mmi"
@@ -515,7 +522,7 @@ if len(swamp.index)>0 | len(smc.index)>0:
                 s2mmi['processed_by'] = "machine"
                 s2mmi = pd.merge(s2mmi,group_copy[['sampleid','record_origin','origin_lastupdatedate','record_publish']], on = ['sampleid'], how='left')
                 s2mmi = s2mmi.drop_duplicates()
-                s2mmi_status = s2mmi.to_sql('csci_suppl2_mmi', eng, if_exists='append', index=False)
+                #s2mmi_status = s2mmi.to_sql('csci_suppl2_mmi', eng, if_exists='append', index=False)
 
                 print "third - s1grps"
                 s1grps.columns = [x.lower() for x in s1grps.columns]
@@ -527,7 +534,7 @@ if len(swamp.index)>0 | len(smc.index)>0:
                 s1grps = s1grps.drop_duplicates()
                 # export to csv
                 s1grps.to_csv('s1grps.csv', mode='a', sep=',', encoding='utf-8', index=False, header=False)
-                s1grps_status = s1grps.to_sql('csci_suppl1_grps', eng, if_exists='append', index=False)
+                #s1grps_status = s1grps.to_sql('csci_suppl1_grps', eng, if_exists='append', index=False)
                 
                 print "fourth - s1oe"
                 s1oe.columns = [x.lower() for x in s1oe.columns]
@@ -537,7 +544,7 @@ if len(swamp.index)>0 | len(smc.index)>0:
                 s1oe['processed_by'] = "machine"
                 s1oe = pd.merge(s1oe,group_copy[['sampleid','record_origin','origin_lastupdatedate','record_publish']], on = ['sampleid'], how='left')
                 s1oe = s1oe.drop_duplicates()
-                s1oe_status = s1oe.to_sql('csci_suppl1_oe', eng, if_exists='append', index=False)
+                #s1oe_status = s1oe.to_sql('csci_suppl1_oe', eng, if_exists='append', index=False)
 
                 print "fifth - s2oe"
                 s2oe.columns = [x.lower() for x in s2oe.columns]
@@ -547,7 +554,7 @@ if len(swamp.index)>0 | len(smc.index)>0:
                 s2oe['processed_by'] = "machine"
                 s2oe = pd.merge(s2oe,group_copy[['sampleid','record_origin','origin_lastupdatedate','record_publish']], on = ['sampleid'], how='left')
                 s2oe = s2oe.drop_duplicates()
-                s2oe_status = s2oe.to_sql('csci_suppl2_oe', eng, if_exists='append', index=False)
+                #s2oe_status = s2oe.to_sql('csci_suppl2_oe', eng, if_exists='append', index=False)
 
             except Exception as e:
                 print "failed to load to database"

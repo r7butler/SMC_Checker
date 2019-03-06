@@ -14,6 +14,7 @@ import psycopg2
 from pandas import DataFrame
 import folium
 import xlsxwriter
+from zipfile import ZipFile 
 
 def support_jsonp(f):
         """Wraps JSONified output for JSONP"""
@@ -86,13 +87,7 @@ def export():
             lquery = local_engine.execute(lsql, ("smc"))
             lresult = lquery.fetchall()
             lresult = [r for r, in lresult]
-            # check views - not necessary for exports
-            #vsql = "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.VIEWS WHERE TABLE_NAME LIKE %s"
-            #vquery = local_engine.execute(vsql, ("vw_%%"))
-            #vresult = vquery.fetchall()
-            #vresult = [r for r, in vresult]
-            # combine lookups and views
-            result = lresult #+ vresult
+            result = lresult 
             if local_table_name in result:
                 print "found matching table"
                 return 1
@@ -103,66 +98,93 @@ def export():
 	#if request.args.get("action"):
         gettime = int(time.time())
         TIMESTAMP = str(gettime)
-        #export_file = '/var/www/smc/logs/%s-export.xlsx' % TIMESTAMP
-        #export_link = 'http://smcchecker.sccwrp.org/smc/logs/%s-export.xlsx' % TIMESTAMP
         export_file = '/var/www/smc/logs/%s-export.csv' % TIMESTAMP
         export_link = 'http://smcchecker.sccwrp.org/smc/logs/%s-export.csv' % TIMESTAMP
 
         # sql injection check three
-        valid_tables = ['csci_core', 'csci_suppl1_grps', 'csci_suppl1_mmi', 'csci_suppl1_oe', 'csci_suppl2_mmi', 'csci_suppl2_oe', 'chemistry','tmp_channelengineering','tblcramplants', 'tblcrammetricscores','tblcramstressors','tmp_hydromodresults','tmp_phab','tmp_phabmetrics','taxonomy','tmp_siteeval','tmp_timeserieseffortcheck','tmp_timeserieseffortdetails','tmp_timeseriesresults','tmp_toxicitybatch','tmp_toxicityresults','tmp_toxicitysummary']
+        #valid_tables = ['algae','csci_core', 'csci_suppl1_grps', 'csci_suppl1_mmi', 'csci_suppl1_oe', 'csci_suppl2_mmi', 'csci_suppl2_oe', 'chemistry','channelengineering','cramplants', 'crammetricscores','cramstressors','hydromodresults','phab','phabmetrics','taxonomy','siteeval','timeserieseffortcheck','timeserieseffortdetails','timeseriesresults','toxicitybatch','toxicityresults','toxicitysummary']
+        valid_tables = {'algae': 'tbl_algae', 'csci_core': 'csci_core', 'csci_suppl1': 'csci_suppl1_grps', 'csci_suppl1_grps': 'csci_suppl1_grps', 'csci_suppl1_mmi': 'csci_suppl1_mmi', 'csci_suppl1_oe': 'csci_suppl1_oe', 'csci_suppl2': 'csci_suppl2_grps', 'csci_suppl2_grps': 'csci_suppl2_grps', 'csci_suppl2_mmi': 'csci_suppl2_mmi', 'csci_suppl2_oe': 'csci_suppl2_oe', 'cramplants': 'tblcramplants', 'cramstressors': 'tblcramstressors', 'crammetricscores': 'tblcrammetricscores', 'cramindexandattributescores': 'tblcramindexandattributescores', 'channelengineering': 'tmp_channelengineering','hydromod': 'tmp_hydromodresults', 'siteeval': 'tmp_siteeval', 'taxonomy': 'taxonomy', 'chemistry': 'chemistry', 'phab': 'tmp_phab', 'toxicitybatchresults': 'tmp_toxicitybatch'}
         if request.args.get("callback"):
 	    test = request.args.get("callback", False)
             print test
-        if request.args.get("table"):
-            table = request.args.get("table", False)
-            table = table.lower()
-            cleanstring(table)
-            check = exists_table(admin_engine, table)
-            print table
         if request.args.get("action"):
             action = request.args.get("action", False)
+            print action
             cleanstring(action)
             print action 
-        if request.args.get("fields"):
-            fields = request.args.get("fields", False)
-            cleanstring(fields)
-            print fields
-        if request.args.get("county"):
-            county = request.args.get("county", False)
-            cleanstring(county)
-            print county
-        if request.args.get("smcshed"):
-            smcshed = request.args.get("smcshed", False)
-            cleanstring(smcshed)
-            print smcshed
+        if request.args.get("query"):
+            query = request.args.get("query", False)
+            print query
+            # incoming json string 
+            jsonstring = json.loads(query)
 
-        # run some checks on data coming in
-        if table in valid_tables and check == 1:
-                print "found valid table: %s" % table
-	        #export_writer = pd.ExcelWriter(export_file, engine='xlsxwriter')
-	        #eng = create_engine('postgresql://smcread:1969$Harbor@192.168.1.17:5432/smc')
-                #sql1_statement = "SELECT %s FROM %s INNER JOIN %s t1 ON t0.toxbatch = t1.toxbatch INNER JOIN lu_stations t2 ON t1.stationcode = t2.stationid $terms AND t1.record_publish = 'true'
-	        #sql = eng.execute(sql_primary, (table,fields,county,smcshed))
-                print "sql call"
-                print type(action)
-                action = str(action)
-                print type(action)
-                raw_sql = text(action)
+        if action == "multiple":
+            outlink = 'http://smcchecker.sccwrp.org/smc/logs/%s-export.zip' % (TIMESTAMP)
+            zipfile = '/var/www/smc/logs/%s-export.zip' % (TIMESTAMP)
+            with ZipFile(zipfile,'w') as zip:
+                for item in jsonstring:
+                    table_name = jsonstring[item]['table']
+                    table_name = table_name.replace("-", "_")
+                    # check table_name for prevention of sql injection
+                    cleanstring(table_name)
+                    print table_name
+                    table = valid_tables[table_name]
+                    print table
+                    check = exists_table(admin_engine, table)
+                    if table_name in valid_tables and check == 1:
+                        sql = jsonstring[item]['sql']
+                        # check sql string - clean it of any special characters
+                        cleanstring(sql)
+                        outputfilename = '%s-export.csv' % (table_name)
+                        outputfile = '/var/www/smc/logs/%s' % (outputfilename)
+                        isql = text(sql)
+                        print isql
+                        rsql = query_engine.execute(isql)
+	                df = DataFrame(rsql.fetchall())
+	                if len(df) > 0:
+                            df.columns = rsql.keys()
+                            df.columns = [x.lower() for x in df.columns]
+                            print df
+                            df.to_csv(outputfile,header=True, index=False, encoding='utf-8')
+                            print "outputfile"
+                            print outputfile
+                            print "outputfilename"
+                            print outputfilename
+                            zip.write(outputfile,outputfilename) 
+                    # if we dont pass validation then something is wrong - just error out
+                    else:
+                        response = jsonify({'code': 200,'link': export_link})
+                        return response
 
-                sql = query_engine.execute(raw_sql)
-                print sql
-	        df = DataFrame(sql.fetchall())
-                print df
-	        if len(df) > 0:
-                    df.columns = sql.keys()
-		    df.columns = [x.lower() for x in df.columns]
-		    #df.to_excel(export_writer, sheet_name=table, index = False)
-                    df.to_csv(export_file)
-		    print export_link
-                else:
-                    export_link = "empty"
-        else:
-                export_link = "empty"
+        if action == "single":
+            for item in jsonstring:
+                table_name = jsonstring[item]['table']
+                outlink = 'http://smcchecker.sccwrp.org/smc/logs/%s-%s-export.csv' % (TIMESTAMP,table_name)
+                csvfile = '/var/www/smc/logs/%s-%s-export.csv' % (TIMESTAMP,table_name)
+                table_name = table_name.replace("-", "_")
+                # check table_name for prevention of sql injection
+                cleanstring(table_name)
+                table = valid_tables[table_name]
+                print table
+                check = exists_table(admin_engine, table)
+                if table_name in valid_tables and check == 1:
+                    sql = jsonstring[item]['sql']
+                    # check sql string - clean it of any special characters
+                    cleanstring(sql)
+                    outputfilename = '%s-%s-export.csv' % (TIMESTAMP,table_name)
+                    outputfile = '/var/www/smc/logs/%s' % (outputfilename)
+                    isql = text(sql)
+                    rsql = query_engine.execute(isql)
+                    df = DataFrame(rsql.fetchall())
+                    if len(df) > 0:
+                        df.columns = rsql.keys()
+                        df.columns = [x.lower() for x in df.columns]
+                        df.to_csv(outputfile,header=True, index=False, encoding='utf-8')
+                    else:
+                        response = jsonify({'code': 200,'link': export_link})
+                        return response
+
+        export_link = outlink
         admin_engine.dispose()
         query_engine.dispose()
         response = jsonify({'code': 200,'link': export_link})
