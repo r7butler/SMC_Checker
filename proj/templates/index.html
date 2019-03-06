@@ -462,6 +462,12 @@ td {
 			var elements = value_string.split("-");
 			var tab_name = elements[1];
 			var tab_show = String(elements[4]);
+			console.log("elements:");
+			console.log(elements);
+			console.log(elements.includes("phab"));
+			console.log(elements.includes("ipi"));
+			console.log(elements[elements.length - 1], elements[elements.length - 2]);
+			console.log(summary_file);
 			console.log(tab_show);	
 			if(tab_show == "True"){
 				// create tab navigation button 
@@ -472,7 +478,15 @@ td {
 				if(summary_file && tkey == 1){
 					$('#tabsnav ul').append('<li><a href="#tab3">CSCI</a></li>');
 					$('#tabs').append('<div id="tab3" style="overflow-y:auto; height: 100%;"><br><a href="http://smcchecker.sccwrp.org/smc/logs/'+ summary_file + '.core.csv" target="_blank">CSCI component scores [Excel]</a> - <a href="http://smcchecker.sccwrp.org/smc/logs/'+ summary_file + '.Suppl1_mmi.csv" target="_blank">Details about pMMI score [Excel]</a> - <a href="http://smcchecker.sccwrp.org/smc/logs/'+ summary_file + '.Suppl1_grps.csv" target="_blank">Details on ref group membership [Excel]</a> - <a href="http://smcchecker.sccwrp.org/smc/logs/'+ summary_file + '.Suppl1_OE.csv" target="_blank">Details about O/E score [Excel]</a> - <a href="http://smcchecker.sccwrp.org/smc/logs/'+ summary_file + '.Suppl2_mmi.csv" target="_blank">Iteration-level details on pMMI score [Excel]</a> - <a href="http://smcchecker.sccwrp.org/smc/logs/'+ summary_file + '.Suppl2_OE.csv" target="_blank">Iteration-level details on O/E score [Excel]</a></div>');
-				}
+			     }	else if (summary_file && elements.includes("phab")) {
+			     		$('#tabsnav ul').append('<li><a href="#tab1">PHAB Metrics</a></li>');
+					  $('#tabs').append('<div id="tab1"><br><a href="http://smcchecker.sccwrp.org/smc/logs/' + summary_file + '.phabmetrics.csv" target="_blank">PHAB Metrics [Excel]</a></div>');
+
+					if (elements.includes("ipi")){
+			     			$('#tabsnav ul').append('<li><a href="#tab2">IPI</a></li>');
+					   $('#tabs').append('<div id="tab2"><br><a href="http://smcchecker.sccwrp.org/smc/logs/' + summary_file + '.ipi.csv" target="_blank">IPI Scores [Excel]</a></div>');	
+					}
+			     }
 		 		//$("#tabsnav").navbar();
 			}
 		}); // close table_match
@@ -616,18 +630,56 @@ td {
 	function upload(dropped_files){
 				console.log("function upload");
 				var formData = new FormData();
+				console.log(formData);
 				formData.append('login', email_login);
+				console.log("email login:" + email_login);
+				console.log(formData);
 				formData.append('agency', agency);
+				console.log("agency: " + agency);
+				console.log(formData);
 				formData.append('owner', owner);
+				console.log("owner: " + owner);
+				console.log(formData);
 				formData.append('year', year);
+				console.log("year: " + year);
+				console.log(formData);
 				formData.append('project', project);
+				console.log("project: " + project);
+				console.log(formData);
 				formData.append('usession', usession);
 				console.log("usession: "+usession);
+				console.log("formData:");
+				console.log(formData);
 				// call application first
-				for(var i = 0; i < dropped_files.length; ++i){
+				
+				var formData2 = new FormData();
+
+				for(var i = 0; i < dropped_files.length; i++){
 					/* submit as array to as file array - otherwise will fail */
+					console.log("File being appended to formData:")
+					console.log(dropped_files[i])
 					formData.append('files[]', dropped_files[i]);
+					formData2.append('files[]', dropped_files[i]);
+					console.log("FORMDATA TO BE SENT TO THE SERVER:");
+					console.log(formData);
+					console.log("the extra form data:");
+					console.log(formData2);
 				}
+			
+				$.ajax({
+					url: $SCRIPT_ROOT + '/bogus',
+					type: "POST",
+					data: formData2,
+					processData: false,
+					contentType: false,
+					success: function(data){
+						console.log("JSON response received from the extra AJAX call: " + data.message);
+					},		      
+					error: function(data){
+						console.log("");
+					}
+				})  
+
 				$.ajax({
 					url: $SCRIPT_ROOT + '/upload',
 					type: "POST",
@@ -650,6 +702,7 @@ td {
 							redundant = data.redundant;
 							custom = data.custom;
 							redundant_custom = data.redundant_custom;
+
 							console.log(redundant_custom)
 							summary_file = data.summary_file;
 							// if the first element of the message array has a value then we need to let the user know
@@ -724,6 +777,7 @@ td {
 								}
 								$("#compare_list").append("<br>");
 							});
+							console.log(table_match);
 							console.log(business);	
 							presentation(table_match,redundant,redundant_custom,business,custom,summary_file);
 							// Tab initialization
