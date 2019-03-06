@@ -19,6 +19,8 @@ from ChannelEngineeringChecks import channelengineering_checks
 from HydromodChecks import hydromod_checks
 from SiteEvaluationChecks import siteevaluation_checks
 from ChemistryChecks import chemistry_checks
+# Cant quite import this one yet. PHABMetrics package must be installed.
+#from PHABChecks import phab_checks
 
 import sentry_sdk
 from sentry_sdk.integrations.flask import FlaskIntegration
@@ -59,6 +61,8 @@ app.register_blueprint(channelengineering_checks)
 app.register_blueprint(hydromod_checks)
 app.register_blueprint(siteevaluation_checks)
 app.register_blueprint(chemistry_checks)
+#Cant quite register this one yet. PHABMetrics must be installed.
+#app.register_blueprint(phab_checks)
 app.register_blueprint(finish_app)
 app.register_blueprint(staging_upload)
 app.register_blueprint(notification_email)

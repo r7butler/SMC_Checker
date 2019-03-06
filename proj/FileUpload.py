@@ -22,6 +22,7 @@ from ChannelEngineeringChecks import channelengineering
 from HydromodChecks import hydromod
 from SiteEvaluationChecks import siteevaluation
 from ChemistryChecks import chemistry
+# PHABMetrics R package must be installed.
 #from PHABChecks import phab, python_phabmetrics
 from PhabConvert import phabconvert
 from TimeSeriesChecks import timeseries
