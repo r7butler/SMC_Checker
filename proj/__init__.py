@@ -15,6 +15,10 @@ from TaxonomyChecks import taxonomy_checks
 from FinishApp import finish_app
 from StagingUpload import staging_upload
 from NotificationEmail import notification_email
+from ChannelEngineeringChecks import channelengineering_checks
+from HydromodChecks import hydromod_checks
+from SiteEvaluationChecks import siteevaluation_checks
+from ChemistryChecks import chemistry_checks
 
 import sentry_sdk
 from sentry_sdk.integrations.flask import FlaskIntegration
@@ -51,6 +55,10 @@ app.register_blueprint(match_file)
 app.register_blueprint(core_checks)
 app.register_blueprint(custom_checks)
 app.register_blueprint(taxonomy_checks)
+app.register_blueprint(channelengineering_checks)
+app.register_blueprint(hydromod_checks)
+app.register_blueprint(siteevaluation_checks)
+app.register_blueprint(chemistry_checks)
 app.register_blueprint(finish_app)
 app.register_blueprint(staging_upload)
 app.register_blueprint(notification_email)
