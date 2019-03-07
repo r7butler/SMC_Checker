@@ -299,7 +299,6 @@ def upload():
 					if match_tables:
 						errorLog("entering match_tables")
 						errorLog(match_tables)
-                                                personalLog(match_tables)
                                                 # get split key to get matching table
                 				for dataframe in all_dataframes.keys():
                         				errorLog("dataframe:")
