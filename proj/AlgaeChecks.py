@@ -158,10 +158,47 @@ def algae(all_dataframes,sql_match_tables,errors_dict,project_code,login_info):
 		errorLog(message)
 		statusLog(message)
 		## END LOGIC CHECKS ##
-
+                
+                ###################
 		## CUSTOM CHECKS ##
-		## END CUSTOM CHECKS ##
-		## END CHECKS ##
+                ###################
+
+		# 1. If sampletypecode = 'Integrated' then actualorganismcount and baresult are required fields and cannot be empty or have -88.
+                errorLog("If sampletypecode = 'Integrated' then actualorganismcount and baresult are required fields and cannot be empty or have -88")
+                # first check if actualorganismcount is empty
+                errorLog(algae[(algae.sampletypecode == 'Integrated') & (algae.actualorganismcount == -88)])
+                checkData(algae[(algae.sampletypecode == 'Integrated') & (algae.actualorganismcount == -88)].tmp_row.tolist(),'ActualOrganismCount','Undefined Error','error','SampleType is Integrated. ActualOrganismCount is a required field.', algae)
+                # second check if baresult is empty
+                errorLog(algae[(algae.sampletypecode == 'Integrated') & (algae.baresult == -88)])
+                checkData(algae[(algae.sampletypecode == 'Integrated') & (algae.baresult == -88)].tmp_row.tolist(), 'BAResult','Undefined Error','error','SampleTypeCode is Integrated. BAResult is a required field.',algae)
+                
+                # 2. If sampletypecode = 'Macroalgae' then actualorganismcount and result are required fields and cannot be empty or have -88.
+                errorLog("If sampletypecode = 'Macroalgae' then actualorganismcount and result are required fields and cannot be empty or have -88")
+                # first check if actualorganismcount is empty
+                errorLog(algae[(algae.sampletypecode == 'Macroalgae') & (algae.actualorganismcount == -88)])
+                checkData(algae[(algae.sampletypecode == 'Macroalgae') & (algae.actualorganismcount == -88)].tmp_row.tolist(),'ActualOrganismCount','Undefined Error','error','SampleType is MacroAlgae. ActualOrganismCount is a required field.', algae)
+                # second check if result is empty
+                errorLog(algae[(algae.sampletypecode == 'Macroalgae') & (algae.result == '-88')])
+                checkData(algae[(algae.sampletypecode == 'Macroalgae') & (algae.result == '-88')].tmp_row.tolist(), 'Result','Undefined Error','error','SampleTypeCode is Macroalgae. Result is a required field.',algae)
+
+                # 3. If sampletypecode = 'Microalgae' then actualorganismcount and result are required fields and cannot be empty or have -88.
+                errorLog("If sampletypecode = 'Microalgae' then actualorganismcount and baresult are required fields and cannot be empty or have -88")
+                # first check if actualorganismcount is empty
+                errorLog(algae[(algae.sampletypecode == 'Microalgae') & (algae.actualorganismcount == -88)])
+                checkData(algae[(algae.sampletypecode == 'Microalgae') & (algae.actualorganismcount == -88)].tmp_row.tolist(),'ActualOrganismCount','Undefined Error','error','SampleType is MicroAlgae. ActualOrganismCount is a required field.', algae)
+                # second check if result is empty
+                errorLog(algae[(algae.sampletypecode == 'Microalgae') & (algae.result == '-88')])
+                checkData(algae[(algae.sampletypecode == 'Microalgae') & (algae.result == '-88')].tmp_row.tolist(), 'Result','Undefined Error','error','SampleTypeCode is Microalgae. Result is a required field.',algae)
+                
+                # 4. If sampletypecode = 'Epiphyte' then actualorganismcount and baresult are required fields and cannot be empty or have -88.
+                errorLog("If sampletypecode = 'Epiphyte' then actualorganismcount and baresult are required fields and cannot be empty or have -88")
+                # first check if actualorganismcount is empty
+                errorLog(algae[(algae.sampletypecode == 'Epiphyte') & (algae.actualorganismcount == -88)])
+                checkData(algae[(algae.sampletypecode == 'Epiphyte') & (algae.actualorganismcount == -88)].tmp_row.tolist(),'ActualOrganismCount','Undefined Error','error','SampleType is Epiphyte. ActualOrganismCount is a required field.', algae)
+                # second check if baresult is empty
+                errorLog(algae[(algae.sampletypecode == 'Epiphyte') & (algae.baresult == -88)])
+                checkData(algae[(algae.sampletypecode == 'Epiphyte') & (algae.baresult == -88)].tmp_row.tolist(), 'BAResult','Undefined Error','error','SampleTypeCode is Epiphyte. BAResult is a required field.',algae)
+
 
 		## START MAP CHECK ##
 		# get a unique list of stations from stationcode

@@ -217,21 +217,21 @@ def chemistry(all_dataframes,sql_match_tables,errors_dict,project_code,login_inf
                     checkData(errs.tmp_row.tolist(),field,'Undefined Error','error','%s must now be written as %s.' %(oldname, newname),df)
 
                 def exactMatch(df, field, conditions, value):
-                   """
-                   DESCRIPTION:
-                   This function returns an error if field value in df under conditions does not exactly match specified value
+                    """
+                    DESCRIPTION:
+                    This function returns an error if field value in df under conditions does not exactly match specified value
 
-                   PARAMETERS:
-                   df - pandas dataframe of interest
-                   field - string of the field of interest
-                   conditions - a dictionary of conditions placed on the dataframe (i.e. {'field':['condition1',...]})
-                   value - string or numeric of exact value needed
-                   """
-                   mask = pd.DataFrame([df[k].isin(v) for k,v in conditions.items()]).T.all(axis = 1)
-                   sub = df[mask]
-                   errs = sub[sub[field] != value]
-                   errorLog(errs)
-                   checkData(errs.tmp_row.tolist(), field,'Undefined Error','error','%s mismatch. %s should be %s' %(field,field,value), result)
+                    PARAMETERS:
+                    df - pandas dataframe of interest
+                    field - string of the field of interest
+                    conditions - a dictionary of conditions placed on the dataframe (i.e. {'field':['condition1',...]})
+                    value - string or numeric of exact value needed
+                    """
+                    mask = pd.DataFrame([df[k].isin(v) for k,v in conditions.items()]).T.all(axis = 1)
+                    sub = df[mask]
+                    errs = sub[sub[field] != value]
+                    errorLog(errs)
+                    checkData(errs.tmp_row.tolist(), field,'Undefined Error','error','%s mismatch. %s should be %s' %(field,field,value), result)
                 
 
                 ############################
@@ -344,7 +344,31 @@ def chemistry(all_dataframes,sql_match_tables,errors_dict,project_code,login_inf
                 bad_records = batch[(batch.labsubmissioncode.isin(['A','MD','QI']))&(batch.labbatchcomments.isnull())]
                 errorLog(bad_records)
                 checkData(bad_records.tmp_row.tolist(),'LabBatchComments','Undefined Warning','warning','LabSubmissionCode is A, MD, or QI. LabBatchComment is required.', batch)
+                
+                
+                # Check - If SampleTypeCode == 'Grab' or 'LabBlank' or 'Integrated' and unit = '% recovery' then expectedvalue is required and canot have a -88
+                # Alternatively, if unit is NOT % recovery, then expectedvalue needs to be -88
 
+                # BELOW commented out since a later check takes care of it.
+                #errorLog("If SampleTypeCode == 'Grab' or 'LabBlank' or 'Integrated' and unit = '% recovery' then expectedvalue is required and canot have a -88")
+                #badrowsdf = result[((result.sampletypecode.isin(['Grab', 'LabBlank', 'Integrated'])) & (result.unit == '% recovery')) & (result.expectedvalue != -88) ]
+                #errorLog(badrowsdf)
+                #checkData(badrowsdf.tmp_row.tolist(), 'ExpectedValue', 'Undefined Error', 'error', "If SampleTypeCode is either Grab, LabBlank, or Integrated, and Unit is percent recovery, then ExpectedValue must not have a -88", result)
+
+                bad_records = result[((result.sampletypecode.isin(['Grab', 'LabBlank', 'Integrated'])) & (result.unit != '% recovery')) & (result.expectedvalue == -88) ]
+                errorLog(bad_records)
+                checkData(bad_records.tmp_row.tolist(), 'ExpectedValue', 'Undefined Error', 'error', "If SampleTypeCode is either Grab, LabBlank, or Integrated, and Unit is not percent recovery, then ExpectedValue must be -88", result)
+                
+                
+                # Check - if sampletypecode 'MS1' or 'LCS' or 'CRM' then expected value cannot be -88
+                errorLog("If sampletypecode is 'MS1, 'LCS', or 'CRM' then expectedvalue cannot be -88")
+                errorLog(result[(result.sampletypecode.isin(['MS1', 'LCS', 'CRM'])) & (result.expectedvalue == -88)])
+                checkData(result[(result.sampletypecode.isin(['MS1', 'LCS', 'CRM'])) & (result.expectedvalue == -88)].tmp_row.tolist(), 'ExpectedValue', 'Undefined Error', 'error', "If sampletypecode is MS1, LCS, or CRM then expectedvalue cannot be -88", result)
+
+                # Check - if unit == '% recovery', then expectedvalue cannot have -88
+                errorLog("if unit == % recovery, then expectedvalue cannot have -88")
+                errorLog(result[(result.unit == '% recovery') & (result.expectedvalue == -88)])
+                checkData(result[(result.unit == '% recovery') & (result.expectedvalue == -88)].tmp_row.tolist(), 'ExpectedValue', 'Undefined Error', 'error', 'If unit is percent recovery, then expected value cannot be blank or -88', result)
 
 
 

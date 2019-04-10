@@ -76,6 +76,8 @@ def staging():
 			df = df.drop('custom_errors', 1)
 		errorLog("Show columns to load: %s" % df.columns)
 		df_column_names = str(','.join(df.columns))
+                # added objectid as a column name because we are letting pandas handle it rather than next_rowid - 18mar19
+                df_column_names = 'objectid, ' + df_column_names
 
 		# placeholder SCCWRP is for agency variable in future
 		staging_table_name = "staging_agency_" + table_name + "_" + TIMESTAMP
@@ -107,16 +109,14 @@ def staging():
                         
                         # new field object id
                         objid_sql = "SELECT MAX(objectid) from %s;" % table_name
+                        errorLog(objid_sql)
                         last_objid = dest_engine.execute(objid_sql).fetchall()[0][0]
-                        errorLog("Last ObjectID Found In %s" % table_name)
+                        errorLog("Last ObjectID Found In %s" % last_objid)
                         # if there is no objectid then start the objectid at 1
                         if last_objid:
-                            errorLog(last_objid)
                             df['objectid'] = df.index + last_objid + 1
                         else:
-                            df['objectid'] = 1
-                        errorLog("ObjectID's created for %s" % table_name)
-                        errorLog(df['objectid'])
+                            df['objectid'] = df.index + 1
                         
                         # timestamp to date format - bug fix #4
 			timestamp_date = datetime.datetime.fromtimestamp(int(TIMESTAMP)).strftime('%Y-%m-%d %H:%M:%S')
@@ -163,7 +163,8 @@ def staging():
 			if state == 0:
      				eng = create_engine('postgresql://sde:dinkum@192.168.1.17:5432/smc')
 				# works but below is more precise - sql = 'INSERT INTO %s (SELECT * FROM %s)' % (table_name,staging_table_name)
-				sql = 'INSERT INTO "' + table_name + '" (objectid, globalid, created_user, created_date, last_edited_user, last_edited_date, login_email, login_agency, login_owner, login_year, login_project, '+ df_column_names + ') select sde.next_rowid(%s,%s), sde.next_globalid(), created_user, created_date, last_edited_user, last_edited_date, login_email, login_agency, login_owner, login_year, login_project, ' + df_column_names + ' from "' + staging_table_name + '"'
+				#sql = 'INSERT INTO "' + table_name + '" (objectid, globalid, created_user, created_date, last_edited_user, last_edited_date, login_email, login_agency, login_owner, login_year, login_project, '+ df_column_names + ') select sde.next_rowid(%s,%s), sde.next_globalid(), created_user, created_date, last_edited_user, last_edited_date, login_email, login_agency, login_owner, login_year, login_project, ' + df_column_names + ' from "' + staging_table_name + '"' - removed objectid below - next_rowid bug - 18mar19
+				sql = 'INSERT INTO "' + table_name + '" (globalid, created_user, created_date, last_edited_user, last_edited_date, login_email, login_agency, login_owner, login_year, login_project, '+ df_column_names + ') select sde.next_globalid(), created_user, created_date, last_edited_user, last_edited_date, login_email, login_agency, login_owner, login_year, login_project, ' + df_column_names + ' from "' + staging_table_name + '"'
                                 errorLog(sql)
                                 
 				# "sde" and table_name below are used to populate next_rowid in sql statement

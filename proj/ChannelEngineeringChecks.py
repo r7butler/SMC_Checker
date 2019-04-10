@@ -285,8 +285,13 @@ def channelengineering(all_dataframes,sql_match_tables,errors_dict,project_code,
                 def NaturalChannelCheck(fieldname):
                     errorLog('Check - if channeltype == Natural then the %s field should be filled out as NR' % fieldname)
                     errorLog('Submitted Data where channeltype == Natural but the %s field is not filled with NR:' % fieldname)
-                    errorLog(chaneng[ (chaneng.channeltype == 'Natural') & (chaneng[fieldname] != 'NR')  ])
-                    checkData(chaneng[ (chaneng.channeltype == 'Natural') & (chaneng[fieldname] != 'NR') ].tmp_row.tolist(), fieldname, 'Undefined Error', 'error', 'The channeltype is Natural, but the %s field is not filled with NR' % fieldname, chaneng)
+                    acceptable_values = ['NR']
+                    if fieldname == 'structureshape':
+                        acceptable_values.append('Natural')
+                    if fieldname == 'bottom':
+                        acceptable_values.append('Soft/Natural')
+                    errorLog(chaneng[ (chaneng.channeltype == 'Natural') & (~(chaneng[fieldname].isin(acceptable_values))) ])
+                    checkData(chaneng[ (chaneng.channeltype == 'Natural') & (~(chaneng[fieldname].isin(acceptable_values))) ].tmp_row.tolist(), fieldname, 'Undefined Error', 'error', 'The channeltype is Natural, but the %s field is not filled with NR' % fieldname, chaneng)
 
                 NaturalChannelCheck('bottom')    
                 NaturalChannelCheck('structurewidth')    

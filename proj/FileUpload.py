@@ -260,7 +260,6 @@ def upload():
 				modifiedfilename = "original filename: " + filename + " - new filename: " + newfilename + "(" + humanfilename + ")"
                                 errorLog(modifiedfilename)
 				errorLog("================================= about to try to upload")
-                                statusLog("================================== about to try to upload")
                                 try:
 					# save timestamp file first
                                         statusLog("Uploading file")
@@ -342,11 +341,18 @@ def upload():
                                                                     all_dataframes[match_tables_key]['resqualcode'] = all_dataframes[match_tables_key]['resqualcode'].astype('str')
                                                             # Bug fix: Force datatype of Result field to string for algae data. -Jordan 2/19/2019
                                                             if match_tables_name == 'tbl_algae':
+                                                                    # Critical: If actualorganismcount, baresult, and result are empty fill them with -88. This should be done before core checks.
+                                                                    all_dataframes[match_tables_key]['actualorganismcount'].fillna(-88,inplace=True)
+                                                                    all_dataframes[match_tables_key]['baresult'].fillna(-88,inplace=True)
+                                                                    all_dataframes[match_tables_key]['result'].fillna(-88,inplace=True)
                                                                     all_dataframes[match_tables_key]['result'] = all_dataframes[match_tables_key]['result'].astype(str)
 
                                                             if match_tables_name == 'tbl_phab':
                                                                     all_dataframes, sql_match_tables, match_tables, pmetrics_long, stations_for_IPI, unique_stations = python_phabmetrics(infile, login_info, excel = True)
 						
+                                                            if match_tables_name == 'tbl_channelengineering':
+                                                                all_dataframes[match_tables_key]['determination'] = all_dataframes[match_tables_key].determination.apply(lambda x: 'Site visit' if str(x).lower() == 'site visit' else x)
+                                                                    
                                                 
                                                 
                                                 data_checks, data_checks_redundant, errors_dict = core(all_dataframes,sql_match_tables, errors_dict)

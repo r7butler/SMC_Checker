@@ -45,8 +45,6 @@ def index():
 @app.route('/clear')
 def clear():
         eng = create_engine('postgresql://sde:dinkum@192.168.1.17:5432/smc') # postgresql
-        statement3 = text("""DELETE FROM tbl_channelengineering""")
-        eng.execute(statement3)
         statement4 = text("""DELETE FROM tbl_toxicitybatch""")
         eng.execute(statement4)
         statement5 = text("""DELETE FROM tbl_toxicityresults""")
@@ -59,7 +57,7 @@ def clear():
         eng.execute(statement8)
         statement9 = text("""DELETE FROM tbl_hydromod""")
         eng.execute(statement9)
-        return "algae, channelengineering, hydromod, siteevaluation, toxicity beta clear finished"
+        return "algae, hydromod, siteevaluation, toxicity beta clear finished"
 
 @app.route('/export', methods=['GET'])
 @support_jsonp
