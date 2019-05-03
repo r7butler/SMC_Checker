@@ -1,6 +1,6 @@
 from proj import app
 from functools import wraps
-from flask import send_from_directory, render_template, request, redirect, Response, jsonify, json, current_app
+from flask import send_from_directory, render_template, request, redirect, Response, jsonify, json, current_app, Markup
 from werkzeug import secure_filename
 from sqlalchemy import create_engine, text
 from sqlalchemy import exc
@@ -14,7 +14,9 @@ import psycopg2
 from pandas import DataFrame
 import folium
 import xlsxwriter
-from zipfile import ZipFile 
+from zipfile import ZipFile
+from collections import OrderedDict, defaultdict
+
 
 def support_jsonp(f):
         """Wraps JSONified output for JSONP"""
@@ -101,7 +103,7 @@ def export():
 
         # sql injection check three
         #valid_tables = ['algae','csci_core', 'csci_suppl1_grps', 'csci_suppl1_mmi', 'csci_suppl1_oe', 'csci_suppl2_mmi', 'csci_suppl2_oe', 'chemistry','channelengineering','cramplants', 'crammetricscores','cramstressors','hydromodresults','phab','phabmetrics','taxonomy','siteeval','timeserieseffortcheck','timeserieseffortdetails','timeseriesresults','toxicitybatch','toxicityresults','toxicitysummary']
-        valid_tables = {'algae': 'tbl_algae', 'csci_core': 'csci_core', 'csci_suppl1': 'csci_suppl1_grps', 'csci_suppl1_grps': 'csci_suppl1_grps', 'csci_suppl1_mmi': 'csci_suppl1_mmi', 'csci_suppl1_oe': 'csci_suppl1_oe', 'csci_suppl2': 'csci_suppl2_grps', 'csci_suppl2_grps': 'csci_suppl2_grps', 'csci_suppl2_mmi': 'csci_suppl2_mmi', 'csci_suppl2_oe': 'csci_suppl2_oe', 'cramplants': 'tblcramplants', 'cramstressors': 'tblcramstressors', 'crammetricscores': 'tblcrammetricscores', 'cramindexandattributescores': 'tblcramindexandattributescores', 'channelengineering': 'tmp_channelengineering','hydromod': 'tmp_hydromodresults', 'siteeval': 'tmp_siteeval', 'taxonomy': 'taxonomy', 'chemistry': 'chemistry', 'phab': 'tmp_phab', 'toxicitybatchresults': 'tmp_toxicitybatch'}
+        valid_tables = {'algae': 'tbl_algae', 'csci_core': 'csci_core', 'csci_suppl1': 'csci_suppl1_grps', 'csci_suppl1_grps': 'csci_suppl1_grps', 'csci_suppl1_mmi': 'csci_suppl1_mmi', 'csci_suppl1_oe': 'csci_suppl1_oe', 'csci_suppl2': 'csci_suppl2_grps', 'csci_suppl2_grps': 'csci_suppl2_grps', 'csci_suppl2_mmi': 'csci_suppl2_mmi', 'csci_suppl2_oe': 'csci_suppl2_oe', 'cramplants': 'tblcramplants', 'cramstressors': 'tblcramstressors', 'crammetricscores': 'tblcrammetricscores', 'cramindexandattributescores': 'tblcramindexandattributescores', 'channelengineering': 'tmp_channelengineering','hydromod': 'tmp_hydromodresults', 'siteeval': 'tmp_siteeval', 'taxonomy': 'taxonomy', 'chemistry': 'chemistry', 'phab': 'tmp_phab', 'toxicitybatchresults': 'tmp_toxicitybatch', 'toxicitysummary': 'tmp_toxicitysummary'}
         if request.args.get("callback"):
 	    test = request.args.get("callback", False)
             print test
@@ -246,6 +248,66 @@ def map():
 	return redirect("/smc/logs/map.html", code=302)
 	#return action
 
+# for the scraper
+import unicodedata as ucd
+def html_table(dataframe, name='generic-datatable', verbose_classes=False):
+        dataframe_html = '<table id="' + name + '" class="datatable"><thead><tr class="table-header">'
+        dataframe_html += '<colgroup>'
+        dataframe.fillna('')
+        print "building colgroups"
+        for column in dataframe.columns:
+            dataframe_html += '<col class="' + str(column) + '">'
+        dataframe_html += '</colgroup>'
+        
+        print "Making table headers"
+        for col in dataframe.columns:
+                dataframe_html += '<th>' + col + '</th>'
+        dataframe_html += '</tr></thead>'
+        dataframe_html += '<tbody>'
+        print "Making table rows"
+        for i in range(len(dataframe)):
+                print len(dataframe)
+                print name
+                row = dataframe.iloc[i]
+                #print row
+                colname_value_pairs = zip(row.keys(), row.values)
+                print "Row %s" % i
+                
+                dataframe_html += '<tr class="'
+                if i % 2 == 0:
+                        dataframe_html += 'row-even'
+                else:
+                        dataframe_html += 'row-odd'
+                
+                if verbose_classes:
+                        dataframe_html += ' '
+                        for pair in colname_value_pairs:
+                                dataframe_html += 'c-%s--v-%s ' % (pair[0], pair[1])
+                        dataframe_html += '">'
+                else:
+                        dataframe_html += '">'
+
+
+                print "writing table cells"
+                for pair in colname_value_pairs:
+                        #print ucd.normalize('NFKD', pair[0]).encode('ascii','ignore')
+                        #print ucd.normalize('NFKD', pair[1]).encode('ascii','ignore')
+                        #dataframe_html += '<td class="col-' + str(pair[0]) + '">'
+                        #dataframe_html += str(pair[1])
+                        try:
+                            dataframe_html += '<td class="col-' + ucd.normalize('NFKD', pair[0]).encode('ascii','ignore') + '">'
+                            dataframe_html += ucd.normalize('NFKD', pair[1]).encode('ascii','ignore')
+                            dataframe_html += '</td>'
+                        except Exception as err:
+                            print err
+                            dataframe_html += '<td></td>'
+                
+                dataframe_html += '</tr>'
+
+        dataframe_html += '</tbody></table>'
+        return dataframe_html
+
+
 @app.route('/scraper', methods=['GET'])
 def scraper():
 	print("start scraper")
@@ -296,7 +358,7 @@ def scraper():
                         layer = cleanstring(layer)
                         # check that the table name exists in the system catalog - to avoid sql injection
                         check = exists_table(admin_engine, layer)
-			if (layer.startswith(("lu_","vw_")) and check == 1):
+			if (layer.startswith(("lu_","vw_")) and (check == 1)):
 				# completed sanitizing above
 				# https://stackoverflow.com/questions/39196462/how-to-use-variable-for-sqlite-table-name?rq=1
 				# get primary key for lookup list
@@ -342,15 +404,34 @@ def scraper():
                                                 scraper_json = scraper_results.to_dict('records')
                                                 # give jinga the listname, primary key (to highlight row), and fields/rows
                                                 print "render"
+                                               
+                                                print layer
+                                                if layer == 'lu_organism':
+                                                    organism_sql = "SELECT finalid, commonname, phylum, superclass, lu_organism.class, subclass, superorder, lu_organism.order_, suborder, superfamily, lu_organism.family, subfamily, tribe, genuscomplex, genus, speciescomplex, species, subspecies, variety, taxonomicauthority, finalidauthority, lu_organism.source FROM lu_organism ORDER BY finalid;"
+                                                    scraper_results = pd.read_sql(organism_sql, query_engine)
+                                                    print scraper_results.head(7)
+                                                    #scraper_json = scraper_results.to_dict('records')
+                                                    #scraper_html = Markup(html_table(scraper_results, name='mytable'))
+                                                    #print scraper_json
+                                                    #scraper_html = Markup(ucd.normalize('NKFD', str(scraper_results.to_html())).encode('ascii','ignore'))
+                                                    
+                                                    scraper_html = scraper_results.to_html(index=False, na_rep='')
+
+                                                    return render_template('organism.html', list=layer, primary='finalid',scraper=scraper_html)
+                                                    
+                                                    
+
+
                                                 return render_template('scraper.html', list=layer, primary=primary_key[0], scraper=scraper_json)
                                         # if sql error just return empty 
 					except Exception as err:
+                                                print err
 						return "empty"
 				except Exception as err:
 					return "empty"
 				admin_engine.dispose()
 				query_engine.dispose()
-			else:
+                        else:
 				return "empty"
 
 @app.route('/status', methods=['GET'])

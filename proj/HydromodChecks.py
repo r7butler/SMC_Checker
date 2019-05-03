@@ -208,6 +208,8 @@ def hydromod(all_dataframes,sql_match_tables,errors_dict,project_code,login_info
                     'If "FullyArmored" field is equal to "No" then check if the required fields are not empty'
                     errorLog('Check - if FullyArmored == No then the %s field is required' % fieldname)
                     errorLog('Submitted Data where FullyArmored == No, but the %s field is empty:' % fieldname)
+                    # the .isnull() may have to be changed to -88... because anyways, these fields are NOT NULL in the database
+                    # meaning if they left them blank, they won't pass CoreChecks....
                     errorLog(hydro[ (hydro.fullyarmored == 'No') & (hydro[fieldname].isnull())  ])
                     checkData(hydro[ (hydro.fullyarmored == 'No') & (hydro[fieldname].isnull()) ].tmp_row.tolist(), fieldname, 'Undefined Error', 'error', 'The FullyArmored field is equal to No, but the %s field is empty' % fieldname, hydro)
                 
@@ -242,18 +244,73 @@ def hydromod(all_dataframes,sql_match_tables,errors_dict,project_code,login_info
                 # Check - If "fullyarmored" == "Yes" then "lateralsusceptibilityr" must be "1"
                 FullyArmoredCheck('lateralsusceptibilityr', 1) 
 
-
-
                 # -- End of Checks where FullyArmored == Yes -- #
 
 
 
 
-                
-                
-                # -- This is the part where we end the checks and wrap it up -- #
 
-		## LOGIC ##
+                # -- Additional Checks from Submission Guide -- #
+
+                # From Hydromod Submission Guide Page 1 - Bullet points 7, 8, 9, 10, 13
+                # For the fields Area, Precipitation, ValleySlope, ValleyWidth, D50...
+                # It says if data is unavailable at time of submission, enter "NR"
+                # NOTE Ask Jeff: Is there a way to check whether the data was available or not at the time of submission?
+
+
+                # Hydromod Submission Guide Bullet points 15 through 20, 22 through 27
+                # BankHeightL1, BankHeightL2,... BankAngleL1, BankAngleL2... etc...
+                # Submission guide says "Not required at fully armored channels"
+                # Questions:
+                #   1) These are not null fields in the database. Therefore if they leave these blank, they will not pass CoreChecks.
+                #       What should they enter into this field in order to leave the field "blank"? Maybe -88??
+                #       I am thinking these fields should be -88 if they aren't submitting data for that field, otherwise a positive number.
+                #
+                #   2) When the submission guide says "Not required" 
+                #       does that mean that you guys would rather have them NOT submit anything in these fields when the channel is fully armored?
+
+                
+                # Submission Guide page 2 - Bullet point #29
+                # If the channel is fully armored then StreamBedState must be "C"
+                # We have this check in place already
+
+
+
+                # Submission Guide page 2 - Bullet point #31
+                # Word for word from Submission Guide:
+                # "If StreambedState is B, then ArmoringPotential is required. Otherwise enter NA"
+                # I have concerns with this.
+                # If the user puts the string NA, the checker interprets this as a null value when it reads in the data, 
+                #   and then it will say that the blank field doesn't match the lookup list for ArmoringPotential.
+                # Furthermore, the submission guide says that the four allowed values for ArmoringPotential are "A", "B", "C", and "NA"
+                #   BUT the lookup list in the database says the four allowed values are "A", "B", "C", and "NR"
+                # I am thinking we should go with what is currently in the lookup list.
+                # 
+                # So here is my thinking for this check:
+                #   If StreabedState == "B" then ArmoringPotential should be "A", "B", or "C", otherwise it should be "NR"
+                #
+                # NOTE For Bullet point #33 (GradeControl) I have the same exact concern as I did for ArmoringPotential
+
+
+
+
+                # Submission Guide page 3 - Bullet point #35 and 36
+                # Concerning LateralSusceptibilityL and LateralSusceptibilityR
+                # The Submission Guide says that these fields are not required. However, these fields are listed as NOT NULL in the database.
+                # Questions and concerns:
+                #   
+                #   1) Should we allow the database to accept NULL values for these fields? or simply make them fill them in with -88 if there is no data?
+                #   
+                #   2) The Submission Guide says they may enter 1, 2, 3, 4, or 5 for these fields. Should we create a lookup list in the database?
+                #       Or we may simply check if the field has one of those specified values during the Extended Checks process.
+
+
+
+                
+                # NOTE Are there any Logic Checks?
+		
+                
+                ## LOGIC ##
 		message = "Starting Hydromod Logic Checks"
 		errorLog(message)
 		statusLog(message)
