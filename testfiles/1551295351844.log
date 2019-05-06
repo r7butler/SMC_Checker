@@ -1,0 +1,22 @@
+SMC & SWAMP SYNC SUMMARY:
+SMC Pre-processing origin_lastupdatedate: Oct 29 2018
+SMC Post-processing origin_lastupdatedate: Jan 14 2019 09:20:56 AM
+A total of 735 OLDSMC records have been added.
+The following stations are missing GISXWalk data:
+903M20230
+903M20214
+903M20235
+404M07364
+404M07365
+404M07368
+801M16973
+801M16976
+403M05798
+907M23379
+907M23367
+907M23349
+403M05800
+CSCI could not be processed for sample SMC01384_06192018_BMI_RWB_1 for the following reason:
+Error in BMIMetrics::BMI(object@bugdata) : 
+  The following FinalID/LifeStageCode combinations did not match with the internal database:Truncatelloidea X
+

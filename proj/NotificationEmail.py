@@ -120,8 +120,9 @@ def send_email():
 	if action == "critical":
 		msg = Message("smc - application failure",
                 	sender="admin@smcchecker.sccwrp.org",
-                  	recipients=["smc-im@sccwrp.org"])
+                  	recipients=["smc-imdev@sccwrp.org"])
 		msg.body = "critical body of email - action = " + str(action) + " - " + str(message_return) + " - " + str(login_return)
+        # code below should be handled above according to each specific datatype - Paul Smith 4/25/19
 	if action == "success":
 		msg = Message("smc - successful data load",
                		sender="admin@smcchecker.sccwrp.org",

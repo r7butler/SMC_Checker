@@ -53,7 +53,15 @@ def staging():
 	df = pd.ExcelFile(inFile, keep_default_na=False, na_values=['NaN'])
 	# tab name will match table in database exactly since it is coming from the export file
        	df_tab_names = df.sheet_names
-	errorLog("df_tab_names: %s" % df_tab_names)
+	errorLog("Submitted tabs df_tab_names: %s" % df_tab_names)
+        # drop csci from data submission process - Paul Smith 4/25/19
+        if 'csci_core' in df_tab_names: df_tab_names.remove('csci_core')
+        if 'csci_suppl1_mmi' in df_tab_names: df_tab_names.remove('csci_suppl1_mmi')
+        if 'csci_suppl1_oe' in df_tab_names: df_tab_names.remove('csci_suppl1_oe')
+        if 'csci_suppl2_mmi' in df_tab_names: df_tab_names.remove('csci_suppl2_mmi')
+        if 'csci_suppl2_oe' in df_tab_names: df_tab_names.remove('csci_suppl2_oe')
+        if 'csci_suppl1_grps' in df_tab_names: df_tab_names.remove('csci_suppl1_grps')
+	errorLog("Adjusted tabs df_tab_names: %s" % df_tab_names)
 	for tab in df_tab_names:
 		table_name = tab
 		df = pd.read_excel(inFile, keep_default_na=False, na_values=['NaN'], sheetname = tab)

@@ -1,0 +1,75 @@
+SMC & SWAMP SYNC SUMMARY:
+The following stations are missing GISXWalk data:
+903M20230
+903M20214
+903M20235
+404M07364
+404M07365
+404M07368
+801M16973
+801M16976
+403M05798
+907M23379
+907M23367
+907M23349
+403M05800
+CSCI could not be processed for sample SMC01384_06192018_BMI_RWB_1 for the following reason:
+Error in BMIMetrics::BMI(object@bugdata) : 
+  The following FinalID/LifeStageCode combinations did not match with the internal database:Truncatelloidea X
+
+
+CSCI could not be processed for sample SMC01384_06192018_BMI_RWB_1 for the following reason:
+Error in BMIMetrics::BMI(object@bugdata) : 
+  The following FinalID/LifeStageCode combinations did not match with the internal database:Truncatelloidea X
+
+
+CSCI could not be processed for sample 902WE0888_05172018_BMI_RWB_1 for the following reason:
+unsupported operand type(s) for +: 'IntegrityError' and 'str'
+
+CSCI could not be processed for sample SMC01384_06192018_BMI_RWB_1 for the following reason:
+Error in BMIMetrics::BMI(object@bugdata) : 
+  The following FinalID/LifeStageCode combinations did not match with the internal database:Truncatelloidea X
+
+
+CSCI could not be processed for sample SMC01640_06192018_BMI_RWB_1 for the following reason:
+unsupported operand type(s) for +: 'IntegrityError' and 'str'
+
+CSCI could not be processed for sample SMC09698_06052018_BMI_RWB_1 for the following reason:
+unsupported operand type(s) for +: 'IntegrityError' and 'str'
+
+CSCI could not be processed for sample SMC11581_06052018_BMI_RWB_1 for the following reason:
+unsupported operand type(s) for +: 'IntegrityError' and 'str'
+
+CSCI could not be processed for sample 902WE0888_05172018_BMI_RWB_1 for the following reason:
+unsupported operand type(s) for +: 'exceptions.NameError' and 'str'
+
+CSCI could not be processed for sample SMC01384_06192018_BMI_RWB_1 for the following reason:
+Error in BMIMetrics::BMI(object@bugdata) : 
+  The following FinalID/LifeStageCode combinations did not match with the internal database:Truncatelloidea X
+
+
+CSCI could not be processed for sample SMC01640_06192018_BMI_RWB_1 for the following reason:
+unsupported operand type(s) for +: 'exceptions.NameError' and 'str'
+
+CSCI could not be processed for sample SMC09698_06052018_BMI_RWB_1 for the following reason:
+unsupported operand type(s) for +: 'exceptions.NameError' and 'str'
+
+CSCI could not be processed for sample SMC11581_06052018_BMI_RWB_1 for the following reason:
+unsupported operand type(s) for +: 'exceptions.NameError' and 'str'
+
+CSCI could not be processed for sample 902WE0888_05172018_BMI_RWB_1 for the following reason:
+unsupported operand type(s) for +: 'IntegrityError' and 'str'
+
+CSCI could not be processed for sample SMC01384_06192018_BMI_RWB_1 for the following reason:
+Error in BMIMetrics::BMI(object@bugdata) : 
+  The following FinalID/LifeStageCode combinations did not match with the internal database:Truncatelloidea X
+
+
+CSCI could not be processed for sample SMC01640_06192018_BMI_RWB_1 for the following reason:
+unsupported operand type(s) for +: 'IntegrityError' and 'str'
+
+CSCI could not be processed for sample SMC09698_06052018_BMI_RWB_1 for the following reason:
+unsupported operand type(s) for +: 'IntegrityError' and 'str'
+
+CSCI could not be processed for sample SMC11581_06052018_BMI_RWB_1 for the following reason:
+unsupported operand type(s) for +: 'IntegrityError' and 'str'

@@ -353,6 +353,9 @@ def upload():
                                                             if match_tables_name == 'tbl_channelengineering':
                                                                 all_dataframes[match_tables_key]['determination'] = all_dataframes[match_tables_key].determination.apply(lambda x: 'Site visit' if str(x).lower() == 'site visit' else x)
                                                                     
+                                                            if match_tables_name == 'tbl_chemistryresults':
+                                                                all_dataframes[match_tables_key]['expectedvalue'].fillna(-88, inplace = True)
+                                                                all_dataframes[match_tables_key]['matrixname'] = all_dataframes[match_tables_key]['matrixname'].apply(lambda x: x if "SEM" in str(x) else x.lower())
                                                 
                                                 
                                                 data_checks, data_checks_redundant, errors_dict = core(all_dataframes,sql_match_tables, errors_dict)
@@ -363,7 +366,7 @@ def upload():
 						errorLog("sql_match_tables:")
 						errorLog(sql_match_tables)
 						# dictionary list of required tables by data type - made into lists instead of strings 15mar18 - supports variations
-                                                required_tables_dict = {'chemistry': [['tbl_chemistrybatch','tbl_chemistryresults'],['tbl_chemresults','tbl_chembatch']],'toxicity': [['tbl_toxbatch','tbl_toxresults','tbl_toxwq'],['tbl_toxresults','tbl_toxbatch','tbl_toxwq'],['tbl_toxwq','tbl_toxresults','tbl_toxbatch'],['tbl_toxwq','tbl_toxbatch','tbl_toxresults'],['tbl_toxbatch','tbl_toxwq','tbl_toxresults']], 'field': [['tbl_stationoccupation','tbl_trawlevent'],['tbl_trawlevent','tbl_stationoccupation'],['tbl_stationoccupation','tbl_grabevent'],['tbl_grabevent','tbl_stationoccupation'],['tbl_stationoccupation','tbl_trawlevent','tbl_grabevent'],['tbl_trawlevent','tbl_grabevent','tbl_stationoccupation']], 'taxonomy': [['tbl_taxonomysampleinfo','tbl_taxonomyresults'],['tbl_taxonomyresults','tbl_taxonomysampleinfo']],'invert': [['tbl_trawlinvertebrateabundance','tbl_trawlinvertebratebiomass'],['tbl_trawlinvertebratebiomass','tbl_trawlinvertebrateabundance']],'ocpw': [['tbl_ocpwlab']],'debris': [['tbl_trawldebris']],'ptsensor': [['tbl_ptsensorresults']],'infauna': [['tbl_infaunalabundance_initial'],['tbl_infaunalabundance_qareanalysis']],'channelengineering': [['tbl_channelengineering']], 'hydromod': [['tbl_hydromod']], 'siteevaluation': [['tbl_siteeval', 'tbl_siteeval']], 'phab': [['tbl_phab']]}
+                                                required_tables_dict = {'chemistry': [['tbl_chemistrybatch','tbl_chemistryresults'],['tbl_chemistryresults','tbl_chemistrybatch']],'toxicity': [['tbl_toxbatch','tbl_toxresults','tbl_toxwq'],['tbl_toxresults','tbl_toxbatch','tbl_toxwq'],['tbl_toxwq','tbl_toxresults','tbl_toxbatch'],['tbl_toxwq','tbl_toxbatch','tbl_toxresults'],['tbl_toxbatch','tbl_toxwq','tbl_toxresults']], 'field': [['tbl_stationoccupation','tbl_trawlevent'],['tbl_trawlevent','tbl_stationoccupation'],['tbl_stationoccupation','tbl_grabevent'],['tbl_grabevent','tbl_stationoccupation'],['tbl_stationoccupation','tbl_trawlevent','tbl_grabevent'],['tbl_trawlevent','tbl_grabevent','tbl_stationoccupation']], 'taxonomy': [['tbl_taxonomysampleinfo','tbl_taxonomyresults'],['tbl_taxonomyresults','tbl_taxonomysampleinfo']],'invert': [['tbl_trawlinvertebrateabundance','tbl_trawlinvertebratebiomass'],['tbl_trawlinvertebratebiomass','tbl_trawlinvertebrateabundance']],'ocpw': [['tbl_ocpwlab']],'debris': [['tbl_trawldebris']],'ptsensor': [['tbl_ptsensorresults']],'infauna': [['tbl_infaunalabundance_initial'],['tbl_infaunalabundance_qareanalysis']],'channelengineering': [['tbl_channelengineering']], 'hydromod': [['tbl_hydromod']], 'siteevaluation': [['tbl_siteeval', 'tbl_siteeval']], 'phab': [['tbl_phab']]}
 						match_dataset = "" 	# start empty
 						errorLog("required_tables_dict:")
 						errorLog(required_tables_dict)
@@ -673,7 +676,7 @@ def upload():
 									if overlap:
                                                                                 # user submitted correct data but there are errors
                                                                                 errorLog(overlap)
-										#message = "missing required tables"
+										message = "missing required tables"
                                                                         else:
                                                                                 errorLog(v)
 							errors_count = json.dumps(errors_dict)	# dump error count dict
@@ -690,8 +693,8 @@ def upload():
 						return jsonify(message=message,state=state,table_match=match_tables,errors=errors_count)
 						
 
-				except IOError:
-					message = "Critical Error: Failed to save file to upload directory!"
+				except IOError as e:
+					message = "Critical Error: Failed to save file to upload directory! - %s" % e
 					state = 1
 		errorLog(message)
 	except ValueError:

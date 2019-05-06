@@ -1,0 +1,135 @@
+StationID,EohaustoriusCategory,EohaustoriusScore,MytilusCategory,MytilusScore,IntegratedToxLOE,IntegratedToxScore,TargetLatitude,TargetLongitude,B13_Stratum,CompressedStratum,Region,AW_Apod_Tox,AW_Mussel_Tox
+B13-8017,Nontoxic,1,Nontoxic,1,Nontoxic,1,32.631911,-117.130957,Bay,Bay,San Diego Bay,3.216436228,3.216436228
+B13-8020,Nontoxic,1,Nontoxic,1,Nontoxic,1,32.641832,-117.131229,Bay,Bay,San Diego Bay,3.216436228,3.216436228
+B13-8029,Nontoxic,1,Nontoxic,1,Nontoxic,1,32.6468,-117.1178,Bay,Bay,San Diego Bay,0.200865713,0.200865713
+B13-8052,Nontoxic,1,Nontoxic,1,Nontoxic,1,32.65828,-117.14434,Bay,Bay,San Diego Bay,3.216436228,3.216436228
+B13-8058,Nontoxic,1,Nontoxic,1,Nontoxic,1,32.661056,-117.143999,Bay,Bay,San Diego Bay,3.216436228,3.216436228
+B13-8060,Nontoxic,1,Nontoxic,1,Nontoxic,1,32.66493,-117.14993,Bay,Bay,San Diego Bay,3.216436228,3.216436228
+B13-8068,Nontoxic,1,Nontoxic,1,Nontoxic,1,32.67537,-117.14385,Bay,Bay,San Diego Bay,2.410202613,2.410202613
+B13-8078,Nontoxic,1,Nontoxic,1,Nontoxic,1,32.686838,-117.148392,Bay,Bay,San Diego Bay,2.410202613,2.410202613
+B13-8093,Nontoxic,1,Nontoxic,1,Nontoxic,1,32.695622,-117.162623,Bay,Bay,San Diego Bay,2.410202613,2.410202613
+B13-8105,Nontoxic,1,Nontoxic,1,Nontoxic,1,32.712338,-117.213324,Bay,Bay,San Diego Bay,3.216436228,3.216436228
+B13-8109,Nontoxic,1,Nontoxic,1,Nontoxic,1,32.71504,-117.18308,Bay,Bay,San Diego Bay,2.410202613,2.410202613
+B13-8118,Nontoxic,1,Nontoxic,1,Nontoxic,1,32.719794,-117.178628,Bay,Bay,San Diego Bay,2.410202613,2.410202613
+B13-8122,Nontoxic,1,Nontoxic,1,Nontoxic,1,32.72427,-117.18276,Bay,Bay,San Diego Bay,2.410202613,2.410202613
+B13-8152,Nontoxic,1,Nontoxic,1,Nontoxic,1,32.76749,-117.2416,Bay,Bay,Mission Bay,0.573195602,0.573195602
+B13-8157,Nontoxic,1,Nontoxic,1,Nontoxic,1,32.782822,-117.229979,Bay,Bay,Mission Bay,3.24468756,3.24468756
+B13-8159,Nontoxic,1,Nontoxic,1,Nontoxic,1,32.78439,-117.2155,Bay,Bay,Mission Bay,3.24468756,3.24468756
+B13-8302,Low Toxicity,2,Nontoxic,1,Low Toxicity,2,33.71205,-118.25789,Bay,Bay,Los Angeles/Long Beach,2.003123859,2.003123859
+B13-8304,Nontoxic,1,Nontoxic,1,Nontoxic,1,33.71351,-118.24162,Bay,Bay,Los Angeles/Long Beach,2.003123859,2.003123859
+B13-8306,Low Toxicity,2,Nontoxic,1,Low Toxicity,2,33.714643,-118.28328,Bay,Bay,Los Angeles/Long Beach,2.003123859,2.003123859
+B13-8315,High Toxicity,4,Nontoxic,1,Moderate Toxicity,3,33.723776,-118.152675,Bay,Bay,Los Angeles/Long Beach,2.003123859,2.003123859
+B13-8318,Nontoxic,1,Nontoxic,1,Nontoxic,1,33.72421,-118.22423,Bay,Bay,Los Angeles/Long Beach,2.003123859,2.003123859
+B13-8319,Nontoxic,1,Nontoxic,1,Nontoxic,1,33.725599,-118.137381,Bay,Bay,Los Angeles/Long Beach,2.003123859,2.003123859
+B13-8322,Low Toxicity,2,Nontoxic,1,Low Toxicity,2,33.727575,-118.212945,Bay,Bay,Los Angeles/Long Beach,2.003123859,2.003123859
+B13-8325,Nontoxic,1,Nontoxic,1,Nontoxic,1,33.72857,-118.15722,Bay,Bay,Los Angeles/Long Beach,2.003123859,2.003123859
+B13-8346,Nontoxic,1,Nontoxic,1,Nontoxic,1,33.738889,-118.144527,Bay,Bay,Los Angeles/Long Beach,2.003123859,2.003123859
+B13-8350,High Toxicity,4,Low Toxicity,2,Moderate Toxicity,3,33.73992,-118.17122,Bay,Bay,Los Angeles/Long Beach,2.003123859,2.003123859
+B13-8351,Nontoxic,1,Nontoxic,1,Nontoxic,1,33.740201,-118.159117,Bay,Bay,Los Angeles/Long Beach,2.003123859,2.003123859
+B13-8355,Nontoxic,1,Nontoxic,1,Nontoxic,1,33.74233,-118.15301,Bay,Bay,Los Angeles/Long Beach,2.003123859,2.003123859
+B13-8358,Moderate Toxicity,3,Nontoxic,1,Low Toxicity,2,33.7442,-118.16867,Bay,Bay,Los Angeles/Long Beach,2.003123859,2.003123859
+B13-8375,Nontoxic,1,Nontoxic,1,Nontoxic,1,33.75284,-118.177488,Bay,Bay,Los Angeles/Long Beach,2.003123859,2.003123859
+B13-8388,Nontoxic,1,Nontoxic,1,Nontoxic,1,33.75964,-118.16271,Bay,Bay,Los Angeles/Long Beach,2.003123859,2.003123859
+B13-8002,Nontoxic,1,Nontoxic,1,Nontoxic,1,32.55659,-117.12813,Estuaries,Estuaries,Tijuana River Estuary,0.092009243,0.092009243
+B13-8008,Nontoxic,1,Nontoxic,1,Nontoxic,1,32.55824,-117.120576,Estuaries,Estuaries,Tijuana River Estuary,0.092009243,0.092009243
+B13-8043,Nontoxic,1,Nontoxic,1,Nontoxic,1,32.650076,-117.105062,Estuaries,Estuaries,Sweetwater Channel,0.288519581,0.288519581
+B13-8129,Nontoxic,1,Nontoxic,1,Nontoxic,1,32.7568,-117.23537,Estuaries,Estuaries,San Diego River,0.16147762,0.16147762
+B13-8134,Nontoxic,1,Nontoxic,1,Nontoxic,1,32.757514,-117.237888,Estuaries,Estuaries,San Diego River,0.16147762,0.16147762
+B13-8136,Nontoxic,1,Nontoxic,1,Nontoxic,1,32.75785,-117.22741,Estuaries,Estuaries,San Diego River,0.16147762,0.16147762
+B13-8169,Nontoxic,1,Nontoxic,1,Nontoxic,1,32.931654,-117.252323,Estuaries,Estuaries,Los Penasquitos Lagoon,0.047283256,0.047283256
+B13-8176,Nontoxic,1,Nontoxic,1,Nontoxic,1,32.933565,-117.256651,Estuaries,Estuaries,Los Penasquitos Lagoon,0.047283256,0.047283256
+B13-8179,Low Toxicity,2,Nontoxic,1,Low Toxicity,2,32.966012,-117.252438,Estuaries,Estuaries,San Dieguito Lagoon,0.114198262,0.114198262
+B13-8180,Nontoxic,1,Nontoxic,1,Nontoxic,1,32.96648,-117.25787,Estuaries,Estuaries,San Dieguito Lagoon,0.114198262,0.114198262
+B13-8187,Nontoxic,1,Nontoxic,1,Nontoxic,1,32.970836,-117.258183,Estuaries,Estuaries,San Dieguito Lagoon,0.114198262,0.114198262
+B13-8188,Nontoxic,1,Nontoxic,1,Nontoxic,1,33.016161,-117.280711,Estuaries,Estuaries,San Elijo Lagoon,0.034767633,0.034767633
+B13-8189,Nontoxic,1,Nontoxic,1,Nontoxic,1,33.012243,-117.274567,Estuaries,Estuaries,San Elijo Lagoon,0.034767633,0.034767633
+B13-8200,Low Toxicity,2,Nontoxic,1,Low Toxicity,2,33.08508,-117.309712,Estuaries,Estuaries,Batiquitos Lagoon,0.308850898,0.308850898
+B13-8202,Moderate Toxicity,3,Nontoxic,1,Low Toxicity,2,33.08822,-117.29156,Estuaries,Estuaries,Batiquitos Lagoon,0.308850898,0.308850898
+B13-8205,Nontoxic,1,Nontoxic,1,Nontoxic,1,33.088855,-117.295636,Estuaries,Estuaries,Batiquitos Lagoon,0.308850898,0.308850898
+B13-8218,Nontoxic,1,Nontoxic,1,Nontoxic,1,33.13922,-117.33775,Estuaries,Estuaries,Agua Hedionda Lagoon,0.352791095,0.352791095
+B13-8219,Nontoxic,1,Nontoxic,1,Nontoxic,1,33.13944,-117.31866,Estuaries,Estuaries,Agua Hedionda Lagoon,0.352791095,0.352791095
+B13-8222,Low Toxicity,2,Nontoxic,1,Low Toxicity,2,33.14016,-117.32504,Estuaries,Estuaries,Agua Hedionda Lagoon,0.352791095,0.352791095
+B13-8248,Nontoxic,1,Nontoxic,1,Nontoxic,1,33.2318,-117.41337,Estuaries,Estuaries,Santa Margarita Estuary,0.074620202,0.074620202
+B13-8250,Nontoxic,1,Nontoxic,1,Nontoxic,1,33.232096,-117.412437,Estuaries,Estuaries,Santa Margarita estuary,0.074620202,0.074620202
+B13-8253,Nontoxic,1,Nontoxic,1,Nontoxic,1,33.233208,-117.413185,Estuaries,Estuaries,Santa Margarita estuary,0.074620202,0.074620202
+B13-8279,Nontoxic,1,Nontoxic,1,Nontoxic,1,33.617018,-117.904983,Estuaries,Estuaries,Upper Newport Bay,0.637015357,0.637015357
+B13-8286,Nontoxic,1,Low Toxicity,2,Low Toxicity,2,33.635665,-117.956096,Estuaries,Estuaries,Santa Ana River,0.327591474,0.327591474
+B13-8287,Low Toxicity,2,Nontoxic,1,Low Toxicity,2,33.63664,-117.95407,Estuaries,Estuaries,Santa Ana River,0.327591474,0.327591474
+B13-8290,Moderate Toxicity,3,Nontoxic,1,Low Toxicity,2,33.64585,-117.88894,Estuaries,Estuaries,Upper Newport Bay,0.327591474,0.327591474
+B13-8291,Moderate Toxicity,3,Nontoxic,1,Low Toxicity,2,33.646548,-117.886781,Estuaries,Estuaries,Upper Newport Bay,0.327591474,0.327591474
+B13-8292,Nontoxic,1,Nontoxic,1,Nontoxic,1,33.64682,-117.88411,Estuaries,Estuaries,Upper Newport Bay,0.327591474,0.327591474
+B13-8295,Nontoxic,1,Moderate Toxicity,3,Low Toxicity,2,33.686496,-118.03631,Estuaries,Estuaries,Bolsa Chica Lagoon,0.327591474,0.327591474
+B13-8298,Nontoxic,1,Nontoxic,1,Nontoxic,1,33.697397,-118.040563,Estuaries,Estuaries,Bolsa Chica Lagoon,0.327591474,0.327591474
+B13-8301,Nontoxic,1,Nontoxic,1,Nontoxic,1,33.710285,-118.059572,Estuaries,Estuaries,Bolsa Bay,0.327591474,0.327591474
+B13-8328,Nontoxic,1,Low Toxicity,2,Low Toxicity,2,33.730877,-118.081677,Estuaries,Estuaries,Seal Beach,0.327591474,0.327591474
+B13-8353,Low Toxicity,2,Nontoxic,1,Low Toxicity,2,33.74202,-118.11713,Estuaries,Estuaries,San Gabriel River Estuary,0.327591474,0.327591474
+B13-8378,Low Toxicity,2,Nontoxic,1,Low Toxicity,2,33.75299,-118.10511,Estuaries,Estuaries,San Gabriel River,0.327591474,0.327591474
+B13-8390,Low Toxicity,2,Nontoxic,1,Low Toxicity,2,33.761013,-118.202111,Estuaries,Estuaries,Los Angeles River,0.327591474,0.327591474
+B13-8391,High Toxicity,4,High Toxicity,4,High Toxicity,4,33.762562,-118.204966,Estuaries,Estuaries,Los Angeles River,0.327591474,0.327591474
+B13-8394,Low Toxicity,2,Nontoxic,1,Low Toxicity,2,33.76578,-118.10355,Estuaries,Estuaries,Los Alamitos Estuary,0.327591474,0.327591474
+B13-8403,High Toxicity,4,High Toxicity,4,High Toxicity,4,33.78073,-118.20585,Estuaries,Estuaries,Los Angeles River,0.327591474,0.327591474
+B13-8411,Low Toxicity,2,Nontoxic,1,Low Toxicity,2,33.97134,-118.43959,Estuaries,Estuaries,Ballona Creek,0.327591474,0.327591474
+B13-8419,Nontoxic,1,Nontoxic,1,Nontoxic,1,34.100784,-119.08739,Estuaries,Estuaries,Mugu Lagoon-south,0.327591474,0.327591474
+B13-8421,Moderate Toxicity,3,Nontoxic,1,Low Toxicity,2,34.112698,-119.08406,Estuaries,Estuaries,Mugu Lagoon-south,0.327591474,0.327591474
+B13-8073,Nontoxic,1,Nontoxic,1,Nontoxic,1,32.680522,-117.175233,Marina,Marina,San Diego Bay,0.251141567,0.251141567
+B13-8102,Low Toxicity,2,Nontoxic,1,Low Toxicity,2,32.71138,-117.23213,Marina,Marina,San Diego Bay,0.251141567,0.251141567
+B13-8106,Low Toxicity,2,Nontoxic,1,Low Toxicity,2,32.712583,-117.23168,Marina,Marina,San Diego Bay,0.251141567,0.251141567
+B13-8113,Low Toxicity,2,Nontoxic,1,Low Toxicity,2,32.71683,-117.22429,Marina,Marina,San Diego Bay,0.251141567,0.251141567
+B13-8116,Nontoxic,1,Nontoxic,1,Nontoxic,1,32.7181,-117.23046,Marina,Marina,San Diego Bay,0.251141567,0.251141567
+B13-8117,Low Toxicity,2,Nontoxic,1,Low Toxicity,2,32.71867,-117.22571,Marina,Marina,San Diego Bay,0.251141567,0.251141567
+B13-8123,Nontoxic,1,Nontoxic,1,Nontoxic,1,32.72487,-117.18359,Marina,Marina,San Diego Bay,0.278432463,0.278432463
+B13-8124,Nontoxic,1,Nontoxic,1,Nontoxic,1,32.726167,-117.186653,Marina,Marina,San Diego Bay,0.278432463,0.278432463
+B13-8127,Moderate Toxicity,3,Nontoxic,1,Low Toxicity,2,32.72692,-117.20206,Marina,Marina,San Diego Bay,0.251141567,0.251141567
+B13-8128,Nontoxic,1,Nontoxic,1,Nontoxic,1,32.727044,-117.191947,Marina,Marina,San Diego Bay,0.278432463,0.278432463
+B13-8145,Nontoxic,1,Nontoxic,1,Nontoxic,1,32.761696,-117.23813,Marina,Marina,Mission Bay,0.245631361,0.245631361
+B13-8146,Nontoxic,1,Nontoxic,1,Nontoxic,1,32.7623,-117.23618,Marina,Marina,Mission Bay,0.154849287,0.154849287
+B13-8151,Nontoxic,1,Nontoxic,1,Nontoxic,1,32.76715,-117.23551,Marina,Marina,Mission Bay,0.154849287,0.154849287
+B13-8156,Nontoxic,1,Nontoxic,1,Nontoxic,1,32.78093,-117.2496,Marina,Marina,Mission Bay,0.423387172,0.423387172
+B13-8269,Nontoxic,1,Nontoxic,1,Nontoxic,1,33.600669,-117.895024,Marina,Marina,Newport Bay,0.637015357,0.637015357
+B13-8273,Nontoxic,1,Nontoxic,1,Nontoxic,1,33.6094,-117.90476,Marina,Marina,Newport Bay,0.637015357,0.637015357
+B13-8274,Nontoxic,1,Nontoxic,1,Nontoxic,1,33.614153,-117.914296,Marina,Marina,Newport Bay,0.637015357,0.637015357
+B13-8275,High Toxicity,4,Nontoxic,1,Moderate Toxicity,3,33.615205,-117.89425,Marina,Marina,Upper Newport Bay,0.637015357,0.637015357
+B13-8280,Nontoxic,1,Nontoxic,1,Nontoxic,1,33.61891,-117.92728,Marina,Marina,Newport Bay,0.637015357,0.637015357
+B13-8321,Low Toxicity,2,Nontoxic,1,Low Toxicity,2,33.72697,-118.070162,Marina,Marina,Huntington Harbor,0.637015357,0.637015357
+B13-8372,Nontoxic,1,Nontoxic,1,Nontoxic,1,33.75123,-118.118655,Marina,Marina,Alamitos Bay,0.637015357,0.637015357
+B13-8383,Nontoxic,1,Nontoxic,1,Nontoxic,1,33.75536,-118.12987,Marina,Marina,Alamitos Bay,0.637015357,0.637015357
+B13-8389,Nontoxic,1,Nontoxic,1,Nontoxic,1,33.760089,-118.126107,Marina,Marina,Alamitos Bay,0.637015357,0.637015357
+B13-8397,Nontoxic,1,Nontoxic,1,Nontoxic,1,33.7668,-118.24909,Marina,Marina,Los Angeles/Long Beach,0.637015357,0.637015357
+B13-8407,Nontoxic,1,Nontoxic,1,Nontoxic,1,33.9643,-118.45345,Marina,Marina,Marina del Rey,0.637015357,0.637015357
+B13-8409,Nontoxic,1,Nontoxic,1,Nontoxic,1,33.97031,-118.4482,Marina,Marina,Marina del Rey,0.637015357,0.637015357
+B13-8413,Nontoxic,1,Low Toxicity,2,Low Toxicity,2,33.976084,-118.446504,Marina,Marina,Marina del Rey,0.637015357,0.637015357
+B13-8417,Low Toxicity,2,Nontoxic,1,Low Toxicity,2,33.98331,-118.45055,Marina,Marina,Marina del Rey,0.637015357,0.637015357
+B13-8425,Moderate Toxicity,3,Nontoxic,1,Low Toxicity,2,34.1712,-119.2235,Marina,Marina,Channel Islands Harbor,0.637015357,0.637015357
+B13-8426,Nontoxic,1,Nontoxic,1,Nontoxic,1,34.172974,-119.223456,Marina,Marina,Channel Islands Harbor,0.637015357,0.637015357
+B13-8430,Nontoxic,1,Nontoxic,1,Nontoxic,1,34.244207,-119.264876,Marina,Marina,Ventura Harbor,0.637015357,0.637015357
+B13-8431,Nontoxic,1,Nontoxic,1,Nontoxic,1,34.404375,-119.689031,Marina,Marina,Santa Barbara,0.637015357,0.637015357
+B13-8018,Nontoxic,1,Nontoxic,1,Nontoxic,1,32.634031,-117.107207,Port,Port,San Diego Bay,0.276641652,0.276641652
+B13-8045,Low Toxicity,2,Nontoxic,1,Low Toxicity,2,32.65143,-117.12293,Port,Port,San Diego Bay,0.831198858,0.831198858
+B13-8056,Nontoxic,1,Nontoxic,1,Nontoxic,1,32.66033,-117.12292,Port,Port,San Diego Bay,0.585492636,0.585492636
+B13-8065,Nontoxic,1,Nontoxic,1,Nontoxic,1,32.671341,-117.118927,Port,Port,San Diego Bay,0.585492636,0.585492636
+B13-8085,Nontoxic,1,Nontoxic,1,Nontoxic,1,32.69111,-117.23803,Port,Port,San Diego Bay,0.831198858,0.831198858
+B13-8087,Nontoxic,1,Nontoxic,1,Nontoxic,1,32.69177,-117.15298,Port,Port,San Diego Bay,0.831198858,0.831198858
+B13-8100,Nontoxic,1,Nontoxic,1,Nontoxic,1,32.70226,-117.16198,Port,Port,San Diego Bay,0.585492636,0.585492636
+B13-8111,Nontoxic,1,Nontoxic,1,Nontoxic,1,32.71598,-117.17404,Port,Port,San Diego Bay,0.276641652,0.276641652
+B13-8112,Nontoxic,1,Nontoxic,1,Nontoxic,1,32.71608,-117.17615,Port,Port,San Diego Bay,0.831198858,0.831198858
+B13-8308,Nontoxic,1,Low Toxicity,2,Low Toxicity,2,33.71712,-118.243747,Port,Port,Los Angeles/Long Beach,0.955197021,0.955197021
+B13-8310,Nontoxic,1,Nontoxic,1,Nontoxic,1,33.717783,-118.233066,Port,Port,Los Angeles/Long Beach,0.955197021,0.955197021
+B13-8316,Nontoxic,1,Nontoxic,1,Nontoxic,1,33.72387,-118.26265,Port,Port,Los Angeles/Long Beach,0.955197021,0.955197021
+B13-8326,Nontoxic,1,Nontoxic,1,Nontoxic,1,33.7291,-118.2338,Port,Port,Los Angeles/Long Beach,0.955197021,0.955197021
+B13-8333,Nontoxic,1,Nontoxic,1,Nontoxic,1,33.73118,-118.19192,Port,Port,Los Angeles/Long Beach,0.955197021,0.955197021
+B13-8338,Nontoxic,1,Nontoxic,1,Nontoxic,1,33.735102,-118.091546,Port,Port,Anaheim Bay,0.955197021,0.955197021
+B13-8340,Low Toxicity,2,Nontoxic,1,Low Toxicity,2,33.735428,-118.27672,Port,Port,Los Angeles/Long Beach,0.955197021,0.955197021
+B13-8347,Low Toxicity,2,Low Toxicity,2,Low Toxicity,2,33.73893,-118.21017,Port,Port,Los Angeles/Long Beach,0.955197021,0.955197021
+B13-8349,Nontoxic,1,Low Toxicity,2,Low Toxicity,2,33.739017,-118.236282,Port,Port,Los Angeles/Long Beach,0.955197021,0.955197021
+B13-8356,Nontoxic,1,Nontoxic,1,Nontoxic,1,33.743239,-118.204496,Port,Port,Los Angeles/Long Beach,0.955197021,0.955197021
+B13-8360,Nontoxic,1,Nontoxic,1,Nontoxic,1,33.74555,-118.21575,Port,Port,Los Angeles/Long Beach,0.955197021,0.955197021
+B13-8363,Nontoxic,1,Nontoxic,1,Nontoxic,1,33.747344,-118.221345,Port,Port,Los Angeles/Long Beach,0.955197021,0.955197021
+B13-8365,Low Toxicity,2,Nontoxic,1,Low Toxicity,2,33.747636,-118.198273,Port,Port,Los Angeles/Long Beach,0.955197021,0.955197021
+B13-8367,Nontoxic,1,Nontoxic,1,Nontoxic,1,33.74828,-118.24878,Port,Port,Los Angeles/Long Beach,0.955197021,0.955197021
+B13-8371,Nontoxic,1,Low Toxicity,2,Low Toxicity,2,33.75085,-118.23051,Port,Port,Los Angeles/Long Beach,0.955197021,0.955197021
+B13-8374,Nontoxic,1,Low Toxicity,2,Low Toxicity,2,33.75274,-118.21773,Port,Port,Los Angeles/Long Beach,0.955197021,0.955197021
+B13-8382,Nontoxic,1,Nontoxic,1,Nontoxic,1,33.755265,-118.230067,Port,Port,Los Angeles/Long Beach,0.955197021,0.955197021
+B13-8384,Nontoxic,1,Nontoxic,1,Nontoxic,1,33.756633,-118.277038,Port,Port,Los Angeles/Long Beach,0.955197021,0.955197021
+B13-8396,Nontoxic,1,Nontoxic,1,Nontoxic,1,33.76623,-118.27732,Port,Port,Los Angeles/Long Beach,0.955197021,0.955197021
+B13-8399,Nontoxic,1,Nontoxic,1,Nontoxic,1,33.768539,-118.222031,Port,Port,Los Angeles/Long Beach,0.955197021,0.955197021
+B13-8401,Low Toxicity,2,Nontoxic,1,Low Toxicity,2,33.771272,-118.211926,Port,Port,Los Angeles/Long Beach,0.955197021,0.955197021

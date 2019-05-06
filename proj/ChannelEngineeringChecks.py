@@ -235,6 +235,8 @@ def channelengineering(all_dataframes,sql_match_tables,errors_dict,project_code,
                 
                 # Robert - 12/6/2018
                 # This check appears to be taken care of in CoreChecks. Need confirmation.
+                # NOTE Does required mean that they can't leave blank? or does it mean that they can't put "NR" 
+                #           Need to confirm with Jeff
                 '''
                 # Robert 12/6/2018 #
                 # Check - if channeltype == "Engineered" then the following fields are required:
@@ -308,6 +310,8 @@ def channelengineering(all_dataframes,sql_match_tables,errors_dict,project_code,
 
                 # Robert - 12/6/2018
                 # This check appears to be taken care of in CoreChecks. Need Confirmation.
+                # NOTE They cannot leave the field blank. What i need to know is does "lowflowwidth is required" mean they can't leave blank?
+                #       or does it mean they cannot enter "NR"?
                 '''
                 # Robert 12/6/2018
                 # Check - if lowflowpresence == "Present" then lowflowwidth is required
@@ -319,6 +323,7 @@ def channelengineering(all_dataframes,sql_match_tables,errors_dict,project_code,
 
                 # Robert - 12/6/2018
                 # This check appears to be taken care of in CoreChecks. Need Confirmation.
+                #NOTE Same concern as for lowflowwidth, but it is good to know that there are only "Present" and "Absent" in the lookup list for this field.
                 '''
                 # Robert 12/6/2018
                 # Check - if gradecontrolpresence  == "Present" then gradecontrollocation is required

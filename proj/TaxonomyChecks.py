@@ -394,273 +394,278 @@ def taxonomy(all_dataframes,sql_match_tables,errors_dict,project_code,login_info
                         errorLog("stations_count:")	
                         errorLog(stations_count)	
 
-                        # Import and Execute cleanData and CSCI functions 
-                        import rpy2
-                        import rpy2.robjects as robjects
-                        from rpy2.robjects import pandas2ri
-                        import rpy2.robjects.packages as rpackages
-                        from rpy2.robjects.packages import importr
-                        import rpy2.rinterface as rinterface
+                        # UPDATE: If bugs or stations are empty, CSCI cannot be processed. -Jordan 4/23/2019
+                        if bugs_count == 0 or stations_count == 0:
+                            errorLog("bugs and stations could not be built. Do not process CSCI.")
+                            checkData(sampleinfo.tmp_row.tolist(),'stationcode','Undefined Warning','warning','The data you submitted does not meet the minimum requirements to process CSCI. You may continue submitting, but CSCI Reports cannot be generated at this time.',sampleinfo)
+                        else:
+                            # Import and Execute cleanData and CSCI functions 
+                            import rpy2
+                            import rpy2.robjects as robjects
+                            from rpy2.robjects import pandas2ri
+                            import rpy2.robjects.packages as rpackages
+                            from rpy2.robjects.packages import importr
+                            import rpy2.rinterface as rinterface
 
-                        # shortens notation for accessing robjects
-                        r = robjects.r
+                            # shortens notation for accessing robjects
+                            r = robjects.r
 
-                        # imports R package: CSCI
-                        CSCI = importr('CSCI')
+                            # imports R package: CSCI
+                            CSCI = importr('CSCI')
 
-                        # convert cleanData() and CSCI() functions from CSCI package to python
-                        cd = CSCI.cleanData
-                        csci = CSCI.CSCI
+                            # convert cleanData() and CSCI() functions from CSCI package to python
+                            cd = CSCI.cleanData
+                            csci = CSCI.CSCI
 
-                        # collect errors and error counts for each group
-                        error_count = {'clean data':0, 'CSCI': 0}
-                        cd_group_errors = []
-                        csci_group_errors = []
+                            # collect errors and error counts for each group
+                            error_count = {'clean data':0, 'CSCI': 0}
+                            cd_group_errors = []
+                            csci_group_errors = []
 
-                        # process cleanData and CSCI for each Sample
-                        bugs_grouped = bugs.groupby(['SampleID'])
+                            # process cleanData and CSCI for each Sample
+                            bugs_grouped = bugs.groupby(['SampleID'])
 
-                        # open log file for printing status
-                        TIMESTAMP = str(int(round(time.time()*1000)))
-                        logfile = '/var/www/smc/testfiles/' + TIMESTAMP + '.log'
+                            # open log file for printing status
+                            TIMESTAMP = str(int(round(time.time()*1000)))
+                            logfile = '/var/www/smc/testfiles/' + TIMESTAMP + '.log'
 
-                        # Activate R to Python DataFrame conversions
-                        pandas2ri.activate()
+                            # Activate R to Python DataFrame conversions
+                            pandas2ri.activate()
 
-                        start_time = int(time.time())
-                        count = 0
-                        for name, group in bugs_grouped:
-                            # print current group
-                            print "group name: %s" %(name)
-                            bug_sample_id = name
-                            
-                            # group stationcode to get just one
-                            single_station = group.StationCode.unique()
-                            
-                            # check to makesure there is only one
-                            print "stations_grouped: %s" % single_station[0]
-
-                            # find stationcode that matches between the bugs record and what is in stations
-                            station = stations.loc[stations['stationcode'] == single_station[0]]
-                            
-                            # convert group, station to R dataframe
-                            errorLog("convert group, station to R dataframe")
-                            group = pandas2ri.py2ri(group)
-                            station = pandas2ri.py2ri(station)
-
-                            # copy of group
-                            errorLog("make a copy of group and adjust sampledate fields")
-                            group_copy = group
-                            #errorLog("group_copy:")
-                            #errorLog(group_copy)
-                            group_copy = pandas2ri.ri2py(group_copy)
-                            #errorLog("list group copy:")
-                            #errorLog(list(group_copy))
-                            group_copy.columns = [x.lower() for x in group_copy.columns]
-                            # get samplemonth, sampleday, sampleyear for later use
-                            #group_copy["sampledate"] = pd.datetime.strptime(group_copy['sampledate'], '%Y-%m-%d')
-                            #group_copy["samplemonth"] = group_copy.sampledate.dt.month
-                            #group_copy["sampleday"] = group_copy.sampledate.dt.day
-                            #group_copy["sampleyear"] = group_copy.sampledate.dt.year
-                            
-                            '''
-                            # clean group with cleanData()
-                            cd_list = cd(group,msgs=True)
-                            group = cd_list[0]
-                            warn_msg = cd_list[1]
-
-                            # if data cannot be cleaned, prepare email message
-                            if warn_msg[0] != 'Data already clean':
-                                errorLog('cleanData Failed:\n')
-                                bad_station = 'cleanData failed on station %s:\n' %single_station[0]
-                                bad_group = 'Sample %s could not be cleaned because %s.' %(bug_sample_id,warn_msg[0])
-                                errorLog(bad_station)
-                                errorLog(bad_group)
-                                msgs.append('CSCI Error:\n')
-                                msgs.append(bad_station)
-                                msgs.append(bad_group)
+                            start_time = int(time.time())
+                            count = 0
+                            for name, group in bugs_grouped:
+                                # print current group
+                                print "group name: %s" %(name)
+                                bug_sample_id = name
                                 
-                            else:
-                            '''
-                            try:
-                                    errorLog("data is clean process csci")
-                                    errorLog(station)
-                                    errorLog(group)
-                                    report = csci(group,station)
+                                # group stationcode to get just one
+                                single_station = group.StationCode.unique()
+                                
+                                # check to makesure there is only one
+                                print "stations_grouped: %s" % single_station[0]
 
-                                    # assign csci elements to proper tables
-                                    errorLog("assign elements to specific tables")
-                                    core = pandas2ri.ri2py(report[0])
-                                    s1mmi = pandas2ri.ri2py(report[1])
-                                    s1grps = pandas2ri.ri2py(report[2])
-                                    s1oe = pandas2ri.ri2py(report[3])
-                                    s2oe = pandas2ri.ri2py(report[4])
-                                    s2mmi = pandas2ri.ri2py(report[5])
+                                # find stationcode that matches between the bugs record and what is in stations
+                                station = stations.loc[stations['stationcode'] == single_station[0]]
+                                
+                                # convert group, station to R dataframe
+                                errorLog("convert group, station to R dataframe")
+                                group = pandas2ri.py2ri(group)
+                                station = pandas2ri.py2ri(station)
 
-                                    # fields that need to be filled
-                                    errorLog("first - csci")
-                                    errorLog(core)
-                                    core.columns = [x.lower() for x in core.columns]
-                                    core['processed_by'] = "checker"
-                                    core['cleaned'] = "Yes"
-                                    core['scorenotes'] = "Distinct set to NA"
-                                    core['rand'] = 2
-                                    core['scoredate'] = timestamp_date
-                                    core['record_origin'] = project # should probably be SMC
-                                    core['origin_lastupdatedate'] = timestamp_date
-                                    core['record_publish'] = "False"
-                                    core = pd.merge(core,group_copy[['sampleid','sampledate','sampleday','samplemonth','sampleyear','collectionmethodcode','fieldreplicate']], on = ['sampleid'], how='left')
-                                    core['sampledate'] = pd.to_datetime(core['sampledate'], unit = 's').dt.date
-                                    core = core.drop_duplicates()
-                                    core_file = "/var/www/smc/logs/%s.core.csv" % TIMESTAMP
-                                    # only show header once
-                                    
-                                    if count == 0:
-                                        core.to_csv(core_file, sep=',', mode='a', encoding='utf-8', index=False)
-                                    else:
-                                        # skip next loop
-                                        core.to_csv(core_file, sep=',', mode='a', encoding='utf-8', index=False, header=False)
-                                   
-                                    errorLog("second - s1mmi")
-                                    s1mmi.columns = [x.lower() for x in s1mmi.columns]
-                                    s1mmi['processed_by'] = "checker"
-                                    s1mmi.rename(columns={'coleoptera_percenttaxa_predicted': 'coleoptera_percenttaxa_predict'}, inplace=True)
-                                    s1mmi['record_origin'] = project # should probably be SMC
-                                    s1mmi['origin_lastupdatedate'] = timestamp_date
-                                    s1mmi['record_publish'] = "False"
-                                    s1mmi = s1mmi.drop_duplicates()
-                                    s1mmi_file = "/var/www/smc/logs/%s.Suppl1_mmi.csv" % TIMESTAMP
-                                    # only show header once
-                                    if count == 0:
-                                        s1mmi.to_csv(s1mmi_file, sep=',', mode='a', encoding='utf-8', index=False)
-                                    else:
-                                        # skip next loop
-                                        s1mmi.to_csv(s1mmi_file, sep=',', mode='a', encoding='utf-8', index=False, header=False)
+                                # copy of group
+                                errorLog("make a copy of group and adjust sampledate fields")
+                                group_copy = group
+                                #errorLog("group_copy:")
+                                #errorLog(group_copy)
+                                group_copy = pandas2ri.ri2py(group_copy)
+                                #errorLog("list group copy:")
+                                #errorLog(list(group_copy))
+                                group_copy.columns = [x.lower() for x in group_copy.columns]
+                                # get samplemonth, sampleday, sampleyear for later use
+                                #group_copy["sampledate"] = pd.datetime.strptime(group_copy['sampledate'], '%Y-%m-%d')
+                                #group_copy["samplemonth"] = group_copy.sampledate.dt.month
+                                #group_copy["sampleday"] = group_copy.sampledate.dt.day
+                                #group_copy["sampleyear"] = group_copy.sampledate.dt.year
+                                
+                                '''
+                                # clean group with cleanData()
+                                cd_list = cd(group,msgs=True)
+                                group = cd_list[0]
+                                warn_msg = cd_list[1]
 
-                                    errorLog("third - s2mmi")
-                                    s2mmi.columns = [x.lower() for x in s2mmi.columns]
-                                    s2mmi['processed_by'] = "checker"
-                                    s2mmi['record_origin'] = project # should probably be SMC
-                                    s2mmi['origin_lastupdatedate'] = timestamp_date
-                                    s2mmi['record_publish'] = "False"
-                                    s2mmi = s2mmi.drop_duplicates()
-                                    s2mmi_file = "/var/www/smc/logs/%s.Suppl2_mmi.csv" % TIMESTAMP
-                                    # only show header once
-                                    if count == 0:
-                                        s2mmi.to_csv(s2mmi_file, sep=',', mode='a', encoding='utf-8', index=False)
-                                    else:
-                                        # skip next loop
-                                        s2mmi.to_csv(s2mmi_file, sep=',', mode='a', encoding='utf-8', index=False, header=False)
-
-                                    errorLog("fourth - s1grps")
-                                    s1grps.columns = [x.lower() for x in s1grps.columns]
-                                    s1grps['processed_by'] = "checker"
-                                    s1grps['record_origin'] = project # should probably be SMC
-                                    s1grps['origin_lastupdatedate'] = timestamp_date
-                                    s1grps['record_publish'] = "False"
-                                    s1grps = s1grps.drop_duplicates()
-                                    s1grps_file = "/var/www/smc/logs/%s.Suppl1_grps.csv" % TIMESTAMP
-                                    # only show header once
-                                    if count == 0:
-                                        s1grps.to_csv(s1grps_file, sep=',', mode='a', encoding='utf-8', index=False)
-                                    else:
-                                        # skip next loop
-                                        s1grps.to_csv(s1grps_file, sep=',', mode='a', encoding='utf-8', index=False, header=False)
-
-                                    errorLog("fifth - s1oe")
-                                    s1oe.columns = [x.lower() for x in s1oe.columns]
-                                    #print s1oe
-                                    #s1oe['objectid'] = s1oe.apply(lambda x: int(x.objectid) + x.index, axis=1)
-                                    s1oe['processed_by'] = "checker"
-                                    s1oe['record_origin'] = project # should probably be SMC
-                                    s1oe['origin_lastupdatedate'] = timestamp_date
-                                    s1oe['record_publish'] = "False"
-                                    s1oe = s1oe.drop_duplicates()
-                                    s1oe_file = "/var/www/smc/logs/%s.Suppl1_OE.csv" % TIMESTAMP
-                                    # only show header once
-                                    if count == 0:
-                                        s1oe.to_csv(s1oe_file, sep=',', mode='a', encoding='utf-8', index=False)
-                                    else:
-                                        # skip next loop
-                                        s1oe.to_csv(s1oe_file, sep=',', mode='a', encoding='utf-8', index=False, header=False)
-            
-                                    errorLog("sixth - s2oe")
-                                    s2oe.columns = [x.lower() for x in s2oe.columns]
-                                    # fill na with -88
-                                    #s2oe.fillna(-88, inplace=True)
-                                    s2oe['captureprob'].replace(['NA'], -88, inplace=True)
-                                    s2oe['processed_by'] = "checker"
-                                    s2oe['record_origin'] = project # should probably be SMC
-                                    s2oe['origin_lastupdatedate'] = timestamp_date
-                                    s2oe['record_publish'] = "False"
-                                    s2oe = s2oe.drop_duplicates()
-                                    s2oe_file = "/var/www/smc/logs/%s.Suppl2_OE.csv" % TIMESTAMP
-                                    # only show header once
-                                    if count == 0:
-                                        s2oe.to_csv(s2oe_file, sep=',', mode='a', encoding='utf-8', index=False)
-                                    else:
-                                        # skip next loop
-                                        s2oe.to_csv(s2oe_file, sep=',', mode='a', encoding='utf-8', index=False, header=False)
-
-                                    summary_results_link = TIMESTAMP
-
-                                    count = count + 1
-                                    #file_to_get = "/var/www/smc/logs/%s.core.csv" % TIMESTAMP
-                                    #errorLog("file to get:")
-                                    #errorLog(file_to_get)
-                                    #all_dataframes["2 - core_csv - tmp_cscicore"] = pd.read_csv('/var/www/smc/logs/%s.core.csv' % TIMESTAMP)
-                                    #all_dataframes["2 - core_csv - tmp_cscicore"].columns = [x.lower() for x in all_dataframes["2 - core_csv - tmp_cscicore"].columns]
-
-                                    ## WHAT HAPPENS IF CSCI SCORE IS ALREADY IN DATABASE - MAY WANT TO CHECK ABOVE
-                                    #errorLog("print core_csv columns:")
-                                    #errorLog(list(all_dataframes["2 - core_csv - tmp_cscicore"]))
-                                    #errorLog("remove index:")
-                                    #all_dataframes["2 - core_csv - tmp_cscicore"].drop(['unnamed: 0'],axis=1, inplace=True)
-                                    #errorLog(list(all_dataframes["2 - core_csv - tmp_cscicore"]))
-                                    #errorLog(all_dataframes["2 - core_csv - tmp_cscicore"])
-                                    #
-                                    #summary_results_link = 'http://smcchecker.sccwrp.org/smc/logs/%s.core.csv' % TIMESTAMP
-                                    #summary_results_link = TIMESTAMP
-
-                                    ### IMPORTANT LOAD ONE CSCI FIELD FROM CSV FILE AND MAP IT TO EXISTING BUGS/STATIONS DATAFRAME THEN OUTPUT TO CSV LOAD FILE FOR IMPORT
-                                    ### AT STAGING INTO DATABASES
-                                    message = "Success CSCI"
-                                    errorLog(message)
-                                    '''
-                                    # code below wont work do to sampledate getting changed to number instead of date - fails on submission
-                                    all_dataframes["2 - CSCI_Core - csci_core"] = core
-                                    all_dataframes["3 - CSCI_Suppl1_MMI - csci_suppl1_mmi"] = s1mmi
-                                    all_dataframes["4 - CSCI_Suppl2_MMI - csci_suppl2_mmi"] = s2mmi
-                                    all_dataframes["5 - CSCI_Suppl1_GRPS - csci_suppl1_grps"] = s1grps
-                                    all_dataframes["6 - CSCI_Suppl1_OE - csci_suppl1_oe"] = s1oe
-                                    all_dataframes["7 - CSCI_Suppl2_OE - csci_suppl2_oe"] = s2oe
-                                    '''
-                                    
-                                    message = str(msgs)
-                                    state = 0
-                            except Exception as e:
-                                    # here is where we email sccwrp to let them know we couldnt get csci score for sampleid - we still need load the data and try to load other sampleids 
-                                    bad_station = '\n CSCI Processing Failed on station %s:\n' %single_station[0]
-                                    bad_group = 'Sample %s could not be processed because %s.\n' % (bug_sample_id,e[0])
-                                    
+                                # if data cannot be cleaned, prepare email message
+                                if warn_msg[0] != 'Data already clean':
+                                    errorLog('cleanData Failed:\n')
+                                    bad_station = 'cleanData failed on station %s:\n' %single_station[0]
+                                    bad_group = 'Sample %s could not be cleaned because %s.' %(bug_sample_id,warn_msg[0])
+                                    errorLog(bad_station)
+                                    errorLog(bad_group)
                                     msgs.append('CSCI Error:\n')
                                     msgs.append(bad_station)
                                     msgs.append(bad_group)
                                     
-                                    errorLog("CSCI ran into the following error: %s" % e[0])
-                                    msgs.append('Failed to run csci\n')
+                                else:
+                                '''
+                                try:
+                                        errorLog("data is clean process csci")
+                                        errorLog(station)
+                                        errorLog(group)
+                                        report = csci(group,station)
+
+                                        # assign csci elements to proper tables
+                                        errorLog("assign elements to specific tables")
+                                        core = pandas2ri.ri2py(report[0])
+                                        s1mmi = pandas2ri.ri2py(report[1])
+                                        s1grps = pandas2ri.ri2py(report[2])
+                                        s1oe = pandas2ri.ri2py(report[3])
+                                        s2oe = pandas2ri.ri2py(report[4])
+                                        s2mmi = pandas2ri.ri2py(report[5])
+
+                                        # fields that need to be filled
+                                        errorLog("first - csci")
+                                        errorLog(core)
+                                        core.columns = [x.lower() for x in core.columns]
+                                        core['processed_by'] = "checker"
+                                        core['cleaned'] = "Yes"
+                                        core['scorenotes'] = "Distinct set to NA"
+                                        core['rand'] = 2
+                                        core['scoredate'] = timestamp_date
+                                        core['record_origin'] = project # should probably be SMC
+                                        core['origin_lastupdatedate'] = timestamp_date
+                                        core['record_publish'] = "False"
+                                        core = pd.merge(core,group_copy[['sampleid','sampledate','sampleday','samplemonth','sampleyear','collectionmethodcode','fieldreplicate']], on = ['sampleid'], how='left')
+                                        core['sampledate'] = pd.to_datetime(core['sampledate'], unit = 's').dt.date
+                                        core = core.drop_duplicates()
+                                        core_file = "/var/www/smc/logs/%s.core.csv" % TIMESTAMP
+                                        # only show header once
                                         
+                                        if count == 0:
+                                            core.to_csv(core_file, sep=',', mode='a', encoding='utf-8', index=False)
+                                        else:
+                                            # skip next loop
+                                            core.to_csv(core_file, sep=',', mode='a', encoding='utf-8', index=False, header=False)
+                                       
+                                        errorLog("second - s1mmi")
+                                        s1mmi.columns = [x.lower() for x in s1mmi.columns]
+                                        s1mmi['processed_by'] = "checker"
+                                        s1mmi.rename(columns={'coleoptera_percenttaxa_predicted': 'coleoptera_percenttaxa_predict'}, inplace=True)
+                                        s1mmi['record_origin'] = project # should probably be SMC
+                                        s1mmi['origin_lastupdatedate'] = timestamp_date
+                                        s1mmi['record_publish'] = "False"
+                                        s1mmi = s1mmi.drop_duplicates()
+                                        s1mmi_file = "/var/www/smc/logs/%s.Suppl1_mmi.csv" % TIMESTAMP
+                                        # only show header once
+                                        if count == 0:
+                                            s1mmi.to_csv(s1mmi_file, sep=',', mode='a', encoding='utf-8', index=False)
+                                        else:
+                                            # skip next loop
+                                            s1mmi.to_csv(s1mmi_file, sep=',', mode='a', encoding='utf-8', index=False, header=False)
+
+                                        errorLog("third - s2mmi")
+                                        s2mmi.columns = [x.lower() for x in s2mmi.columns]
+                                        s2mmi['processed_by'] = "checker"
+                                        s2mmi['record_origin'] = project # should probably be SMC
+                                        s2mmi['origin_lastupdatedate'] = timestamp_date
+                                        s2mmi['record_publish'] = "False"
+                                        s2mmi = s2mmi.drop_duplicates()
+                                        s2mmi_file = "/var/www/smc/logs/%s.Suppl2_mmi.csv" % TIMESTAMP
+                                        # only show header once
+                                        if count == 0:
+                                            s2mmi.to_csv(s2mmi_file, sep=',', mode='a', encoding='utf-8', index=False)
+                                        else:
+                                            # skip next loop
+                                            s2mmi.to_csv(s2mmi_file, sep=',', mode='a', encoding='utf-8', index=False, header=False)
+
+                                        errorLog("fourth - s1grps")
+                                        s1grps.columns = [x.lower() for x in s1grps.columns]
+                                        s1grps['processed_by'] = "checker"
+                                        s1grps['record_origin'] = project # should probably be SMC
+                                        s1grps['origin_lastupdatedate'] = timestamp_date
+                                        s1grps['record_publish'] = "False"
+                                        s1grps = s1grps.drop_duplicates()
+                                        s1grps_file = "/var/www/smc/logs/%s.Suppl1_grps.csv" % TIMESTAMP
+                                        # only show header once
+                                        if count == 0:
+                                            s1grps.to_csv(s1grps_file, sep=',', mode='a', encoding='utf-8', index=False)
+                                        else:
+                                            # skip next loop
+                                            s1grps.to_csv(s1grps_file, sep=',', mode='a', encoding='utf-8', index=False, header=False)
+
+                                        errorLog("fifth - s1oe")
+                                        s1oe.columns = [x.lower() for x in s1oe.columns]
+                                        #print s1oe
+                                        #s1oe['objectid'] = s1oe.apply(lambda x: int(x.objectid) + x.index, axis=1)
+                                        s1oe['processed_by'] = "checker"
+                                        s1oe['record_origin'] = project # should probably be SMC
+                                        s1oe['origin_lastupdatedate'] = timestamp_date
+                                        s1oe['record_publish'] = "False"
+                                        s1oe = s1oe.drop_duplicates()
+                                        s1oe_file = "/var/www/smc/logs/%s.Suppl1_OE.csv" % TIMESTAMP
+                                        # only show header once
+                                        if count == 0:
+                                            s1oe.to_csv(s1oe_file, sep=',', mode='a', encoding='utf-8', index=False)
+                                        else:
+                                            # skip next loop
+                                            s1oe.to_csv(s1oe_file, sep=',', mode='a', encoding='utf-8', index=False, header=False)
+                
+                                        errorLog("sixth - s2oe")
+                                        s2oe.columns = [x.lower() for x in s2oe.columns]
+                                        # fill na with -88
+                                        #s2oe.fillna(-88, inplace=True)
+                                        s2oe['captureprob'].replace(['NA'], -88, inplace=True)
+                                        s2oe['processed_by'] = "checker"
+                                        s2oe['record_origin'] = project # should probably be SMC
+                                        s2oe['origin_lastupdatedate'] = timestamp_date
+                                        s2oe['record_publish'] = "False"
+                                        s2oe = s2oe.drop_duplicates()
+                                        s2oe_file = "/var/www/smc/logs/%s.Suppl2_OE.csv" % TIMESTAMP
+                                        # only show header once
+                                        if count == 0:
+                                            s2oe.to_csv(s2oe_file, sep=',', mode='a', encoding='utf-8', index=False)
+                                        else:
+                                            # skip next loop
+                                            s2oe.to_csv(s2oe_file, sep=',', mode='a', encoding='utf-8', index=False, header=False)
+
+                                        summary_results_link = TIMESTAMP
+
+                                        count = count + 1
+                                        #file_to_get = "/var/www/smc/logs/%s.core.csv" % TIMESTAMP
+                                        #errorLog("file to get:")
+                                        #errorLog(file_to_get)
+                                        #all_dataframes["2 - core_csv - tmp_cscicore"] = pd.read_csv('/var/www/smc/logs/%s.core.csv' % TIMESTAMP)
+                                        #all_dataframes["2 - core_csv - tmp_cscicore"].columns = [x.lower() for x in all_dataframes["2 - core_csv - tmp_cscicore"].columns]
+
+                                        ## WHAT HAPPENS IF CSCI SCORE IS ALREADY IN DATABASE - MAY WANT TO CHECK ABOVE
+                                        #errorLog("print core_csv columns:")
+                                        #errorLog(list(all_dataframes["2 - core_csv - tmp_cscicore"]))
+                                        #errorLog("remove index:")
+                                        #all_dataframes["2 - core_csv - tmp_cscicore"].drop(['unnamed: 0'],axis=1, inplace=True)
+                                        #errorLog(list(all_dataframes["2 - core_csv - tmp_cscicore"]))
+                                        #errorLog(all_dataframes["2 - core_csv - tmp_cscicore"])
+                                        #
+                                        #summary_results_link = 'http://smcchecker.sccwrp.org/smc/logs/%s.core.csv' % TIMESTAMP
+                                        #summary_results_link = TIMESTAMP
+
+                                        ### IMPORTANT LOAD ONE CSCI FIELD FROM CSV FILE AND MAP IT TO EXISTING BUGS/STATIONS DATAFRAME THEN OUTPUT TO CSV LOAD FILE FOR IMPORT
+                                        ### AT STAGING INTO DATABASES
+                                        message = "Success CSCI"
+                                        errorLog(message)
+                                        '''
+                                        # code below wont work do to sampledate getting changed to number instead of date - fails on submission
+                                        all_dataframes["2 - CSCI_Core - csci_core"] = core
+                                        all_dataframes["3 - CSCI_Suppl1_MMI - csci_suppl1_mmi"] = s1mmi
+                                        all_dataframes["4 - CSCI_Suppl2_MMI - csci_suppl2_mmi"] = s2mmi
+                                        all_dataframes["5 - CSCI_Suppl1_GRPS - csci_suppl1_grps"] = s1grps
+                                        all_dataframes["6 - CSCI_Suppl1_OE - csci_suppl1_oe"] = s1oe
+                                        all_dataframes["7 - CSCI_Suppl2_OE - csci_suppl2_oe"] = s2oe
+                                        '''
                                         
-                                                                
-                        all_dataframes["2 - CSCI_Core - csci_core"] = pd.read_csv("/var/www/smc/logs/%s.core.csv" %TIMESTAMP)
-                        all_dataframes["3 - CSCI_Suppl1_MMI - csci_suppl1_mmi"] = pd.read_csv("/var/www/smc/logs/%s.Suppl1_mmi.csv" %TIMESTAMP)
-                        all_dataframes["4 - CSCI_Suppl2_MMI - csci_suppl2_mmi"] = pd.read_csv("/var/www/smc/logs/%s.Suppl2_mmi.csv" %TIMESTAMP)
-                        all_dataframes["5 - CSCI_Suppl1_GRPS - csci_suppl1_grps"] = pd.read_csv("/var/www/smc/logs/%s.Suppl1_grps.csv" %TIMESTAMP)
-                        all_dataframes["6 - CSCI_Suppl1_OE - csci_suppl1_oe"] = pd.read_csv("/var/www/smc/logs/%s.Suppl1_OE.csv" %TIMESTAMP)
-                        all_dataframes["7 - CSCI_Suppl2_OE - csci_suppl2_oe"] = pd.read_csv("/var/www/smc/logs/%s.Suppl2_OE.csv" %TIMESTAMP)
-                        message = msgs
-                        errorLog(message)
-                        state = 0
+                                        message = str(msgs)
+                                        state = 0
+                                except Exception as e:
+                                        # here is where we email sccwrp to let them know we couldnt get csci score for sampleid - we still need load the data and try to load other sampleids 
+                                        bad_station = '\n CSCI Processing Failed on station %s:\n' %single_station[0]
+                                        bad_group = 'Sample %s could not be processed because %s.\n' % (bug_sample_id,e[0])
+                                        
+                                        msgs.append('CSCI Error:\n')
+                                        msgs.append(bad_station)
+                                        msgs.append(bad_group)
+                                        
+                                        errorLog("CSCI ran into the following error: %s" % e[0])
+                                        msgs.append('Failed to run csci\n')
+                                            
+                                            
+                                                                    
+                            all_dataframes["2 - CSCI_Core - csci_core"] = pd.read_csv("/var/www/smc/logs/%s.core.csv" %TIMESTAMP)
+                            all_dataframes["3 - CSCI_Suppl1_MMI - csci_suppl1_mmi"] = pd.read_csv("/var/www/smc/logs/%s.Suppl1_mmi.csv" %TIMESTAMP)
+                            all_dataframes["4 - CSCI_Suppl2_MMI - csci_suppl2_mmi"] = pd.read_csv("/var/www/smc/logs/%s.Suppl2_mmi.csv" %TIMESTAMP)
+                            all_dataframes["5 - CSCI_Suppl1_GRPS - csci_suppl1_grps"] = pd.read_csv("/var/www/smc/logs/%s.Suppl1_grps.csv" %TIMESTAMP)
+                            all_dataframes["6 - CSCI_Suppl1_OE - csci_suppl1_oe"] = pd.read_csv("/var/www/smc/logs/%s.Suppl1_OE.csv" %TIMESTAMP)
+                            all_dataframes["7 - CSCI_Suppl2_OE - csci_suppl2_oe"] = pd.read_csv("/var/www/smc/logs/%s.Suppl2_OE.csv" %TIMESTAMP)
+                            message = msgs
+                            errorLog(message)
+                            state = 0
 		
                 
                 for dataframe in all_dataframes.keys():

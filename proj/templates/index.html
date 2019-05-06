@@ -296,24 +296,13 @@ td {
 		}, 10000); 
 		*/
 		if (i == "success" && h == "Data Loaded Successful"){
-    				$.ajax({
-					type: "GET",
-					url: $SCRIPT_ROOT + '/mail?action=' + i + '&type=' + d + '&message=' + m + '&login=' + l + '&agency=' + a,
-        				success: function(data) {
-						// probably need to adjust this if mail fails
-						console.log(data);
-						var answer = confirm("Thank you for submitting your data. SCCWRP staff along with committee have been notified of your submission. Restart the application?");
-						if (answer == true){
-							reload_page();
-							//report(); - moved into upload
-						} else {
-							// do nothing
-						}
-					},
-					error: function(data){
-						console.log(data);
-					}
-				});
+			var answer = confirm("Thank you for submitting your data. SCCWRP staff along with committee have been notified of your submission. Restart the application?");
+			if (answer == true){
+				reload_page();
+			      	//report(); - moved into upload
+			} else {
+				// do nothing
+			}
 		}
 		if (i == "critical"){
 			alert("critical");

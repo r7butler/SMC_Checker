@@ -1,0 +1,23 @@
+CSCI FLUSH AND REPROCESSING REPORT:
+
+---------- Records deleted from CSCI report tables
+
+Records deleted from csci_core: 0
+Records deleted from csci_suppl1_grps: 0
+Records deleted from csci_suppl1_mmi: 0
+Records deleted from csci_suppl1_oe: 0
+Records deleted from csci_suppl2_mmi: 0
+Records deleted from csci_suppl2_oe: 0
+
+---------- SampleIDs found in Unified Taxonomy, but not in CSCI Reports
+
+number of unified taxonomy records missing core: 4
+number of unified taxonomy records missing s1grps: 0
+number of unified taxonomy records missing s1mmi: 4
+number of unified taxonomy records missing s1oe: 4
+number of unified taxonomy records missing s2mmi: 4
+number of unified taxonomy records missing s2oe: 4
+
+---------- CSCI Processing Errors
+
+Duplicate suppl1_grps data for sample 103WER026_20030729_BMI_TRC_1. Skip loading to database.Duplicate suppl1_grps data for sample 103WER026_20120815_BMI_RWB_1. Skip loading to database.Duplicate suppl1_grps data for sample 103WER026_20120815_BMI_RWB_2. Skip loading to database.
