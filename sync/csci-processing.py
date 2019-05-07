@@ -413,7 +413,7 @@ for name, group in bugs_grouped:
             try:
                 core_status = core.to_sql('tmp_csci_core', smc_eng, if_exists='append', index=False)
             except IntegrityError:
-                msgs.append("Duplicate core data for sample %s. Skip loading to database." %bug_sample_id)
+                msgs.append("Duplicate core data for sample %s. Skip loading to database.\n" %bug_sample_id)
                 pass
 
             print "second - s1mmi"
@@ -427,7 +427,7 @@ for name, group in bugs_grouped:
             try:
                 s1mmi_status = s1mmi.to_sql('tmp_csci_suppl1_mmi', smc_eng, if_exists='append', index=False)
             except IntegrityError:
-                msgs.append("Duplicate suppl1_mmi data for sample %s. Skip loading to database." %bug_sample_id)
+                msgs.append("Duplicate suppl1_mmi data for sample %s. Skip loading to database.\n" %bug_sample_id)
                 pass
 
              
@@ -441,7 +441,7 @@ for name, group in bugs_grouped:
             try:
                 s2mmi_status = s2mmi.to_sql('tmp_csci_suppl2_mmi', smc_eng, if_exists='append', index=False)
             except IntegrityError:
-                msgs.append("Duplicate suppl2_mmi data for sample %s. Skip loading to database." %bug_sample_id)
+                msgs.append("Duplicate suppl2_mmi data for sample %s. Skip loading to database.\n" %bug_sample_id)
                 pass
 
             print "third - s1oe"
@@ -454,7 +454,7 @@ for name, group in bugs_grouped:
             try:
                 s1oe_status = s1oe.to_sql('tmp_csci_suppl1_oe', smc_eng, if_exists='append', index=False)
             except IntegrityError:
-                msgs.append("Duplicate suppl1_oe data for sample %s. Skip loading to database." %bug_sample_id)
+                msgs.append("Duplicate suppl1_oe data for sample %s. Skip loading to database.\n" %bug_sample_id)
                 pass
 
             print "fourth - s2oe"
@@ -469,7 +469,7 @@ for name, group in bugs_grouped:
             try:
                 s2oe_status = s2oe.to_sql('tmp_csci_suppl2_oe', smc_eng, if_exists='append', index=False)
             except IntegrityError:
-                msgs.append("Duplicate suppl2_oe data for sample %s. Skip loading to database." %bug_sample_id)
+                msgs.append("Duplicate suppl2_oe data for sample %s. Skip loading to database.\n" %bug_sample_id)
                 pass
 
             print "last - s1grps"
@@ -486,7 +486,7 @@ for name, group in bugs_grouped:
             try:
                 s1grps_status = s1grps.to_sql('tmp_csci_suppl1_grps', smc_eng, if_exists='append', index=False)
             except IntegrityError:
-                msgs.append("Duplicate suppl1_grps data for sample %s. Skip loading to database." %bug_sample_id)
+                msgs.append("Duplicate suppl1_grps data for sample %s. Skip loading to database.\n" %bug_sample_id)
                 pass
 
 

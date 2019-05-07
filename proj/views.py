@@ -471,6 +471,11 @@ def upload_test_uploader():
         #f.save(secure_filename(f.filename))
         return 'file uploaded successfully'
 
+@app.route('/bogus')
+def bogus():
+    return ''
+
+
 def errorApp():
 	print("error app")
 	return render_template('error.html')

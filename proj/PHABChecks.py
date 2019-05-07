@@ -173,8 +173,14 @@ def phab(all_dataframes,pmetrics_long,stations,sql_match_tables,errors_dict,proj
             
             if custom_errors == []:
                 # Run IPI Here
-                ipi_output = python_IPI(pmetrics_long, stations)
-                message = "IPI ran successfully"
+                try:
+                    ipi_output = python_IPI(pmetrics_long, stations)
+                    message = "IPI ran successfully"
+                except Exception as errmsg:
+                    message = "There was a problem processing IPI"
+                    errorLog(message)
+                    errorLog(errmsg)
+                    ipi_output = pd.DataFrame({})
 
             
             
