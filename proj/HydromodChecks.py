@@ -210,6 +210,7 @@ def hydromod(all_dataframes,sql_match_tables,errors_dict,project_code,login_info
                     errorLog('Submitted Data where FullyArmored == No, but the %s field is empty:' % fieldname)
                     # the .isnull() may have to be changed to -88... because anyways, these fields are NOT NULL in the database
                     # meaning if they left them blank, they won't pass CoreChecks....
+                    # NOTE I need to ask Jeff what he wants them to put if they aren't submitting data for this field
                     errorLog(hydro[ (hydro.fullyarmored == 'No') & (hydro[fieldname].isnull())  ])
                     checkData(hydro[ (hydro.fullyarmored == 'No') & (hydro[fieldname].isnull()) ].tmp_row.tolist(), fieldname, 'Undefined Error', 'error', 'The FullyArmored field is equal to No, but the %s field is empty' % fieldname, hydro)
                 
@@ -230,18 +231,22 @@ def hydromod(all_dataframes,sql_match_tables,errors_dict,project_code,login_info
 
 
                 # Check - If "fullyarmored" == "Yes" then "streambedstate" must be "C"
+                # Jeff confirmed that this check is correct.
                 FullyArmoredCheck('streambedstate', "C")
 
                 
                 # Check - If "fullyarmored" == "Yes" then "gradecontrol" must be "A"
+                # Jeff has NOT confirmed that this check is correct
                 FullyArmoredCheck('gradecontrol', "A")
                 
                 
                 # These next two checks may have to be changed. I was unclear on what to do.
                 # Check - If "fullyarmored" == "Yes" then "lateralsusceptibilityl" must be "1"
+                # Jeff has NOT confirmed that this check is correct
                 FullyArmoredCheck('lateralsusceptibilityl', 1)
 
                 # Check - If "fullyarmored" == "Yes" then "lateralsusceptibilityr" must be "1"
+                # Jeff has NOT confirmed that this check is correct
                 FullyArmoredCheck('lateralsusceptibilityr', 1) 
 
                 # -- End of Checks where FullyArmored == Yes -- #
@@ -256,6 +261,16 @@ def hydromod(all_dataframes,sql_match_tables,errors_dict,project_code,login_info
                 # For the fields Area, Precipitation, ValleySlope, ValleyWidth, D50...
                 # It says if data is unavailable at time of submission, enter "NR"
                 # NOTE Ask Jeff: Is there a way to check whether the data was available or not at the time of submission?
+                # NOTE He said no to the above question.
+                #       - He also said that D50 is needed if FullyArmored is No AND StreamBedState is B
+                #
+                # NOTE There is another can of worms that gets opened up with this part of the submission guide.
+                #       - The guide says that if the data is unavailable, enter 'NR' BUT these are integer fields
+                #       - We can do one of the following:
+                #           1) Make them put -88 if data is unavailable
+                #           2) Change the fields to strings, so that the data entered is either a string of a number, or 'NR'
+
+
 
 
                 # Hydromod Submission Guide Bullet points 15 through 20, 22 through 27
@@ -268,7 +283,12 @@ def hydromod(all_dataframes,sql_match_tables,errors_dict,project_code,login_info
                 #
                 #   2) When the submission guide says "Not required" 
                 #       does that mean that you guys would rather have them NOT submit anything in these fields when the channel is fully armored?
+                # These questions are still unanswered.
 
+
+
+
+                
                 
                 # Submission Guide page 2 - Bullet point #29
                 # If the channel is fully armored then StreamBedState must be "C"
@@ -276,6 +296,8 @@ def hydromod(all_dataframes,sql_match_tables,errors_dict,project_code,login_info
 
 
 
+                
+                
                 # Submission Guide page 2 - Bullet point #31
                 # Word for word from Submission Guide:
                 # "If StreambedState is B, then ArmoringPotential is required. Otherwise enter NA"
@@ -287,9 +309,24 @@ def hydromod(all_dataframes,sql_match_tables,errors_dict,project_code,login_info
                 # I am thinking we should go with what is currently in the lookup list.
                 # 
                 # So here is my thinking for this check:
-                #   If StreabedState == "B" then ArmoringPotential should be "A", "B", or "C", otherwise it should be "NR"
+                #   If StreambedState == "B" then ArmoringPotential should be "A", "B", or "C", otherwise it should be "NR"
                 #
                 # NOTE For Bullet point #33 (GradeControl) I have the same exact concern as I did for ArmoringPotential
+                #
+                #
+                # NOTE From Jeff:
+                #       - If StreambedState == 'B' then ArmoringPotential needs to be in ['A', 'B', 'C']
+                #       - If StreambedState == 'B' then GradeControl needs to be in ['A', 'B', 'C']
+                #       - If StreambedState != 'B' then it does NOT matter what ArmoringPotential or GradeControl are.
+                
+                errorLog("If StreambedState == 'B' then ArmoringPotential needs to be in ['A', 'B', 'C']")
+                checkData(hydro[(hydro.streambedstate == 'B')&(~hydro.armoringpotential.isin(['A','B','C']))].tmp_row.tolist(), 'ArmoringPotential', 'Undefined Error', 'error', 'If StreamBedState is B then ArmoringPotential must be either A, B, or C', hydro) 
+
+                errorLog("If StreambedState == 'B' then GradeControl needs to be in ['A', 'B', 'C']")
+                checkData(hydro[(hydro.streambedstate == 'B')&(~hydro.gradecontrol.isin(['A','B','C']))].tmp_row.tolist(), 'GradeControl', 'Undefined Error', 'error', 'If StreamBedState is B then GradeControl must be either A, B, or C', hydro)
+
+
+
 
 
 
@@ -303,11 +340,16 @@ def hydromod(all_dataframes,sql_match_tables,errors_dict,project_code,login_info
                 #   
                 #   2) The Submission Guide says they may enter 1, 2, 3, 4, or 5 for these fields. Should we create a lookup list in the database?
                 #       Or we may simply check if the field has one of those specified values during the Extended Checks process.
+                # NOTE We created a lookup list for this one. This check will now be taken care of in the CoreChecks process.
 
 
 
-                
+
+
+
+
                 # NOTE Are there any Logic Checks?
+                # From what I can tell, no. Logic Checks are usually outlined in the submission guide.
 		
                 
                 ## LOGIC ##
